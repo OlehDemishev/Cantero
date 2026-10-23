@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { CrewsPanel } from "@/components/crews-panel";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, notifyApiError } from "@/lib/api-client";
 import { formatDate, formatDateWithOptions } from "@/lib/format-date";
 import { resetStateInEffect } from "@/lib/effect-reset";
 import { useConfirm } from "@/components/ui/confirm-dialog";
@@ -124,12 +124,12 @@ export default function ResourcePlanningPage() {
     apiFetch<Project[]>("/projects").then((list) => {
       setProjects(list);
       setForm((f) => ({ ...f, projectId: f.projectId || (list[0]?.id ?? "") }));
-    });
+    }).catch(notifyApiError);
     apiFetch<Worker[]>("/workers").then((list) => {
       setWorkers(list);
       setForm((f) => ({ ...f, resourceId: f.resourceId || (list[0]?.id ?? "") }));
-    });
-    apiFetch<Equipment[]>("/equipment").then(setEquipment);
+    }).catch(notifyApiError);
+    apiFetch<Equipment[]>("/equipment").then(setEquipment).catch(notifyApiError);
   }, []);
 
   useEffect(() => {
@@ -137,7 +137,7 @@ export default function ResourcePlanningPage() {
       resetStateInEffect(() => setProjectTasks([]));
       return;
     }
-    apiFetch<TaskOption[]>(`/tasks?projectId=${form.projectId}`).then(setProjectTasks);
+    apiFetch<TaskOption[]>(`/tasks?projectId=${form.projectId}`).then(setProjectTasks).catch(notifyApiError);
   }, [form.projectId]);
 
   function switchResourceType(resourceType: ResourceType) {

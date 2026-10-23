@@ -3,7 +3,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, notifyApiError } from "@/lib/api-client";
 import { useHotkey } from "@/lib/use-hotkey";
 import { SearchIcon } from "@/components/nav-icons";
 import { resetStateInEffect } from "@/lib/effect-reset";
@@ -61,7 +61,7 @@ export function CommandPalette({ navItems }: { navItems: readonly NavAction[] })
       return;
     }
     debounceRef.current = setTimeout(() => {
-      apiFetch<SearchResult[]>(`/search?q=${encodeURIComponent(query)}`).then(setResults);
+      apiFetch<SearchResult[]>(`/search?q=${encodeURIComponent(query)}`).then(setResults).catch(notifyApiError);
     }, DEBOUNCE_MS);
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import type { AccountingProviderType } from "@cantero/shared";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, notifyApiError } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
 
 interface Company {
@@ -43,8 +43,8 @@ export default function IntegrationsPage() {
   const [webhookCount, setWebhookCount] = useState<number | null>(null);
 
   useEffect(() => {
-    apiFetch<unknown[]>("/company/api-keys").then((list) => setApiKeyCount(list.length));
-    apiFetch<unknown[]>("/company/webhooks").then((list) => setWebhookCount(list.length));
+    apiFetch<unknown[]>("/company/api-keys").then((list) => setApiKeyCount(list.length)).catch(notifyApiError);
+    apiFetch<unknown[]>("/company/webhooks").then((list) => setWebhookCount(list.length)).catch(notifyApiError);
   }, []);
 
   const cards: IntegrationCard[] = [

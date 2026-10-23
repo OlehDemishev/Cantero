@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import type { CustomFieldEntityType, CustomFieldType } from "@cantero/shared";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, notifyApiError } from "@/lib/api-client";
 
 interface FieldValue {
   fieldId: string;
@@ -26,7 +26,7 @@ export function CustomFieldsValuesPanel({ entityType, entityId }: { entityType: 
     apiFetch<FieldValue[]>(`/custom-fields/${entityType}/${entityId}`).then((list) => {
       setFields(list);
       setDraft(Object.fromEntries(list.map((f) => [f.fieldId, f.value ?? ""])));
-    });
+    }).catch(notifyApiError);
   }
 
   useEffect(load, [entityType, entityId]);

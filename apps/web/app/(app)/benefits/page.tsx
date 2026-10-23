@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { EmptyState } from "@/components/ui/empty-state";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, notifyApiError } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
 import { useMe } from "@/lib/use-me";
 import { useCan } from "@/lib/permissions";
@@ -52,11 +52,11 @@ export default function BenefitsPage() {
     apiFetch<Worker[]>("/workers").then((list) => {
       setWorkers(list);
       if (list[0]) setForm((f) => ({ ...f, workerId: f.workerId || list[0].id }));
-    });
+    }).catch(notifyApiError);
     apiFetch<Plan[]>("/benefits/plans").then((list) => {
       setPlans(list);
       if (list[0]) setForm((f) => ({ ...f, planId: f.planId || list[0].id, tierId: list[0].tiers[0]?.id ?? "" }));
-    });
+    }).catch(notifyApiError);
   }, []);
 
   const selectedPlan = plans.find((p) => p.id === form.planId);

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { VEHICLE_TYPES, type VehicleInspectionResult, type VehicleType } from "@cantero/shared";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, notifyApiError } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
 import { formatDate } from "@/lib/format-date";
 import { formatNumber } from "@/lib/format-currency";
@@ -88,7 +88,7 @@ export default function FleetPage() {
 
   function load() {
     apiFetch<Vehicle[]>("/vehicles").then(setVehicles);
-    apiFetch<FuelEfficiencyRow[]>("/vehicles/fuel-efficiency-report").then(setFuelEfficiency);
+    apiFetch<FuelEfficiencyRow[]>("/vehicles/fuel-efficiency-report").then(setFuelEfficiency).catch(notifyApiError);
   }
   useEffect(load, []);
 
@@ -127,7 +127,7 @@ export default function FleetPage() {
     setExpandedId(id);
     const d = await apiFetch<VehicleDetail>(`/vehicles/${id}`);
     setDetail(d);
-    apiFetch<FuelLog[]>(`/vehicles/${id}/fuel-logs`).then(setFuelLogs);
+    apiFetch<FuelLog[]>(`/vehicles/${id}/fuel-logs`).then(setFuelLogs).catch(notifyApiError);
   }
 
   async function addFuelLog(id: string) {
@@ -144,8 +144,8 @@ export default function FleetPage() {
         }),
       });
       setFuelForm({ quantity: "", cost: "", odometerMiles: "", idleHours: "" });
-      apiFetch<FuelLog[]>(`/vehicles/${id}/fuel-logs`).then(setFuelLogs);
-      apiFetch<FuelEfficiencyRow[]>("/vehicles/fuel-efficiency-report").then(setFuelEfficiency);
+      apiFetch<FuelLog[]>(`/vehicles/${id}/fuel-logs`).then(setFuelLogs).catch(notifyApiError);
+      apiFetch<FuelEfficiencyRow[]>("/vehicles/fuel-efficiency-report").then(setFuelEfficiency).catch(notifyApiError);
     } finally {
       setBusy(false);
     }

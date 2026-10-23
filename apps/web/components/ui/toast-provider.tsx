@@ -2,7 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
-import { setApiErrorListener } from "@/lib/api-client";
+import { ApiError, NetworkError, notifyApiError, setApiErrorListener } from "@/lib/api-client";
 import { ApiErrorMessages } from "@/components/api-error-messages";
 
 type ToastType = "error" | "success";
@@ -30,7 +30,8 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 
   const showToast = useCallback((type: ToastType, message: string) => {
     const id = ++nextId.current;
-    setToasts((prev) => [...prev, { id, type, message }]);
+    // Several loads failing for one reason (offline, say) show that reason once, not once each.
+    setToasts((prev) => (prev.some((t) => t.type === type && t.message === message) ? prev : [...prev, { id, type, message }]));
     setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), AUTO_DISMISS_MS);
   }, []);
 
@@ -40,6 +41,21 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     setApiErrorListener((message) => showToast("error", message));
     return () => setApiErrorListener(null);
   }, [showToast]);
+
+  // Safety net for an API failure nothing caught — typically an event handler's `await apiFetch()`
+  // inside try/finally: the person hears about it once (a failed write was already toasted by
+  // apiFetch) and it doesn't surface as an unhandled rejection. Other errors are left alone.
+  useEffect(() => {
+    function onUnhandledRejection(event: PromiseRejectionEvent) {
+      const reason: unknown = event.reason;
+      const aborted = reason instanceof DOMException && reason.name === "AbortError";
+      if (!(reason instanceof ApiError) && !(reason instanceof NetworkError) && !aborted) return;
+      event.preventDefault();
+      notifyApiError(reason);
+    }
+    window.addEventListener("unhandledrejection", onUnhandledRejection);
+    return () => window.removeEventListener("unhandledrejection", onUnhandledRejection);
+  }, []);
 
   return (
     <ToastContext.Provider value={{ showToast }}>

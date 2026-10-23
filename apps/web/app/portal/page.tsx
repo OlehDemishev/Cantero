@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { ApiError } from "@/lib/api-client";
+import { ApiError, notifyApiError } from "@/lib/api-client";
 import { getPortalToken, portalApiFetch, signOutPortal, clearPortalToken } from "@/lib/portal-api-client";
 import { formatDate } from "@/lib/format-date";
 import { useConfirm } from "@/components/ui/confirm-dialog";
@@ -148,16 +148,16 @@ export default function PortalDashboardPage() {
       const firstUnderWarranty = list.find((p) => p.isUnderWarranty);
       if (firstUnderWarranty) setClaimForm((f) => ({ ...f, projectId: f.projectId || firstUnderWarranty.id }));
       if (list[0]) setChangeRequestForm((f) => ({ ...f, projectId: f.projectId || list[0].id }));
-    });
-    portalApiFetch<WarrantyClaimSummary[]>("/portal/warranty").then(setWarrantyClaims);
+    }).catch(notifyApiError);
+    portalApiFetch<WarrantyClaimSummary[]>("/portal/warranty").then(setWarrantyClaims).catch(notifyApiError);
   }
 
   function loadChangeRequests() {
-    portalApiFetch<ChangeRequestSummary[]>("/portal/change-requests").then(setChangeRequests);
+    portalApiFetch<ChangeRequestSummary[]>("/portal/change-requests").then(setChangeRequests).catch(notifyApiError);
   }
 
   function loadTickets() {
-    portalApiFetch<TicketSummary[]>("/portal/tickets").then(setTickets);
+    portalApiFetch<TicketSummary[]>("/portal/tickets").then(setTickets).catch(notifyApiError);
   }
 
   async function submitChangeRequest(e: React.FormEvent) {
@@ -190,9 +190,9 @@ export default function PortalDashboardPage() {
       return;
     }
     loadMe();
-    portalApiFetch<EstimateSummary[]>("/portal/estimates").then(setEstimates);
-    portalApiFetch<ChangeOrderSummary[]>("/portal/change-orders").then(setChangeOrders);
-    portalApiFetch<InvoiceSummary[]>("/portal/invoices").then(setInvoices);
+    portalApiFetch<EstimateSummary[]>("/portal/estimates").then(setEstimates).catch(notifyApiError);
+    portalApiFetch<ChangeOrderSummary[]>("/portal/change-orders").then(setChangeOrders).catch(notifyApiError);
+    portalApiFetch<InvoiceSummary[]>("/portal/invoices").then(setInvoices).catch(notifyApiError);
     loadWarranty();
     loadTickets();
     loadChangeRequests();

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch, apiUpload } from "@/lib/api-client";
+import { apiFetch, apiUpload, notifyApiError } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -25,7 +25,7 @@ function Thumbnail({ doc }: { doc: GalleryDocument }) {
     apiFetch<Blob>(`/documents/${doc.id}/download`).then((blob) => {
       objectUrl = URL.createObjectURL(blob);
       setSrc(objectUrl);
-    });
+    }).catch(notifyApiError);
     return () => {
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };

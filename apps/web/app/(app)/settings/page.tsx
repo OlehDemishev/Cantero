@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { TabNav, type TabNavItem } from "@/components/ui/tab-nav";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, notifyApiError } from "@/lib/api-client";
 import { useCan } from "@/lib/permissions";
 import { useMe } from "@/lib/use-me";
 import { NotificationPreferencesPanel } from "@/components/notification-preferences-panel";
@@ -88,7 +88,7 @@ export default function SettingsPage() {
 
   const [leadFormToken, setLeadFormToken] = useState<string | null>(null);
   function loadLeadFormToken() {
-    apiFetch<{ publicLeadFormToken: string | null }>("/company").then((c) => setLeadFormToken(c.publicLeadFormToken));
+    apiFetch<{ publicLeadFormToken: string | null }>("/company").then((c) => setLeadFormToken(c.publicLeadFormToken)).catch(notifyApiError);
   }
   useEffect(loadLeadFormToken, []);
 

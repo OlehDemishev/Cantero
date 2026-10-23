@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { TriagePanel } from "@/components/triage-panel";
 import { DashboardWidgetsPanel } from "@/components/dashboard-widgets-panel";
@@ -17,7 +16,9 @@ import {
   TrendDownIcon,
   TrendUpIcon,
 } from "@/components/nav-icons";
-import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useMe } from "@/lib/use-me";
 import { useReportAccess } from "@/lib/report-access";
 import { formatCurrency } from "@/lib/format-currency";
@@ -39,17 +40,11 @@ export default function DashboardPage() {
   const t = useTranslations("dashboard");
   const tn = useTranslations("nav");
   const { data } = useMe();
-  const [overview, setOverview] = useState<Overview | null>(null);
-  const [periodComparison, setPeriodComparison] = useState<PeriodComparison | null>(null);
   // The company figures are for finance roles; everyone else's dashboard starts at the quick links.
   const canView = useReportAccess();
   const showFigures = canView("overview");
-
-  useEffect(() => {
-    if (!showFigures) return;
-    apiFetch<Overview>("/reports/overview").then(setOverview);
-    apiFetch<PeriodComparison>("/reports/period-comparison?months=1").then(setPeriodComparison);
-  }, [showFigures]);
+  const { data: overview, error: overviewError, reload: reloadOverview } = useApi<Overview>(showFigures ? "/reports/overview" : null);
+  const { data: periodComparison } = useApi<PeriodComparison>(showFigures ? "/reports/period-comparison?months=1" : null);
 
   const currency = data?.company.currency ?? "";
   const revenueTrend =
@@ -69,6 +64,19 @@ export default function DashboardPage() {
     <>
       <h1 className="text-2xl font-semibold">{data ? t("welcome", { name: data.user.name }) : ""}</h1>
 
+      {showFigures && !overview && (
+        <div className="mt-8">
+          {overviewError ? (
+            <ErrorState error={overviewError} onRetry={reloadOverview} compact />
+          ) : (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {[0, 1, 2, 3].map((i) => (
+                <Skeleton key={i} variant="block" height="h-24" />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
       {overview && (
         <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <StatCard label={t("projectsTotal")} value={overview.projectsTotal} />

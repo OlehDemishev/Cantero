@@ -5,7 +5,7 @@ import dynamic from "next/dynamic";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { TabNav, type TabNavItem } from "@/components/ui/tab-nav";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, notifyApiError } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import { useReportAccess } from "@/lib/report-access";
 import { formatCurrency } from "@/lib/format-currency";
@@ -89,7 +89,7 @@ export default function PortfolioPage() {
 
   useEffect(() => {
     if (!figuresAllowed) return;
-    apiFetch<Portfolio>("/reports/portfolio").then(setData);
+    apiFetch<Portfolio>("/reports/portfolio").then(setData).catch(notifyApiError);
   }, [figuresAllowed]);
 
   return (

@@ -8,7 +8,7 @@ import { EstimateAccuracyPanel } from "@/components/estimate-accuracy-panel";
 import { MaterialPricesPanel } from "@/components/material-prices-panel";
 import { EmptyState } from "@/components/ui/empty-state";
 import { CloseIcon, RateCatalogIcon } from "@/components/nav-icons";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, notifyApiError } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
 import { formatDate, formatDateTime } from "@/lib/format-date";
 
@@ -197,7 +197,7 @@ export default function RateCatalogPage() {
     }
     setHistoryForId(id);
     setHistory(null);
-    apiFetch<Revision[]>(`/estimates/rate-catalog/${id}/history`).then(setHistory);
+    apiFetch<Revision[]>(`/estimates/rate-catalog/${id}/history`).then(setHistory).catch(notifyApiError);
   }
 
   const catalogNameById = Object.fromEntries(catalogs.map((c) => [c.id, c.name]));

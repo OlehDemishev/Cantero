@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import type { PDFPageProxy } from "pdfjs-dist";
 import { TAKEOFF_RATIO_UNITS, type TakeoffRatioUnit } from "@cantero/shared";
-import { apiFetch, apiUpload } from "@/lib/api-client";
+import { apiFetch, apiUpload, notifyApiError } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
 import { loadPdf, pageVertices, renderPage, VertexIndex } from "@/lib/pdf";
 import { useConfirm } from "@/components/ui/confirm-dialog";
@@ -101,11 +101,11 @@ export function TakeoffPanel({ projectId }: { projectId: string }) {
       setDetail(d);
       if (!keepMode) setMode("idle");
       setCurrentPoints([]);
-    });
+    }).catch(notifyApiError);
   }, []);
 
   useEffect(() => {
-    apiFetch<Estimate[]>("/estimates").then((all) => setDraftEstimates(all.filter((e) => e.project.id === projectId && e.status === "draft")));
+    apiFetch<Estimate[]>("/estimates").then((all) => setDraftEstimates(all.filter((e) => e.project.id === projectId && e.status === "draft"))).catch(notifyApiError);
   }, [projectId]);
 
   // "Measure this sheet" in the Plan room links here with ?takeoff=<id>.

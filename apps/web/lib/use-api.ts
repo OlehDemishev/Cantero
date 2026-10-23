@@ -9,11 +9,15 @@ export interface UseApiOptions {
    * for offline viewing, and while the device is offline the last stored answer is served instead
    * of an error (`stale` is then true). */
   cacheKey?: string;
+  /** While a changed path (another filter, a search) loads, keep showing the previous path's data
+   * instead of none — for refining one list, not for switching to another record or project. */
+  keepPrevious?: boolean;
 }
 
 export interface UseApiResult<T> {
   /** The latest answer for the current path — undefined until it arrives, after a failed first
-   * load, and right after the path changes (a previous path's answer is never shown for the new one). */
+   * load, and right after the path changes (a previous path's answer is not shown for the new one,
+   * unless `keepPrevious`). */
   data: T | undefined;
   /** Why the last load failed (an ApiError carries the status), or null. A failed `reload` keeps
    * the data already on screen and sets this too — render `data` first, then the error. */
@@ -119,7 +123,7 @@ const EMPTY: State<never> = { key: null, data: undefined, error: null, validatin
  * rejections — they are in `error`, ready for <ErrorState>.
  */
 export function useApi<T>(path: string | null, options: UseApiOptions = {}): UseApiResult<T> {
-  const { cacheKey } = options;
+  const { cacheKey, keepPrevious = false } = options;
   const key = path === null ? null : requestKey(path, cacheKey);
   const [state, setState] = useState<State<T>>(EMPTY);
   /** The key this component is showing right now (as of the last commit) and the reloads it has
@@ -186,7 +190,7 @@ export function useApi<T>(path: string | null, options: UseApiOptions = {}): Use
 
   const own = state.key === key && key !== null;
   return {
-    data: own ? state.data : undefined,
+    data: own || (keepPrevious && key !== null) ? state.data : undefined,
     error: own ? state.error : null,
     loading: key !== null && (!own || (state.data === undefined && state.error === null)),
     validating: own && state.validating,

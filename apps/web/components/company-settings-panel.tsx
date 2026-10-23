@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { LOCALE_NAMES, SUPPORTED_LOCALES, SUPPORTED_CURRENCIES } from "@cantero/shared";
-import { apiFetch, apiUpload } from "@/lib/api-client";
+import { apiFetch, apiUpload, notifyApiError } from "@/lib/api-client";
 import { HelpTooltip } from "@/components/help-tooltip";
 import { CompanyHolidaysPanel } from "@/components/company-holidays-panel";
 
@@ -243,7 +243,7 @@ export function CompanySettingsPanel({ isManager }: { isManager: boolean }) {
         reviewRequestUrl: c.reviewRequestUrl ?? "",
         reportingCurrency: c.reportingCurrency ?? "",
       });
-    });
+    }).catch(notifyApiError);
     loadLogo();
   }, []);
 

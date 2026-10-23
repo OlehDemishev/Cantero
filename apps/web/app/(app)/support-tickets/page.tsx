@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { TICKET_PRIORITIES, TICKET_STATUSES, type TicketPriority, type TicketStatus } from "@cantero/shared";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, notifyApiError } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
 import { formatDateTime } from "@/lib/format-date";
 import { useCan } from "@/lib/permissions";
@@ -82,7 +82,7 @@ export default function SupportTicketsPage() {
   useEffect(load, [statusFilter]);
 
   useEffect(() => {
-    apiFetch<{ user: Member }[]>("/company/members").then((list) => setMembers(list.map((m) => m.user)));
+    apiFetch<{ user: Member }[]>("/company/members").then((list) => setMembers(list.map((m) => m.user))).catch(notifyApiError);
   }, []);
 
   async function createTicket(e: React.FormEvent) {

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, notifyApiError } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
 import { HelpTooltip } from "@/components/help-tooltip";
 import { useCan } from "@/lib/permissions";
@@ -39,7 +39,7 @@ export function ProjectMembersPanel({ projectId }: { projectId: string }) {
   }
 
   useEffect(() => {
-    if (canManage) apiFetch<CompanyMember[]>("/company/members").then(setCompanyMembers);
+    if (canManage) apiFetch<CompanyMember[]>("/company/members").then(setCompanyMembers).catch(notifyApiError);
   }, [canManage]);
 
   async function toggleRestricted() {

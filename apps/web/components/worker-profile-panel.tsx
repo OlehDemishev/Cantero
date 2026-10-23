@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { SUPPORTED_LOCALES } from "@cantero/shared";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, notifyApiError } from "@/lib/api-client";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface WageClassification {
@@ -62,8 +62,8 @@ export function WorkerProfilePanel({ workerId, currency, onChanged }: { workerId
         payrollEmployeeId: w.payrollEmployeeId ?? "",
         isApprentice: w.isApprentice,
       });
-    });
-    apiFetch<WageClassification[]>("/wage-classifications").then(setWageClassifications);
+    }).catch(notifyApiError);
+    apiFetch<WageClassification[]>("/wage-classifications").then(setWageClassifications).catch(notifyApiError);
   }
 
   useEffect(load, [workerId]);

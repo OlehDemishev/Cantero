@@ -9,7 +9,9 @@ import {
 } from "@cantero/shared";
 import { EmptyState } from "@/components/ui/empty-state";
 import { InvoicesIcon } from "@/components/nav-icons";
-import { apiFetch, downloadBlob, getToken, API_URL, ApiError } from "@/lib/api-client";
+import { apiFetch, downloadBlob, getToken, API_URL, ApiError, notifyApiError } from "@/lib/api-client";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useApi } from "@/lib/use-api";
 import { useMe } from "@/lib/use-me";
 import { useConfirm } from "@/components/ui/confirm-dialog";
@@ -66,6 +68,7 @@ export default function InvoicesPage() {
   const tc = useTranslations("common");
   const { data: me } = useMe();
   const [invoices, setInvoices] = useState<Invoice[] | null>(null);
+  const [invoicesError, setInvoicesError] = useState<Error | null>(null);
   const [invoicesHasMore, setInvoicesHasMore] = useState(false);
   const [invoicesLoadMoreBusy, setInvoicesLoadMoreBusy] = useState(false);
   const currency = me?.company.currency ?? "";
@@ -93,10 +96,12 @@ export default function InvoicesPage() {
   const [datevWarningCount, setDatevWarningCount] = useState<number | null>(null);
 
   function loadRecurring() {
-    apiFetch<RecurringInvoice[]>("/recurring-invoices").then((page) => {
-      setRecurring(page);
-      setRecurringHasMore(page.length === RECURRING_INVOICES_PAGE_SIZE);
-    });
+    apiFetch<RecurringInvoice[]>("/recurring-invoices")
+      .then((page) => {
+        setRecurring(page);
+        setRecurringHasMore(page.length === RECURRING_INVOICES_PAGE_SIZE);
+      })
+      .catch(notifyApiError);
   }
 
   async function loadMoreRecurring() {
@@ -114,10 +119,13 @@ export default function InvoicesPage() {
   }
 
   function loadInvoices() {
-    apiFetch<Invoice[]>("/invoices").then((page) => {
-      setInvoices(page);
-      setInvoicesHasMore(page.length === INVOICES_PAGE_SIZE);
-    });
+    apiFetch<Invoice[]>("/invoices")
+      .then((page) => {
+        setInvoicesError(null);
+        setInvoices(page);
+        setInvoicesHasMore(page.length === INVOICES_PAGE_SIZE);
+      })
+      .catch(setInvoicesError);
   }
 
   async function loadMoreInvoices() {
@@ -306,7 +314,7 @@ export default function InvoicesPage() {
 
       <div className="mt-6">
         {!invoices ? (
-          <p className="text-fg-subtle">{tc("loading")}</p>
+          invoicesError ? <ErrorState error={invoicesError} onRetry={loadInvoices} compact /> : <Skeleton variant="table" rows={5} columns={5} />
         ) : invoices.length === 0 ? (
           <div className="card">
             <EmptyState

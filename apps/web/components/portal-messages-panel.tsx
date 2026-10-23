@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, notifyApiError } from "@/lib/api-client";
 import { formatDateTime } from "@/lib/format-date";
 
 interface PortalMessage {
@@ -29,7 +29,7 @@ export function PortalMessagesPanel({ projectId }: { projectId: string }) {
     apiFetch<PortalMessage[]>(`/projects/${projectId}/portal-messages`).then((list) => {
       setMessages(list);
       setTimeout(() => bottomRef.current?.scrollIntoView({ block: "end" }), 0);
-    });
+    }).catch(notifyApiError);
   }
 
   useEffect(load, [projectId]);

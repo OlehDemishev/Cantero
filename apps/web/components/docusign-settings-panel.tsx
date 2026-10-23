@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, notifyApiError } from "@/lib/api-client";
 import { formatDate } from "@/lib/format-date";
 import { resetStateInEffect } from "@/lib/effect-reset";
 import { useConfirm } from "@/components/ui/confirm-dialog";
@@ -22,7 +22,7 @@ export function DocusignSettingsPanel({ canManage }: { canManage: boolean }) {
   const [error, setError] = useState<string | null>(null);
 
   function load() {
-    apiFetch<Status>("/company/docusign/status").then(setStatus);
+    apiFetch<Status>("/company/docusign/status").then(setStatus).catch(notifyApiError);
   }
 
   useEffect(() => {

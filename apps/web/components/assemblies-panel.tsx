@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, notifyApiError } from "@/lib/api-client";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface RateCatalogItem {
@@ -48,7 +48,7 @@ export function AssembliesPanel() {
     apiFetch<RateCatalogItem[]>("/estimates/rate-catalog").then((items) => {
       setRateItems(items);
       if (items[0]) setDraftLines([{ rateCatalogItemId: items[0].id, quantityPerUnit: "1" }]);
-    });
+    }).catch(notifyApiError);
   }, []);
 
   function addDraftLine() {

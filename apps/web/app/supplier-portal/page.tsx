@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { ApiError } from "@/lib/api-client";
+import { ApiError, notifyApiError } from "@/lib/api-client";
 import { getSupplierPortalToken, supplierPortalApiFetch, signOutSupplierPortal, clearSupplierPortalToken } from "@/lib/supplier-portal-api-client";
 import { formatDate } from "@/lib/format-date";
 import { formatCurrency } from "@/lib/format-currency";
@@ -50,7 +50,7 @@ export default function SupplierPortalDashboardPage() {
   const [error, setError] = useState<string | null>(null);
 
   function loadOrders() {
-    supplierPortalApiFetch<PurchaseOrder[]>("/supplier-portal/purchase-orders").then(setOrders);
+    supplierPortalApiFetch<PurchaseOrder[]>("/supplier-portal/purchase-orders").then(setOrders).catch(notifyApiError);
   }
 
   useEffect(() => {

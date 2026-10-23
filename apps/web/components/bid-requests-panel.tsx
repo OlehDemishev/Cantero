@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch, apiUpload, downloadBlob, ApiError } from "@/lib/api-client";
+import { apiFetch, apiUpload, downloadBlob, ApiError, notifyApiError } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -104,7 +104,7 @@ export function BidRequestsPanel({ projectId }: { projectId: string }) {
   }
 
   function loadDetail(id: string) {
-    apiFetch<BidRequestDetail>(`/bid-requests/${id}`).then(setDetail);
+    apiFetch<BidRequestDetail>(`/bid-requests/${id}`).then(setDetail).catch(notifyApiError);
   }
 
   function toggleExpand(id: string) {

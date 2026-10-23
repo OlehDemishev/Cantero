@@ -7,6 +7,9 @@ import { useTranslations } from "next-intl";
 import { INSURANCE_CLAIM_TYPES, INSURANCE_CLAIM_STATUSES, type InsuranceClaimType, type InsuranceClaimStatus } from "@cantero/shared";
 import { DocumentsPanel } from "@/components/documents-panel";
 import { apiFetch, downloadBlob } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useMe } from "@/lib/use-me";
 import { formatDate } from "@/lib/format-date";
 import { resetStateInEffect } from "@/lib/effect-reset";
@@ -67,9 +70,16 @@ export default function InsuranceClaimsPage() {
   const currency = me?.company.currency ?? "";
   const searchParams = useSearchParams();
 
-  const [claims, setClaims] = useState<Claim[] | null>(null);
-  const [projects, setProjects] = useState<Project[]>([]);
+  const { data: projects = [] } = useApi<Project[]>("/projects");
   const [filters, setFilters] = useState({ projectId: "", status: "" });
+  const claimParams = new URLSearchParams();
+  if (filters.projectId) claimParams.set("projectId", filters.projectId);
+  const {
+    data: allClaims,
+    error: claimsError,
+    reload: reloadClaims,
+  } = useApi<Claim[]>(`/insurance-claims?${claimParams.toString()}`, { keepPrevious: true });
+  const claims = allClaims ? (filters.status ? allClaims.filter((c) => c.status === filters.status) : allClaims) : null;
   const [form, setForm] = useState(emptyForm);
   const [creating, setCreating] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -77,18 +87,8 @@ export default function InsuranceClaimsPage() {
   const [settleForm, setSettleForm] = useState({ settledAmount: "", settledAt: "" });
 
   function load() {
-    const params = new URLSearchParams();
-    if (filters.projectId) params.set("projectId", filters.projectId);
-    apiFetch<Claim[]>(`/insurance-claims?${params.toString()}`).then((all) =>
-      setClaims(filters.status ? all.filter((c) => c.status === filters.status) : all),
-    );
+    void reloadClaims();
   }
-
-  useEffect(() => {
-    load();
-    apiFetch<Project[]>("/projects").then(setProjects);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters.projectId, filters.status]);
 
   useEffect(() => {
     const projectId = searchParams.get("projectId");
@@ -310,7 +310,7 @@ export default function InsuranceClaimsPage() {
       </div>
 
       {!claims ? (
-        <p className="mt-4 text-sm text-fg-subtle">{tc("loading")}</p>
+        claimsError ? <ErrorState error={claimsError} onRetry={reloadClaims} compact className="mt-4" /> : <Skeleton className="mt-4" lines={3} />
       ) : claims.length === 0 ? (
         <p className="mt-4 text-sm text-fg-subtle">{t("empty")}</p>
       ) : (

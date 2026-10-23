@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, notifyApiError } from "@/lib/api-client";
 
 interface ChecklistTask {
   id: string;
@@ -19,7 +19,7 @@ export function WorkerChecklistsPanel({ workerId }: { workerId: string }) {
 
   useEffect(() => {
     apiFetch<ChecklistTask[]>(`/workers/${workerId}/onboarding-tasks`).then(setOnboardingTasks);
-    apiFetch<ChecklistTask[]>(`/workers/${workerId}/offboarding-tasks`).then(setOffboardingTasks);
+    apiFetch<ChecklistTask[]>(`/workers/${workerId}/offboarding-tasks`).then(setOffboardingTasks).catch(notifyApiError);
   }, [workerId]);
 
   async function toggleOnboardingTask(taskId: string) {
@@ -29,7 +29,7 @@ export function WorkerChecklistsPanel({ workerId }: { workerId: string }) {
 
   async function toggleOffboardingTask(taskId: string) {
     await apiFetch(`/workers/${workerId}/offboarding-tasks/${taskId}/toggle`, { method: "POST" });
-    apiFetch<ChecklistTask[]>(`/workers/${workerId}/offboarding-tasks`).then(setOffboardingTasks);
+    apiFetch<ChecklistTask[]>(`/workers/${workerId}/offboarding-tasks`).then(setOffboardingTasks).catch(notifyApiError);
   }
 
   return (

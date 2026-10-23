@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import type { MaterialRfqStatus } from "@cantero/shared";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, notifyApiError } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import { formatCurrency } from "@/lib/format-currency";
 
@@ -76,7 +76,7 @@ export function MaterialRfqsPanel() {
   }
 
   function loadDetail(id: string) {
-    apiFetch<Rfq>(`/materials/rfqs/${id}`).then(setDetail);
+    apiFetch<Rfq>(`/materials/rfqs/${id}`).then(setDetail).catch(notifyApiError);
   }
 
   function toggleExpand(id: string) {
@@ -95,9 +95,9 @@ export function MaterialRfqsPanel() {
     apiFetch<MaterialCatalogItem[]>("/materials/catalog").then((items) => {
       setMaterials(items);
       setLines([{ materialCatalogItemId: items[0]?.id ?? "", quantity: "1" }]);
-    });
-    apiFetch<Project[]>("/projects").then(setProjects);
-    apiFetch<Supplier[]>("/materials/suppliers").then(setSuppliers);
+    }).catch(notifyApiError);
+    apiFetch<Project[]>("/projects").then(setProjects).catch(notifyApiError);
+    apiFetch<Supplier[]>("/materials/suppliers").then(setSuppliers).catch(notifyApiError);
   }, []);
 
   function addLine() {

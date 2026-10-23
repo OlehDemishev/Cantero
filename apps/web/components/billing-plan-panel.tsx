@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, notifyApiError } from "@/lib/api-client";
 import { formatCurrency } from "@/lib/format-currency";
 
 interface Plan {
@@ -35,9 +35,9 @@ export function BillingPlanPanel({ isManager }: { isManager: boolean }) {
     apiFetch<Subscription>("/billing/subscription").then((s) => {
       setSubscription(s);
       setSeatsInput(String(s.seats));
-    });
-    apiFetch<Plan[]>("/billing/plans").then(setPlans);
-    apiFetch<Member[]>("/company/members").then((list) => setMemberCount(list.length));
+    }).catch(notifyApiError);
+    apiFetch<Plan[]>("/billing/plans").then(setPlans).catch(notifyApiError);
+    apiFetch<Member[]>("/company/members").then((list) => setMemberCount(list.length)).catch(notifyApiError);
   }
 
   useEffect(load, []);

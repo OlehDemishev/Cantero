@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch, API_URL } from "@/lib/api-client";
+import { apiFetch, API_URL, notifyApiError } from "@/lib/api-client";
 
 /** The credentials are only in GET /company for members with settings.company — everyone else
  * gets the has* flags instead. */
@@ -33,7 +33,7 @@ export function IntegrationsPanel({ canManage }: { canManage: boolean }) {
       });
       setCalendarFeedToken(c.calendarFeedToken ?? null);
       setHasCalendarFeed(c.hasCalendarFeed);
-    });
+    }).catch(notifyApiError);
   }
 
   useEffect(load, []);

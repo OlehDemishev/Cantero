@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, notifyApiError } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import { formatCurrency } from "@/lib/format-currency";
 
@@ -27,7 +27,7 @@ export function BondingCapacityPanel() {
     apiFetch<CapacityUtilization>("/surety-bonds/capacity").then((c) => {
       setCapacity(c);
       setLimitInput(c.limit !== null ? String(c.limit) : "");
-    });
+    }).catch(notifyApiError);
   }
   useEffect(load, []);
 

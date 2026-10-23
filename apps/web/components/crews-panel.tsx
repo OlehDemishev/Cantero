@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, notifyApiError } from "@/lib/api-client";
 import { resetStateInEffect } from "@/lib/effect-reset";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 
@@ -54,7 +54,7 @@ export function CrewsPanel({ workers, projects }: { workers: Worker[]; projects:
     apiFetch<Crew[]>("/resource-planning/crews").then((list) => {
       setCrews(list);
       setAssignForm((f) => ({ ...f, crewId: f.crewId || (list[0]?.id ?? "") }));
-    });
+    }).catch(notifyApiError);
   }
 
   useEffect(load, []);
@@ -64,8 +64,7 @@ export function CrewsPanel({ workers, projects }: { workers: Worker[]; projects:
       resetStateInEffect(() => setAssignTasks([]));
       return;
     }
-    apiFetch<TaskOption[]>(`/tasks?projectId=${assignForm.projectId}`).then(setAssignTasks);
-     
+    apiFetch<TaskOption[]>(`/tasks?projectId=${assignForm.projectId}`).then(setAssignTasks).catch(notifyApiError);
   }, [assignForm.projectId]);
 
   useEffect(() => {

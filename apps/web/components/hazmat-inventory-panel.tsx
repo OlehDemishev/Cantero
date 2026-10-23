@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, notifyApiError } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -37,7 +37,7 @@ export function HazmatInventoryPanel({ projectId }: { projectId: string }) {
     apiFetch<HazardousMaterial[]>("/hazmat/materials").then((list) => {
       setMaterials(list);
       if (list[0]) setForm((f) => ({ ...f, hazardousMaterialId: f.hazardousMaterialId || list[0].id }));
-    });
+    }).catch(notifyApiError);
   }, []);
 
   async function addItem(e: React.FormEvent) {

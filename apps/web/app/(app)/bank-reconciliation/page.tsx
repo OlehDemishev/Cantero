@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { EXPENSE_CATEGORIES, type ExpenseCategory } from "@cantero/shared";
 import { CsvImportButton } from "@/components/csv-import-button";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, notifyApiError } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
 import { useMe } from "@/lib/use-me";
 import { formatDate } from "@/lib/format-date";
@@ -77,7 +77,7 @@ export default function BankReconciliationPage() {
     apiFetch<BankTransaction[]>(`/bank-transactions${query}`).then(setTransactions);
     apiFetch<MatchSuggestion[]>("/bank-transactions/suggested-matches").then((list) =>
       setSuggestions(Object.fromEntries(list.map((s) => [s.transactionId, s.candidates]))),
-    );
+    ).catch(notifyApiError);
   }
 
   function loadRules() {

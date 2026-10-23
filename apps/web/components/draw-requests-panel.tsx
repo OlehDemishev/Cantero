@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { DRAW_REQUEST_STATUSES, type DrawRequestStatus } from "@cantero/shared";
-import { apiFetch, downloadBlob } from "@/lib/api-client";
+import { apiFetch, downloadBlob, notifyApiError } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import { formatDate } from "@/lib/format-date";
 import { formatCurrency } from "@/lib/format-currency";
@@ -55,8 +55,8 @@ export function DrawRequestsPanel({ projectId }: { projectId: string }) {
       const wrappedInvoiceIds = new Set(list.map((d) => d.invoice.id));
       apiFetch<Invoice[]>("/invoices").then((all) =>
         setEligibleInvoices(all.filter((i) => i.project.id === projectId && i.percentComplete !== null && !wrappedInvoiceIds.has(i.id))),
-      );
-    });
+      ).catch(notifyApiError);
+    }).catch(notifyApiError);
   }
 
   useEffect(load, [projectId]);

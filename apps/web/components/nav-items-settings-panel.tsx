@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, notifyApiError } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import { NAV_GROUPS } from "@/components/authenticated-shell";
 
@@ -26,7 +26,7 @@ export function NavItemsSettingsPanel({ canManage }: { canManage: boolean }) {
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    apiFetch<Company>("/company").then((c) => setHidden(new Set(c.hiddenNavItems)));
+    apiFetch<Company>("/company").then((c) => setHidden(new Set(c.hiddenNavItems))).catch(notifyApiError);
   }, []);
 
   function toggleItem(key: string) {

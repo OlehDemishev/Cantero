@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { SUPPORTED_LOCALES } from "@cantero/shared";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, notifyApiError } from "@/lib/api-client";
 
 interface Client {
   street: string | null;
@@ -51,7 +51,7 @@ export function ClientBillingAddressPanel({ clientId }: { clientId: string }) {
         paymentTermsDays: c.paymentTermsDays?.toString() ?? "",
         preferredLocale: c.preferredLocale ?? "",
       });
-    });
+    }).catch(notifyApiError);
   }, [clientId]);
 
   async function saveBilling(e: React.FormEvent) {

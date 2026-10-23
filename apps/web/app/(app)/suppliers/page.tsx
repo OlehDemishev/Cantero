@@ -9,7 +9,7 @@ import { SupplierAccountingFields } from "@/components/supplier-accounting-field
 import { MaterialRfqsPanel } from "@/components/material-rfqs-panel";
 import { EmptyState } from "@/components/ui/empty-state";
 import { CloseIcon, SuppliersIcon } from "@/components/nav-icons";
-import { apiFetch, apiUpload } from "@/lib/api-client";
+import { apiFetch, apiUpload, notifyApiError } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -78,7 +78,7 @@ export default function SuppliersPage() {
 
   function loadDetail(id: string) {
     apiFetch<SupplierDocument[]>(`/materials/suppliers/${id}/documents`).then(setDocuments);
-    apiFetch<SupplierReview[]>(`/materials/suppliers/${id}/reviews`).then(setReviews);
+    apiFetch<SupplierReview[]>(`/materials/suppliers/${id}/reviews`).then(setReviews).catch(notifyApiError);
     apiFetch<SupplierPurchaseOrder[]>(`/materials/purchase-orders?supplierId=${id}`).then(setPurchaseOrders);
   }
 
@@ -95,7 +95,7 @@ export default function SuppliersPage() {
     setReviews(null);
     setPurchaseOrders(null);
     if (!scorecards[id]) {
-      apiFetch<Scorecard>(`/materials/suppliers/${id}/scorecard`).then((s) => setScorecards((prev) => ({ ...prev, [id]: s })));
+      apiFetch<Scorecard>(`/materials/suppliers/${id}/scorecard`).then((s) => setScorecards((prev) => ({ ...prev, [id]: s }))).catch(notifyApiError);
     }
     loadDetail(id);
   }
@@ -141,7 +141,7 @@ export default function SuppliersPage() {
         delete next[supplierId];
         return next;
       });
-      apiFetch<Scorecard>(`/materials/suppliers/${supplierId}/scorecard`).then((s) => setScorecards((prev) => ({ ...prev, [supplierId]: s })));
+      apiFetch<Scorecard>(`/materials/suppliers/${supplierId}/scorecard`).then((s) => setScorecards((prev) => ({ ...prev, [supplierId]: s }))).catch(notifyApiError);
     } finally {
       setDetailBusy(false);
     }

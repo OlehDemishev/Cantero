@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, notifyApiError } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import { formatDate } from "@/lib/format-date";
 import { resetStateInEffect } from "@/lib/effect-reset";
@@ -295,37 +295,37 @@ export function WarehouseDetail({
     ).then(setLevels);
     apiFetch<InventoryValuation>(
       `/materials/stock/valuation?warehouseId=${warehouseId}`,
-    ).then(setValuation);
+    ).then(setValuation).catch(notifyApiError);
     apiFetch<StandardCostVarianceRow[]>(
       `/materials/stock/standard-cost-variance?warehouseId=${warehouseId}`,
-    ).then(setStandardCostVariance);
+    ).then(setStandardCostVariance).catch(notifyApiError);
     apiFetch<StockTransfer[]>(
       `/materials/stock-transfers?warehouseId=${warehouseId}`,
     ).then((page) => {
       setStockTransfers(page);
       setStockTransfersHasMore(page.length === STOCK_TRANSFERS_PAGE_SIZE);
-    });
+    }).catch(notifyApiError);
     apiFetch<StockMovement[]>(
       `/materials/stock/movements?warehouseId=${warehouseId}`,
     ).then((page) => {
       setMovements(page);
       setMovementsHasMore(page.length === MOVEMENTS_PAGE_SIZE);
-    });
+    }).catch(notifyApiError);
     apiFetch<WarehouseLocationOption[]>(
       `/materials/warehouse-locations?warehouseId=${warehouseId}`,
-    ).then(setWarehouseLocationOptions);
+    ).then(setWarehouseLocationOptions).catch(notifyApiError);
     apiFetch<SupplierReturn[]>(
       `/materials/supplier-returns?warehouseId=${warehouseId}`,
-    ).then(setSupplierReturns);
+    ).then(setSupplierReturns).catch(notifyApiError);
     apiFetch<StockReservation[]>(
       `/materials/stock-reservations?warehouseId=${warehouseId}`,
-    ).then(setReservations);
+    ).then(setReservations).catch(notifyApiError);
   }
 
   function loadCounts() {
     apiFetch<StockCount[]>(
       `/materials/stock/counts?warehouseId=${warehouseId}`,
-    ).then(setCounts);
+    ).then(setCounts).catch(notifyApiError);
   }
 
   async function loadMoreMovements() {
@@ -368,15 +368,15 @@ export function WarehouseDetail({
         setReservationForm((r) => ({ ...r, materialCatalogItemId: items[0].id }));
         setSupplierReturnLines([{ materialCatalogItemId: items[0].id, quantity: "1" }]);
       }
-    });
+    }).catch(notifyApiError);
     apiFetch<Supplier[]>("/materials/suppliers").then((s) => {
       setSuppliers(s);
       if (s[0]) setSupplierReturnForm((f) => ({ ...f, supplierId: s[0].id }));
-    });
+    }).catch(notifyApiError);
     apiFetch<{ id: string; name: string }[]>("/materials/stock-kits").then((kits) => {
       setStockKits(kits);
       if (kits[0]) setAssembleForm((f) => ({ ...f, kitId: kits[0].id }));
-    });
+    }).catch(notifyApiError);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [warehouseId]);
 
@@ -387,7 +387,7 @@ export function WarehouseDetail({
       ).then((pos) => {
         setSupplierReturnPOs(pos);
         setSupplierReturnForm((f) => ({ ...f, purchaseOrderId: pos[0]?.id ?? "" }));
-      });
+      }).catch(notifyApiError);
     } else {
       resetStateInEffect(() => setSupplierReturnPOs([]));
     }
@@ -464,7 +464,7 @@ export function WarehouseDetail({
   function loadAvailableSerialUnits(materialCatalogItemId: string) {
     apiFetch<SerialUnit[]>(
       `/materials/stock/serial-units?warehouseId=${warehouseId}&materialCatalogItemId=${materialCatalogItemId}`,
-    ).then(setAvailableSerialUnits);
+    ).then(setAvailableSerialUnits).catch(notifyApiError);
   }
 
   useEffect(() => {

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch, ApiError } from "@/lib/api-client";
+import { apiFetch, ApiError, notifyApiError } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -39,7 +39,7 @@ export function ClientTaxPanel({ clientId }: { clientId: string }) {
   }
 
   useEffect(() => {
-    apiFetch<Client>(`/clients/${clientId}`).then((c) => setTaxJurisdictionId(c.taxJurisdictionId ?? ""));
+    apiFetch<Client>(`/clients/${clientId}`).then((c) => setTaxJurisdictionId(c.taxJurisdictionId ?? "")).catch(notifyApiError);
   }, [clientId]);
 
   async function saveTaxJurisdiction(e: React.FormEvent) {

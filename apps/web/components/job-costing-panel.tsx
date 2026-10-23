@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { chartColors, chartAxisProps, chartGridProps, chartTooltipProps } from "@/components/charts/chart-theme";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, notifyApiError } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
 import { useMe } from "@/lib/use-me";
 import type { CostCode } from "@/components/cost-codes-panel";
@@ -76,7 +76,7 @@ export function JobCostingPanel({ projectId }: { projectId: string }) {
     apiFetch<CostCode[]>("/cost-codes").then((codes) => {
       setCostCodes(codes);
       if (codes.length >= 2) setTransferForm((f) => ({ ...f, fromCostCodeId: f.fromCostCodeId || codes[0].id, toCostCodeId: f.toCostCodeId || codes[1].id }));
-    });
+    }).catch(notifyApiError);
   }, []);
 
   async function submitTransfer(e: React.FormEvent) {

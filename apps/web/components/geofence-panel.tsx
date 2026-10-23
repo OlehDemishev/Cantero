@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, notifyApiError } from "@/lib/api-client";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { formatNumber } from "@/lib/format-currency";
 
@@ -31,7 +31,7 @@ export function GeofencePanel({ projectId }: { projectId: string }) {
         lng: p.geofenceLng?.toString() ?? "",
         radiusMeters: p.geofenceRadiusMeters?.toString() ?? "150",
       });
-    });
+    }).catch(notifyApiError);
   }
 
   useEffect(load, [projectId]);

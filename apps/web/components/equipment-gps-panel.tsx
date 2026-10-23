@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, notifyApiError } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
 
 interface GpsPing {
@@ -50,7 +50,7 @@ export function EquipmentGpsPanel({ equipmentId }: { equipmentId: string }) {
         apiFetch(`/equipment/${equipmentId}/gps-pings`, {
           method: "POST",
           body: JSON.stringify({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-        }).then(load);
+        }).then(load).catch(notifyApiError);
       },
       () => setError(t("gpsDenied")),
       { enableHighAccuracy: true, maximumAge: 10_000 },

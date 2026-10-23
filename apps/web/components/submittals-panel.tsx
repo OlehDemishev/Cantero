@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { SUBMITTAL_REVIEW_DECISIONS, type BulkActionResult, type SubmittalReviewDecision, type SubmittalStatus } from "@cantero/shared";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, notifyApiError } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -229,7 +229,7 @@ export function SubmittalsPanel({ projectId }: { projectId: string }) {
                       if (!expanded && !historyById[item.id]) {
                         apiFetch<{ history: SubmittalHistoryEntry[] }>(`/submittals/${item.id}`).then((detail) =>
                           setHistoryById((h) => ({ ...h, [item.id]: detail.history })),
-                        );
+                        ).catch(notifyApiError);
                       }
                     }}
                     className="flex flex-1 items-start justify-between gap-3 text-left"

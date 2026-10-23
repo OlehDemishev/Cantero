@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, notifyApiError } from "@/lib/api-client";
 import { formatDate } from "@/lib/format-date";
 import { resetStateInEffect } from "@/lib/effect-reset";
 import { useConfirm } from "@/components/ui/confirm-dialog";
@@ -25,7 +25,7 @@ export function IntacctSettingsPanel({ canManage }: { canManage: boolean }) {
     apiFetch<Status>("/company/intacct/status").then((s) => {
       setStatus(s);
       setItemId(s.changeOrderItemId ?? "");
-    });
+    }).catch(notifyApiError);
   }
 
   useEffect(() => {

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { PERFORMANCE_RATINGS, type PerformanceRating, type PerformanceReviewCycleStatus } from "@cantero/shared";
 import { CloseIcon } from "@/components/nav-icons";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, notifyApiError } from "@/lib/api-client";
 import { formatDate } from "@/lib/format-date";
 
 interface Cycle {
@@ -60,7 +60,7 @@ export default function PerformancePage() {
     apiFetch<Worker[]>("/workers").then((list) => {
       setWorkers(list);
       if (list[0]) setReviewWorkerId(list[0].id);
-    });
+    }).catch(notifyApiError);
   }, []);
 
   function loadReviews() {

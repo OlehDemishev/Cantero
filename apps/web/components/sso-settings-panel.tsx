@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch, downloadBlob } from "@/lib/api-client";
+import { apiFetch, downloadBlob, notifyApiError } from "@/lib/api-client";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface SsoConfig {
@@ -35,7 +35,7 @@ export function SsoSettingsPanel({ canManage }: { canManage: boolean }) {
         issuer: c.ssoIssuer ?? "",
         cert: c.ssoCert ?? "",
       });
-    });
+    }).catch(notifyApiError);
   }
 
   useEffect(load, []);

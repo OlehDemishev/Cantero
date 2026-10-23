@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, notifyApiError } from "@/lib/api-client";
 import { SageApExportPanel } from "@/components/sage-ap-export-panel";
 import { useMe } from "@/lib/use-me";
 import { formatDate } from "@/lib/format-date";
@@ -108,8 +108,8 @@ export function VendorBillsPanel() {
 
   function loadBills() {
     apiFetch<VendorBill[]>("/materials/vendor-bills").then(setBills);
-    apiFetch<ApAgingReport>("/materials/vendor-bills/aging-report").then(setAging);
-    apiFetch<DisbursementCalendar>("/materials/vendor-bills/disbursement-calendar").then(setDisbursementCalendar);
+    apiFetch<ApAgingReport>("/materials/vendor-bills/aging-report").then(setAging).catch(notifyApiError);
+    apiFetch<DisbursementCalendar>("/materials/vendor-bills/disbursement-calendar").then(setDisbursementCalendar).catch(notifyApiError);
   }
 
   useEffect(() => {
@@ -117,8 +117,8 @@ export function VendorBillsPanel() {
     apiFetch<Supplier[]>("/materials/suppliers").then((s) => {
       setSuppliers(s);
       if (s[0]) setBillSupplierId(s[0].id);
-    });
-    apiFetch<PurchaseOrderSummary[]>("/materials/purchase-orders").then(setOrders);
+    }).catch(notifyApiError);
+    apiFetch<PurchaseOrderSummary[]>("/materials/purchase-orders").then(setOrders).catch(notifyApiError);
   }, []);
 
   function addBillLine() {

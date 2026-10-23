@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, notifyApiError } from "@/lib/api-client";
 import { formatDate } from "@/lib/format-date";
 import { RevisionDiffPanel } from "@/components/revision-diff-panel";
 import { formatCurrency } from "@/lib/format-currency";
@@ -108,7 +108,7 @@ export function EstimateRevisionHistoryPanel({
   const [loadingRevision, setLoadingRevision] = useState(false);
 
   useEffect(() => {
-    apiFetch<RevisionSummary[]>(`/estimates/${estimateId}/revisions`).then(setRevisions);
+    apiFetch<RevisionSummary[]>(`/estimates/${estimateId}/revisions`).then(setRevisions).catch(notifyApiError);
   }, [estimateId, refreshSignal]);
 
   async function viewRevision(revisionId: string) {

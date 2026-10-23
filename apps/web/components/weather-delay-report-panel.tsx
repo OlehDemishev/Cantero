@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import type { WeatherCondition } from "@cantero/shared";
-import { apiFetch, downloadBlob } from "@/lib/api-client";
+import { apiFetch, downloadBlob, notifyApiError } from "@/lib/api-client";
 import { formatDate } from "@/lib/format-date";
 
 interface WeatherDelayEntry {
@@ -31,7 +31,7 @@ export function WeatherDelayReportPanel({ projectId }: { projectId: string }) {
     apiFetch<WeatherDelayReport>(`/daily-logs/weather-delay-report?projectId=${projectId}`).then((r) => {
       setReport(r);
       setShiftDays(r.suggestedShiftDays > 0 ? String(r.suggestedShiftDays) : "");
-    });
+    }).catch(notifyApiError);
   }
 
   useEffect(load, [projectId]);

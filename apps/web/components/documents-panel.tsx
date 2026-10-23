@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { DOCUMENT_CATEGORIES, type DocumentCategory } from "@cantero/shared";
-import { apiFetch, apiUpload, downloadBlob } from "@/lib/api-client";
+import { apiFetch, apiUpload, downloadBlob, notifyApiError } from "@/lib/api-client";
 import { formatDateTime } from "@/lib/format-date";
 import { Dialog } from "@/components/ui/dialog";
 import { useConfirm } from "@/components/ui/confirm-dialog";
@@ -127,7 +127,7 @@ export function DocumentsPanel({
     }
     setVersionsFor(doc.id);
     setCompareIds([]);
-    apiFetch<Document[]>(`/documents/${doc.id}/versions`).then(setVersions);
+    apiFetch<Document[]>(`/documents/${doc.id}/versions`).then(setVersions).catch(notifyApiError);
   }
 
   function toggleCompareId(id: string) {

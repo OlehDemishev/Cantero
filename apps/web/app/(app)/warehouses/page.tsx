@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { CsvImportButton } from "@/components/csv-import-button";
 import { WarehouseDetail } from "@/components/warehouse-detail";
@@ -9,6 +9,9 @@ import { WarehouseSustainabilitySettings } from "@/components/warehouse-sustaina
 import { EmptyState } from "@/components/ui/empty-state";
 import { CloseIcon, WarehousesIcon } from "@/components/nav-icons";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Warehouse {
   id: string;
@@ -21,20 +24,17 @@ export default function WarehousesPage() {
   const tc = useTranslations("common");
   const ti = useTranslations("import");
 
-  const [warehouses, setWarehouses] = useState<Warehouse[] | null>(null);
-  const [selected, setSelected] = useState<string | null>(null);
+  const { data: warehouses = null, error: warehousesError, reload: reloadWarehouses } = useApi<Warehouse[]>("/materials/warehouses");
+  const [picked, setSelected] = useState<string | null>(null);
+  // The first warehouse is open until another is picked.
+  const selected = picked ?? warehouses?.[0]?.id ?? null;
   const [form, setForm] = useState({ name: "", address: "" });
   const [submitting, setSubmitting] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
 
   function loadWarehouses() {
-    apiFetch<Warehouse[]>("/materials/warehouses").then((list) => {
-      setWarehouses(list);
-      if (!selected && list[0]) setSelected(list[0].id);
-    });
+    void reloadWarehouses();
   }
-
-  useEffect(loadWarehouses, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -130,7 +130,7 @@ export default function WarehousesPage() {
 
         <div className={hasWarehouses ? "lg:col-span-2" : "lg:col-span-3"}>
           {!warehouses ? (
-            <p className="text-fg-subtle">{tc("loading")}</p>
+            warehousesError ? <ErrorState error={warehousesError} onRetry={reloadWarehouses} compact /> : <Skeleton lines={3} />
           ) : warehouses.length === 0 ? (
             <div className="card">
               <EmptyState

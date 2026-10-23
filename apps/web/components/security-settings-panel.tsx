@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { MEMBERSHIP_ROLES_MANAGEABLE, type MembershipRole } from "@cantero/shared";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, notifyApiError } from "@/lib/api-client";
 import { HelpTooltip } from "@/components/help-tooltip";
 
 interface Company {
@@ -37,7 +37,7 @@ export function SecuritySettingsPanel({ canManage }: { canManage: boolean }) {
         passwordRequireSymbol: c.passwordRequireSymbol,
         hideCostDataFromRoles: c.hideCostDataFromRoles,
       });
-    });
+    }).catch(notifyApiError);
   }
 
   useEffect(load, []);

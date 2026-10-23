@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch, ApiError } from "@/lib/api-client";
+import { apiFetch, ApiError, notifyApiError } from "@/lib/api-client";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface TemplateEntry {
@@ -26,7 +26,7 @@ export function MessageTemplatesPanel() {
     apiFetch<TemplateEntry[]>("/message-templates").then((entries) => {
       setTemplates(entries);
       setDrafts(Object.fromEntries(entries.map((e) => [e.key, e.customBody ?? ""])));
-    });
+    }).catch(notifyApiError);
   }
 
   useEffect(load, []);

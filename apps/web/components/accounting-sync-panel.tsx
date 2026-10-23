@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import type { AccountingProviderType } from "@cantero/shared";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, notifyApiError } from "@/lib/api-client";
 import { formatDate, formatDateTime } from "@/lib/format-date";
 import { resetStateInEffect } from "@/lib/effect-reset";
 import { useConfirm } from "@/components/ui/confirm-dialog";
@@ -57,8 +57,8 @@ export function AccountingSyncPanel({ canManage }: { canManage: boolean }) {
   function load() {
     apiFetch<Status>("/company/accounting/status").then((s) => {
       setStatus(s);
-      if (s.connected) apiFetch<IntegrityCheck>("/company/accounting/integrity-check").then(setIntegrity);
-    });
+      if (s.connected) apiFetch<IntegrityCheck>("/company/accounting/integrity-check").then(setIntegrity).catch(notifyApiError);
+    }).catch(notifyApiError);
   }
 
   function toggleHistory() {
@@ -67,7 +67,7 @@ export function AccountingSyncPanel({ canManage }: { canManage: boolean }) {
       return;
     }
     setShowHistory(true);
-    apiFetch<SyncLogEntry[]>("/company/accounting/sync-history").then(setHistory);
+    apiFetch<SyncLogEntry[]>("/company/accounting/sync-history").then(setHistory).catch(notifyApiError);
   }
 
   useEffect(() => {
@@ -123,8 +123,8 @@ export function AccountingSyncPanel({ canManage }: { canManage: boolean }) {
     try {
       const result = await apiFetch<SyncSummary>("/company/accounting/sync", { method: "POST" });
       setSyncResult(result);
-      apiFetch<IntegrityCheck>("/company/accounting/integrity-check").then(setIntegrity);
-      if (showHistory) apiFetch<SyncLogEntry[]>("/company/accounting/sync-history").then(setHistory);
+      apiFetch<IntegrityCheck>("/company/accounting/integrity-check").then(setIntegrity).catch(notifyApiError);
+      if (showHistory) apiFetch<SyncLogEntry[]>("/company/accounting/sync-history").then(setHistory).catch(notifyApiError);
     } finally {
       setBusy(false);
     }
@@ -136,8 +136,8 @@ export function AccountingSyncPanel({ canManage }: { canManage: boolean }) {
     try {
       const result = await apiFetch<SyncSummary>("/company/accounting/sync-bills", { method: "POST" });
       setSyncResult(result);
-      apiFetch<IntegrityCheck>("/company/accounting/integrity-check").then(setIntegrity);
-      if (showHistory) apiFetch<SyncLogEntry[]>("/company/accounting/sync-history").then(setHistory);
+      apiFetch<IntegrityCheck>("/company/accounting/integrity-check").then(setIntegrity).catch(notifyApiError);
+      if (showHistory) apiFetch<SyncLogEntry[]>("/company/accounting/sync-history").then(setHistory).catch(notifyApiError);
     } finally {
       setBusy(false);
     }

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, notifyApiError } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import { formatDate } from "@/lib/format-date";
 import { formatCurrency } from "@/lib/format-currency";
@@ -97,9 +97,9 @@ export function PurchaseOrdersPanel() {
     apiFetch<Supplier[]>("/materials/suppliers").then((s) => {
       setSuppliers(s);
       if (s[0]) setSupplierId(s[0].id);
-    });
-    apiFetch<Warehouse[]>("/materials/warehouses").then(setWarehouses);
-    apiFetch<MaterialCatalogItem[]>("/materials/catalog").then(setMaterials);
+    }).catch(notifyApiError);
+    apiFetch<Warehouse[]>("/materials/warehouses").then(setWarehouses).catch(notifyApiError);
+    apiFetch<MaterialCatalogItem[]>("/materials/catalog").then(setMaterials).catch(notifyApiError);
   }, []);
 
   function addLine() {

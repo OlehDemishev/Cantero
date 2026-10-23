@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import type { ApprenticeRatioViolation, CertifiedPayrollLine } from "@cantero/shared";
-import { apiFetch, downloadBlob } from "@/lib/api-client";
+import { apiFetch, downloadBlob, notifyApiError } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import { formatCurrency, formatNumber } from "@/lib/format-currency";
 
@@ -52,7 +52,7 @@ export function CertifiedPayrollPanel({ projectId }: { projectId: string }) {
     apiFetch<Project>(`/projects/${projectId}`).then((p) => {
       setProject(p);
       setPublicWorkForm({ isPublicWork: p.isPublicWork, contractNumber: p.contractNumber ?? "" });
-    });
+    }).catch(notifyApiError);
   }
 
   function loadReports() {

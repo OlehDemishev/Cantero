@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { ApiError } from "@/lib/api-client";
+import { ApiError, notifyApiError } from "@/lib/api-client";
 import {
   getSubcontractorPortalToken,
   subcontractorPortalApiFetch,
@@ -91,11 +91,11 @@ export default function SubcontractorPortalDashboardPage() {
   const [error, setError] = useState<string | null>(null);
 
   function loadCosts() {
-    subcontractorPortalApiFetch<Cost[]>("/subcontractor-portal/costs").then(setCosts);
+    subcontractorPortalApiFetch<Cost[]>("/subcontractor-portal/costs").then(setCosts).catch(notifyApiError);
   }
 
   function loadWaivers() {
-    subcontractorPortalApiFetch<LienWaiver[]>("/subcontractor-portal/lien-waivers").then(setWaivers);
+    subcontractorPortalApiFetch<LienWaiver[]>("/subcontractor-portal/lien-waivers").then(setWaivers).catch(notifyApiError);
   }
 
   function loadBidRequests() {
@@ -111,7 +111,7 @@ export default function SubcontractorPortalDashboardPage() {
         }
         return next;
       });
-    });
+    }).catch(notifyApiError);
   }
 
   useEffect(() => {
@@ -131,11 +131,11 @@ export default function SubcontractorPortalDashboardPage() {
     subcontractorPortalApiFetch<Assignment[]>("/subcontractor-portal/projects").then((list) => {
       setAssignments(list);
       if (list[0]) setForm((f) => ({ ...f, projectId: f.projectId || list[0].project.id }));
-    });
+    }).catch(notifyApiError);
     loadCosts();
     loadWaivers();
     loadBidRequests();
-    subcontractorPortalApiFetch<MyPunchListItem[]>("/subcontractor-portal/punch-list-items").then(setPunchListItems);
+    subcontractorPortalApiFetch<MyPunchListItem[]>("/subcontractor-portal/punch-list-items").then(setPunchListItems).catch(notifyApiError);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

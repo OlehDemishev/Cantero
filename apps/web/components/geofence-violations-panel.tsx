@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch, downloadBlob } from "@/lib/api-client";
+import { apiFetch, downloadBlob, notifyApiError } from "@/lib/api-client";
 
 interface Violation {
   id: string;
@@ -24,7 +24,7 @@ export function GeofenceViolationsPanel() {
     const query = new URLSearchParams();
     if (from) query.set("from", new Date(from).toISOString());
     if (to) query.set("to", new Date(to).toISOString());
-    apiFetch<Violation[]>(`/reports/geofence-violations?${query.toString()}`).then(setViolations);
+    apiFetch<Violation[]>(`/reports/geofence-violations?${query.toString()}`).then(setViolations).catch(notifyApiError);
   }
 
   useEffect(load, []);

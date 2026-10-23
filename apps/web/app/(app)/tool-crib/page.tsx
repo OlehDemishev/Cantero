@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { TOOL_CHECKOUT_CONDITIONS, type ToolCheckoutCondition } from "@cantero/shared";
 import { CalibrationPanel } from "@/components/calibration-panel";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, notifyApiError } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import { formatDate } from "@/lib/format-date";
 
@@ -53,7 +53,7 @@ export default function ToolCribPage() {
     apiFetch<Worker[]>("/workers").then((w) => {
       setWorkers(w);
       if (w[0]) setCheckoutForm((f) => ({ ...f, workerId: w[0].id }));
-    });
+    }).catch(notifyApiError);
   }, []);
 
   async function create(e: React.FormEvent) {

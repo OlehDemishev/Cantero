@@ -9,6 +9,9 @@ import {
   type ExpenseStatus,
 } from "@cantero/shared";
 import { apiFetch, downloadBlob } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useMe } from "@/lib/use-me";
 import { formatDate } from "@/lib/format-date";
 import { useCan } from "@/lib/permissions";
@@ -56,7 +59,8 @@ export default function ExpensesPage() {
   const currency = me?.company.currency ?? "";
 
   const [expenses, setExpenses] = useState<Expense[] | null>(null);
-  const [projects, setProjects] = useState<Project[]>([]);
+  const [expensesError, setExpensesError] = useState<Error | null>(null);
+  const { data: projects = [] } = useApi<Project[]>("/projects");
   const [filters, setFilters] = useState({ projectId: "", status: "" });
   const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState("");
@@ -73,10 +77,13 @@ export default function ExpensesPage() {
   }
 
   function load() {
-    apiFetch<Expense[]>(`/expenses?${queryString()}`).then((page) => {
-      setExpenses(page);
-      setHasMore(page.length === EXPENSES_PAGE_SIZE);
-    });
+    apiFetch<Expense[]>(`/expenses?${queryString()}`)
+      .then((page) => {
+        setExpensesError(null);
+        setExpenses(page);
+        setHasMore(page.length === EXPENSES_PAGE_SIZE);
+      })
+      .catch(setExpensesError);
   }
 
   async function loadMore() {
@@ -95,7 +102,6 @@ export default function ExpensesPage() {
 
   useEffect(() => {
     load();
-    apiFetch<Project[]>("/projects").then(setProjects);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters.projectId, filters.status]);
 
@@ -180,9 +186,7 @@ export default function ExpensesPage() {
 
       <div className="mt-4">
         {expenses === null ? (
-          <p className="text-sm text-fg-subtle">
-            {tc("loading")}
-          </p>
+          expensesError ? <ErrorState error={expensesError} onRetry={load} compact /> : <Skeleton lines={4} />
         ) : expenses.length === 0 ? (
           <p className="text-sm text-fg-subtle">
             {t("empty")}

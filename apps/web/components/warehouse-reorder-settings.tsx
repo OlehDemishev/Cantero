@@ -2,7 +2,7 @@
 
 import { Fragment, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, notifyApiError } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
 import { useCan } from "@/lib/permissions";
 import { formatDate } from "@/lib/format-date";
@@ -67,7 +67,7 @@ export function WarehouseReorderSettings() {
         }
         return next;
       });
-    });
+    }).catch(notifyApiError);
   }
 
   useEffect(() => {

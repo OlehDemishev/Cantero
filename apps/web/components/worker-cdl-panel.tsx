@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch, ApiError } from "@/lib/api-client";
+import { apiFetch, ApiError, notifyApiError } from "@/lib/api-client";
 
 export function WorkerCdlPanel({ workerId }: { workerId: string }) {
   const t = useTranslations("team");
@@ -15,7 +15,7 @@ export function WorkerCdlPanel({ workerId }: { workerId: string }) {
   useEffect(() => {
     apiFetch<{ worker: { cdlExpiresAt: string | null } }>(`/workers/${workerId}/summary`).then(({ worker }) =>
       setCdlExpiresAt(worker.cdlExpiresAt ? worker.cdlExpiresAt.slice(0, 10) : ""),
-    );
+    ).catch(notifyApiError);
   }, [workerId]);
 
   async function saveCdlExpiry(e: React.FormEvent) {

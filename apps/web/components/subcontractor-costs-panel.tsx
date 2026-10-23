@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch, downloadBlob } from "@/lib/api-client";
+import { apiFetch, downloadBlob, notifyApiError } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -60,7 +60,7 @@ export function SubcontractorCostsPanel({ projectId }: { projectId: string }) {
     apiFetch<Subcontractor[]>("/finance/subcontractors").then((list) => {
       setSubcontractors(list);
       if (list[0]) setForm((f) => ({ ...f, subcontractorId: f.subcontractorId || list[0].id }));
-    });
+    }).catch(notifyApiError);
   }
 
   useEffect(() => {

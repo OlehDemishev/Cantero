@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { DOCUMENT_CATEGORIES, type DocumentCategory } from "@cantero/shared";
 import { apiFetch, apiUpload, downloadBlob } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { SignatureRequestsPanel } from "@/components/signature-requests-panel";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { formatNumber } from "@/lib/format-currency";
@@ -38,7 +40,6 @@ export default function DocumentsPage() {
   const confirm = useConfirm();
   const tc = useTranslations("common");
 
-  const [documents, setDocuments] = useState<Document[] | null>(null);
   const { data: projects = [] } = useApi<Project[]>("/projects");
   const [category, setCategory] = useState<DocumentCategory | "">("");
   const [search, setSearch] = useState("");
@@ -47,14 +48,14 @@ export default function DocumentsPage() {
   const [busy, setBusy] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  function load() {
-    const params = new URLSearchParams();
-    if (category) params.set("category", category);
-    if (search) params.set("search", search);
-    apiFetch<Document[]>(`/documents?${params.toString()}`).then(setDocuments);
-  }
+  const params = new URLSearchParams();
+  if (category) params.set("category", category);
+  if (search) params.set("search", search);
+  const { data: documents = null, reload: reloadDocuments, error: documentsError } = useApi<Document[]>(`/documents?${params.toString()}`, { keepPrevious: true });
 
-  useEffect(load, [category, search]);
+  function load() {
+    void reloadDocuments();
+  }
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -115,7 +116,7 @@ export default function DocumentsPage() {
 
       <div className="mt-8 overflow-x-auto">
         {!documents ? (
-          <p className="text-fg-subtle">{tc("loading")}</p>
+          documentsError ? <ErrorState error={documentsError} onRetry={reloadDocuments} compact /> : <Skeleton lines={3} />
         ) : documents.length === 0 ? (
           <p className="text-sm text-fg-subtle">{t("noDocuments")}</p>
         ) : (

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, notifyApiError } from "@/lib/api-client";
 import { formatDate } from "@/lib/format-date";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 
@@ -40,7 +40,9 @@ export function SubcontractorAssignmentsPanel({ projectId }: { projectId: string
       list.map((s) =>
         apiFetch<Assignment[]>(`/finance/subcontractors/${s.id}/assignments`).then((rows) => [s.id, rows] as const),
       ),
-    ).then((pairs) => setAssignmentsBySubcontractor(Object.fromEntries(pairs)));
+    )
+      .then((pairs) => setAssignmentsBySubcontractor(Object.fromEntries(pairs)))
+      .catch(notifyApiError);
   }
 
   function load() {
@@ -48,7 +50,7 @@ export function SubcontractorAssignmentsPanel({ projectId }: { projectId: string
       setSubcontractors(list);
       if (list[0]) setSelectedId((id) => id || list[0].id);
       loadAssignments(list);
-    });
+    }).catch(notifyApiError);
   }
 
   useEffect(load, []);

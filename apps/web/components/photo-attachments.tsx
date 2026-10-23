@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch, apiUpload } from "@/lib/api-client";
+import { apiFetch, apiUpload, notifyApiError } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
 import { Dialog } from "@/components/ui/dialog";
 
@@ -62,7 +62,7 @@ export function PhotoAttachments({
       const next = Object.fromEntries(pairs);
       setPreviews(next);
       objectUrlsRef.current = Object.values(next);
-    });
+    }).catch(notifyApiError);
     return () => {
       cancelled = true;
       objectUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));

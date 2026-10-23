@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, notifyApiError } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
 import { formatDateTime } from "@/lib/format-date";
 
@@ -38,7 +38,7 @@ export function CommentsThread({ param, entityId }: { param: CommentParam; entit
   }
 
   useEffect(() => {
-    apiFetch<{ user: Member }[]>("/company/members").then((list) => setMembers(list.map((m) => m.user)));
+    apiFetch<{ user: Member }[]>("/company/members").then((list) => setMembers(list.map((m) => m.user))).catch(notifyApiError);
   }, [entityId]);
 
   function handleContentChange(value: string) {

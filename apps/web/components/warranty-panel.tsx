@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import type { BulkActionResult, WarrantyClaimStatus } from "@cantero/shared";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, notifyApiError } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
 import { PhotoAttachments } from "@/components/photo-attachments";
 import { useBulkSelection } from "@/components/bulk-select";
@@ -76,7 +76,7 @@ export function WarrantyPanel({ projectId }: { projectId: string }) {
         handoverDate: p.handoverDate ? p.handoverDate.slice(0, 10) : "",
         warrantyMonths: p.warrantyMonths?.toString() ?? "",
       });
-    });
+    }).catch(notifyApiError);
     apiFetch<WarrantyClaim[]>(`/warranty-claims?projectId=${projectId}`).then(setClaims);
   }
 

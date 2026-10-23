@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, notifyApiError } from "@/lib/api-client";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface MaterialCatalogItem {
@@ -51,7 +51,7 @@ export function StockKits() {
         setForm((f) => ({ ...f, kitMaterialCatalogItemId: items[0].id }));
         setComponents([{ materialCatalogItemId: items[0].id, quantityPerKit: "1" }]);
       }
-    });
+    }).catch(notifyApiError);
   }, []);
 
   function addComponent() {

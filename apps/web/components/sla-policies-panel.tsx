@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { TICKET_PRIORITIES, type TicketPriority } from "@cantero/shared";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, notifyApiError } from "@/lib/api-client";
 
 interface SlaPolicy {
   id: string;
@@ -40,7 +40,7 @@ export function SlaPoliciesPanel() {
           ]),
         ) as Record<TicketPriority, { responseMinutes: string; resolutionMinutes: string }>,
       );
-    });
+    }).catch(notifyApiError);
   }
   useEffect(load, []);
 

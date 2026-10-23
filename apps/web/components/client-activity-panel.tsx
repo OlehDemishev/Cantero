@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, notifyApiError } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -36,7 +36,7 @@ export function ClientActivityPanel({ clientId }: { clientId: string }) {
   }
 
   useEffect(() => {
-    apiFetch<Client>(`/clients/${clientId}`).then((c) => setNotesInput(c.notes ?? ""));
+    apiFetch<Client>(`/clients/${clientId}`).then((c) => setNotesInput(c.notes ?? "")).catch(notifyApiError);
   }, [clientId]);
 
   async function addActivity(e: React.FormEvent) {

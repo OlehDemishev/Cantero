@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch, downloadBlob } from "@/lib/api-client";
+import { apiFetch, downloadBlob, notifyApiError } from "@/lib/api-client";
 import { fetchClientLink } from "@/lib/client-link";
 import { useCan } from "@/lib/permissions";
 import { useMe } from "@/lib/use-me";
@@ -80,10 +80,10 @@ export function EstimateChangeOrdersPanel({
         if (co.clientDecision === "approved" && co.signerName) {
           apiFetch<Blob>(`/estimates/${estimateId}/change-orders/${co.id}/signature`).then((blob) =>
             setCoSignatureUrls((prev) => ({ ...prev, [co.id]: URL.createObjectURL(blob) })),
-          );
+          ).catch(notifyApiError);
         }
       }
-    });
+    }).catch(notifyApiError);
   }
 
   useEffect(loadChangeOrders, [estimateId]);

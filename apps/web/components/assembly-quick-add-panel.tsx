@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, notifyApiError } from "@/lib/api-client";
 
 interface Assembly {
   id: string;
@@ -23,7 +23,7 @@ export function AssemblyQuickAddPanel({ estimateId, onAdded }: { estimateId: str
     apiFetch<Assembly[]>("/assemblies").then((items) => {
       setAssemblies(items);
       if (items[0]) setAssemblyId(items[0].id);
-    });
+    }).catch(notifyApiError);
   }, []);
 
   async function handleSubmit(e: React.FormEvent) {

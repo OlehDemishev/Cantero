@@ -6,7 +6,7 @@ import Link from "next/link";
 import { SUBCONTRACTOR_DIVERSITY_CATEGORIES, type SubcontractorDiversityCategory, type SubcontractorDocumentType } from "@cantero/shared";
 import { CertificateAttachment } from "@/components/certificate-attachment";
 import { SubcontractorPrequalificationPanel } from "@/components/subcontractor-prequalification-panel";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, notifyApiError } from "@/lib/api-client";
 import { formatDate } from "@/lib/format-date";
 import { useCan } from "@/lib/permissions";
 import { useConfirm } from "@/components/ui/confirm-dialog";
@@ -136,9 +136,9 @@ export function SubcontractorListItem({
 
   function loadDetail() {
     apiFetch<SubcontractorDocument[]>(`/finance/subcontractors/${s.id}/documents`).then(setDocuments);
-    apiFetch<Compliance>(`/finance/subcontractors/${s.id}/compliance`).then(setCompliance);
-    apiFetch<Scorecard>(`/finance/subcontractors/${s.id}/scorecard`).then(setScorecard);
-    apiFetch<PerformanceReview[]>(`/finance/subcontractors/${s.id}/performance-reviews`).then(setReviews);
+    apiFetch<Compliance>(`/finance/subcontractors/${s.id}/compliance`).then(setCompliance).catch(notifyApiError);
+    apiFetch<Scorecard>(`/finance/subcontractors/${s.id}/scorecard`).then(setScorecard).catch(notifyApiError);
+    apiFetch<PerformanceReview[]>(`/finance/subcontractors/${s.id}/performance-reviews`).then(setReviews).catch(notifyApiError);
     apiFetch<Assignment[]>(`/finance/subcontractors/${s.id}/assignments`).then(setAssignments);
     apiFetch<SubcontractorCost[]>(`/finance/subcontractor-costs?subcontractorId=${s.id}`).then(setCosts);
     // Tax profile carries both US 1099 fields and the DATEV Kreditor number, so it's fetched
@@ -150,7 +150,7 @@ export function SubcontractorListItem({
         mailingAddress: p.mailingAddress ?? "",
         datevKreditorNumber: p.datevKreditorNumber ?? "",
       }),
-    );
+    ).catch(notifyApiError);
     if (isUsCompany) {
       apiFetch<SubcontractorPayment[]>(`/finance/subcontractors/${s.id}/payments`).then(setPayments);
     }

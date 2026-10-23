@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, notifyApiError } from "@/lib/api-client";
 
 interface MaterialCatalogItem {
   id: string;
@@ -39,7 +39,7 @@ export function WarehouseSustainabilitySettings() {
         }
         return next;
       });
-    });
+    }).catch(notifyApiError);
   }
 
   useEffect(load, []);

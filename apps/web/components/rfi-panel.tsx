@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import type { BallInCourtParty, BulkActionResult, RfiPriority, RfiStatus } from "@cantero/shared";
 import { SimilarItemsHint } from "@/components/similar-items-hint";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, notifyApiError } from "@/lib/api-client";
 import { useBulkSelection } from "@/components/bulk-select";
 import { CommentsThread } from "@/components/comments-thread";
 import { TemplatePicker } from "@/components/template-picker";
@@ -93,13 +93,12 @@ export function RfiPanel({ projectId }: { projectId: string }) {
     const query = new URLSearchParams({ projectId });
     if (myTurnOnly) query.set("ballInCourtParty", "internal");
     apiFetch<Rfi[]>(`/rfis?${query.toString()}`).then(setItems);
-    apiFetch<RfiAnalytics>(`/rfis/analytics?projectId=${projectId}`).then(setAnalytics);
+    apiFetch<RfiAnalytics>(`/rfis/analytics?projectId=${projectId}`).then(setAnalytics).catch(notifyApiError);
   }
 
   useEffect(() => {
     if (!deepLinkedId || !items) return;
     rowRefs.current[deepLinkedId]?.scrollIntoView({ behavior: "smooth", block: "center" });
-     
   }, [items, deepLinkedId]);
 
   useEffect(load, [projectId, myTurnOnly]);

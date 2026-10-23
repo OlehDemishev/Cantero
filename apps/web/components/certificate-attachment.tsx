@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch, apiUpload, downloadBlob } from "@/lib/api-client";
+import { apiFetch, apiUpload, downloadBlob, notifyApiError } from "@/lib/api-client";
 
 type CertificateAttachmentParam = "subcontractorDocumentId" | "supplierDocumentId" | "companyDocumentId";
 
@@ -21,7 +21,7 @@ export function CertificateAttachment({ param, entityId }: { param: CertificateA
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<DocumentSummary[]>(`/documents?${param}=${entityId}`).then((docs) => setDoc(docs[0] ?? null));
+    apiFetch<DocumentSummary[]>(`/documents?${param}=${entityId}`).then((docs) => setDoc(docs[0] ?? null)).catch(notifyApiError);
   }
 
   useEffect(load, [param, entityId]);

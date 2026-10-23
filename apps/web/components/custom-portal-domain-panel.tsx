@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch, ApiError } from "@/lib/api-client";
+import { apiFetch, ApiError, notifyApiError } from "@/lib/api-client";
 
 interface Company {
   customPortalDomain: string | null;
@@ -25,7 +25,7 @@ export function CustomPortalDomainPanel({ canManage }: { canManage: boolean }) {
     apiFetch<Company>("/company").then((c) => {
       setCompany(c);
       setDomainInput(c.customPortalDomain ?? "");
-    });
+    }).catch(notifyApiError);
   }
 
   useEffect(load, []);

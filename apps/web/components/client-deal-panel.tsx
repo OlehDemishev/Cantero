@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, notifyApiError } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
 import { formatCurrency } from "@/lib/format-currency";
 
@@ -79,12 +79,12 @@ export function ClientDealPanel({
         source: c.source ?? "",
         campaignId: c.campaignId ?? "",
       });
-    });
+    }).catch(notifyApiError);
   }
 
   useEffect(() => {
     load();
-    apiFetch<ReferralClient[]>("/clients").then((cs) => setAllClients(cs.filter((c) => c.id !== clientId)));
+    apiFetch<ReferralClient[]>("/clients").then((cs) => setAllClients(cs.filter((c) => c.id !== clientId))).catch(notifyApiError);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clientId]);
 

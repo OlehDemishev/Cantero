@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import type { SubcontractorBackchargeStatus, SubcontractorDefaultNoticeStatus } from "@cantero/shared";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, notifyApiError } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import { formatCurrency } from "@/lib/format-currency";
 import { formatDate } from "@/lib/format-date";
@@ -78,8 +78,8 @@ export function SubcontractorClaimsPanel({ projectId }: { projectId: string }) {
         setBackchargeForm((f) => ({ ...f, subcontractorId: f.subcontractorId || list[0].id }));
         setNoticeForm((f) => ({ ...f, subcontractorId: f.subcontractorId || list[0].id }));
       }
-    });
-    apiFetch<WarrantyClaimOption[]>(`/warranty-claims?projectId=${projectId}`).then(setWarrantyClaims);
+    }).catch(notifyApiError);
+    apiFetch<WarrantyClaimOption[]>(`/warranty-claims?projectId=${projectId}`).then(setWarrantyClaims).catch(notifyApiError);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId]);
 

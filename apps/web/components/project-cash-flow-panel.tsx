@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, notifyApiError } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import { useReportAccess } from "@/lib/report-access";
 import { formatCurrency } from "@/lib/format-currency";
@@ -29,7 +29,7 @@ export function ProjectCashFlowPanel({ projectId }: { projectId: string }) {
 
   useEffect(() => {
     if (!allowed) return;
-    apiFetch<CashFlowForecast>(`/reports/cash-flow-forecast?projectId=${projectId}`).then(setCashFlow);
+    apiFetch<CashFlowForecast>(`/reports/cash-flow-forecast?projectId=${projectId}`).then(setCashFlow).catch(notifyApiError);
   }, [projectId, allowed]);
 
   if (!cashFlow) return null;
