@@ -11,6 +11,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { InvoicesIcon } from "@/components/nav-icons";
 import { apiFetch, downloadBlob, getToken, API_URL, ApiError } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface Invoice {
   id: string;
@@ -58,6 +59,7 @@ const RECURRING_INVOICES_PAGE_SIZE = 100;
 
 export default function InvoicesPage() {
   const t = useTranslations("invoices");
+  const confirm = useConfirm();
   const tc = useTranslations("common");
   const { data: me } = useMe();
   const [invoices, setInvoices] = useState<Invoice[] | null>(null);
@@ -259,7 +261,7 @@ export default function InvoicesPage() {
   }
 
   async function deleteRecurring(id: string) {
-    if (!window.confirm(t("confirmDeleteRecurring"))) return;
+    if (!(await confirm({ message: t("confirmDeleteRecurring"), tone: "danger", verb: "delete" }))) return;
     await apiFetch(`/recurring-invoices/${id}`, { method: "DELETE" });
     loadRecurring();
   }

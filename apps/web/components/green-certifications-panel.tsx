@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { GREEN_CERTIFICATION_TYPES, type GreenCertificationType } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
 import { formatDate } from "@/lib/format-date";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface GreenCertification {
   id: string;
@@ -19,6 +20,8 @@ const EMPTY_FORM = { type: "leed_gold" as GreenCertificationType, name: "", issu
 
 export function GreenCertificationsPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("sustainability");
+  const confirm = useConfirm();
+  const td = useTranslations("dialog");
   const tc = useTranslations("common");
 
   const [items, setItems] = useState<GreenCertification[] | null>(null);
@@ -56,6 +59,7 @@ export function GreenCertificationsPanel({ projectId }: { projectId: string }) {
   }
 
   async function remove(id: string) {
+    if (!(await confirm({ message: td("deleteGreenCertification"), tone: "danger", verb: "delete" }))) return;
     await apiFetch(`/sustainability/certifications/${id}`, { method: "DELETE" });
     load();
   }

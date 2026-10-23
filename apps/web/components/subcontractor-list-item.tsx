@@ -9,6 +9,7 @@ import { SubcontractorPrequalificationPanel } from "@/components/subcontractor-p
 import { apiFetch } from "@/lib/api-client";
 import { formatDate } from "@/lib/format-date";
 import { useCan } from "@/lib/permissions";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 const DOCUMENT_TYPES: SubcontractorDocumentType[] = ["general_liability_insurance", "workers_comp_insurance", "license", "bonding", "other"];
 
@@ -103,6 +104,7 @@ export function SubcontractorListItem({
   onChanged: () => void;
 }) {
   const t = useTranslations("subcontractorCompliance");
+  const confirm = useConfirm();
   const tc = useTranslations("common");
 
   const [expanded, setExpanded] = useState(false);
@@ -307,7 +309,7 @@ export function SubcontractorListItem({
   }
 
   async function removeDocument(documentId: string) {
-    if (!window.confirm(t("confirmDeleteDocument"))) return;
+    if (!(await confirm({ message: t("confirmDeleteDocument"), tone: "danger", verb: "delete" }))) return;
     await apiFetch(`/finance/subcontractors/${s.id}/documents/${documentId}`, { method: "DELETE" });
     loadDetail();
   }

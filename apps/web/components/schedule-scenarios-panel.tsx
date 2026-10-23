@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { formatDate } from "@/lib/format-date";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface Task {
   id: string;
@@ -30,6 +31,7 @@ interface CompareResult {
 
 export function ScheduleScenariosPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("scheduleScenarios");
+  const confirm = useConfirm();
   const tc = useTranslations("common");
 
   const [scenarios, setScenarios] = useState<Scenario[] | null>(null);
@@ -65,7 +67,7 @@ export function ScheduleScenariosPanel({ projectId }: { projectId: string }) {
   }
 
   async function remove(id: string) {
-    if (!window.confirm(t("confirmDeleteScenario"))) return;
+    if (!(await confirm({ message: t("confirmDeleteScenario"), tone: "danger", verb: "delete" }))) return;
     await apiFetch(`/schedule-scenarios/${id}`, { method: "DELETE" });
     load();
   }

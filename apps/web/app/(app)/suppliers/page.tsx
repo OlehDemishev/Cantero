@@ -11,6 +11,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { CloseIcon, SuppliersIcon } from "@/components/nav-icons";
 import { apiFetch, apiUpload } from "@/lib/api-client";
 import { formatDate } from "@/lib/format-date";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface Supplier {
   id: string;
@@ -54,6 +55,7 @@ interface SupplierPurchaseOrder {
 
 export default function SuppliersPage() {
   const t = useTranslations("suppliers");
+  const confirm = useConfirm();
   const tc = useTranslations("common");
   const [suppliers, setSuppliers] = useState<Supplier[] | null>(null);
   const [form, setForm] = useState({ name: "", email: "", phone: "" });
@@ -111,7 +113,7 @@ export default function SuppliersPage() {
   }
 
   async function removeDocument(supplierId: string, documentId: string) {
-    if (!window.confirm(t("confirmDeleteDocument"))) return;
+    if (!(await confirm({ message: t("confirmDeleteDocument"), tone: "danger", verb: "delete" }))) return;
     await apiFetch(`/materials/suppliers/${supplierId}/documents/${documentId}`, { method: "DELETE" });
     loadDetail(supplierId);
   }

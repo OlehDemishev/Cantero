@@ -3,9 +3,12 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 export function LeadFormSettingsPanel({ token, canManage, onChange }: { token: string | null; canManage: boolean; onChange: () => void }) {
   const t = useTranslations("leadForm");
+  const confirm = useConfirm();
+  const td = useTranslations("dialog");
   const tc = useTranslations("common");
 
   const [busy, setBusy] = useState(false);
@@ -24,6 +27,7 @@ export function LeadFormSettingsPanel({ token, canManage, onChange }: { token: s
   }
 
   async function disable() {
+    if (!(await confirm({ message: td("disableLeadForm"), tone: "danger", verb: "disable" }))) return;
     setBusy(true);
     try {
       await apiFetch("/company/lead-form", { method: "DELETE" });

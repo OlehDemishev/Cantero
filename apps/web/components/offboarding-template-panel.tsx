@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch, ApiError } from "@/lib/api-client";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface OffboardingTemplateItem {
   id: string;
@@ -12,6 +13,8 @@ interface OffboardingTemplateItem {
 
 export function OffboardingTemplatePanel() {
   const t = useTranslations("team");
+  const confirm = useConfirm();
+  const td = useTranslations("dialog");
   const tc = useTranslations("common");
 
   const [items, setItems] = useState<OffboardingTemplateItem[] | null>(null);
@@ -42,6 +45,7 @@ export function OffboardingTemplatePanel() {
   }
 
   async function remove(id: string) {
+    if (!(await confirm({ message: td("removeTemplateItem"), tone: "danger", verb: "remove" }))) return;
     setBusy(true);
     setError(null);
     try {

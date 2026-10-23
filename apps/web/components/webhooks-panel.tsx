@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { WEBHOOK_EVENTS, WEBHOOK_TEMPLATES, type WebhookEvent } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
 import { formatDateTime } from "@/lib/format-date";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface WebhookEndpoint {
   id: string;
@@ -26,6 +27,7 @@ interface WebhookDelivery {
 
 export function WebhooksPanel() {
   const t = useTranslations("settings");
+  const confirm = useConfirm();
   const tc = useTranslations("common");
   const [webhooks, setWebhooks] = useState<WebhookEndpoint[] | null>(null);
   const [webhookForm, setWebhookForm] = useState<{ url: string; events: WebhookEvent[] }>({ url: "", events: [] });
@@ -87,7 +89,7 @@ export function WebhooksPanel() {
   }
 
   async function deleteWebhook(id: string) {
-    if (!window.confirm(t("confirmDeleteWebhook"))) return;
+    if (!(await confirm({ message: t("confirmDeleteWebhook"), tone: "danger", verb: "delete" }))) return;
     await apiFetch(`/company/webhooks/${id}`, { method: "DELETE" });
     if (expandedWebhookId === id) setExpandedWebhookId(null);
     load();

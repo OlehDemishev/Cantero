@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { formatDate } from "@/lib/format-date";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 const NEW_SUBCONTRACTOR = "__new__";
 
@@ -21,6 +22,7 @@ interface Assignment {
 
 export function SubcontractorAssignmentsPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("subcontractors");
+  const confirm = useConfirm();
   const tc = useTranslations("common");
 
   const [subcontractors, setSubcontractors] = useState<Subcontractor[]>([]);
@@ -89,7 +91,7 @@ export function SubcontractorAssignmentsPanel({ projectId }: { projectId: string
   }
 
   async function unassign(subcontractorId: string, assignmentId: string) {
-    if (!window.confirm(t("confirmUnassign"))) return;
+    if (!(await confirm({ message: t("confirmUnassign"), tone: "danger", verb: "remove" }))) return;
     await apiFetch(`/finance/subcontractors/${subcontractorId}/assignments/${assignmentId}`, { method: "DELETE" });
     load();
   }

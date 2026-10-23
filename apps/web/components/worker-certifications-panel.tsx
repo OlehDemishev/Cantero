@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { formatDate } from "@/lib/format-date";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface Certification {
   id: string;
@@ -13,6 +14,7 @@ interface Certification {
 
 export function WorkerCertificationsPanel({ workerId }: { workerId: string }) {
   const t = useTranslations("team");
+  const confirm = useConfirm();
   const tc = useTranslations("common");
   const [certifications, setCertifications] = useState<Certification[] | null>(null);
   const [certForm, setCertForm] = useState({ name: "", expiresAt: "" });
@@ -41,7 +43,7 @@ export function WorkerCertificationsPanel({ workerId }: { workerId: string }) {
   }
 
   async function removeCertification(certificationId: string) {
-    if (!window.confirm(t("confirmDeleteCertification"))) return;
+    if (!(await confirm({ message: t("confirmDeleteCertification"), tone: "danger", verb: "delete" }))) return;
     await apiFetch(`/workers/${workerId}/certifications/${certificationId}`, { method: "DELETE" });
     load();
   }

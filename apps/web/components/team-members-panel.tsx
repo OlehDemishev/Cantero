@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { useAssignableRoles } from "@/lib/permissions";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface CustomRole {
   id: string;
@@ -19,6 +20,7 @@ interface Member {
 
 export function TeamMembersPanel({ isManager }: { isManager: boolean }) {
   const t = useTranslations("settings");
+  const confirm = useConfirm();
   const tc = useTranslations("common");
   const [members, setMembers] = useState<Member[] | null>(null);
   const [customRoles, setCustomRoles] = useState<CustomRole[]>([]);
@@ -40,7 +42,7 @@ export function TeamMembersPanel({ isManager }: { isManager: boolean }) {
   }
 
   async function removeMember(userId: string) {
-    if (!window.confirm(t("confirmRemoveMember"))) return;
+    if (!(await confirm({ message: t("confirmRemoveMember"), tone: "danger", verb: "remove" }))) return;
     await apiFetch(`/company/members/${userId}`, { method: "DELETE" });
     load();
   }

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 export interface CostCode {
   id: string;
@@ -12,6 +13,7 @@ export interface CostCode {
 
 export function CostCodesPanel() {
   const t = useTranslations("costCodes");
+  const confirm = useConfirm();
   const tc = useTranslations("common");
 
   const [costCodes, setCostCodes] = useState<CostCode[] | null>(null);
@@ -42,7 +44,7 @@ export function CostCodesPanel() {
   }
 
   async function remove(id: string) {
-    if (!window.confirm(t("confirmDelete"))) return;
+    if (!(await confirm({ message: t("confirmDelete"), tone: "danger", verb: "delete" }))) return;
     await apiFetch(`/cost-codes/${id}`, { method: "DELETE" });
     load();
   }

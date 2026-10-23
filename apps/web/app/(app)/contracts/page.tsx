@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { formatDate } from "@/lib/format-date";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface ContractTemplate {
   id: string;
@@ -28,6 +29,7 @@ const STATUS_STYLES: Record<Contract["status"], string> = {
 
 export default function ContractsPage() {
   const t = useTranslations("contracts");
+  const confirm = useConfirm();
   const tc = useTranslations("common");
 
   const [contracts, setContracts] = useState<Contract[] | null>(null);
@@ -55,7 +57,7 @@ export default function ContractsPage() {
   }
 
   async function deleteTemplate(id: string) {
-    if (!window.confirm(t("confirmDeleteTemplate"))) return;
+    if (!(await confirm({ message: t("confirmDeleteTemplate"), tone: "danger", verb: "delete" }))) return;
     await apiFetch(`/contract-templates/${id}`, { method: "DELETE" });
     load();
   }

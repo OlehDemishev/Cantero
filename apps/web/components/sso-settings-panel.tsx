@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch, downloadBlob } from "@/lib/api-client";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface SsoConfig {
   ssoDomain: string | null;
@@ -15,6 +16,8 @@ interface SsoConfig {
 
 export function SsoSettingsPanel({ canManage }: { canManage: boolean }) {
   const t = useTranslations("sso");
+  const confirm = useConfirm();
+  const td = useTranslations("dialog");
   const tc = useTranslations("common");
 
   const [config, setConfig] = useState<SsoConfig | null>(null);
@@ -72,6 +75,7 @@ export function SsoSettingsPanel({ canManage }: { canManage: boolean }) {
   }
 
   async function disable() {
+    if (!(await confirm({ message: td("disableSso"), tone: "danger", verb: "disable" }))) return;
     setBusy(true);
     try {
       await apiFetch("/company/sso", { method: "DELETE" });

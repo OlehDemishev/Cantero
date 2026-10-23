@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { PERMISSION_KEYS } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
 import { useAssignableRoles } from "@/lib/permissions";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface CustomRole {
   id: string;
@@ -16,6 +17,7 @@ interface CustomRole {
 
 export function CustomRolesPanel({ isManager }: { isManager: boolean }) {
   const t = useTranslations("settings");
+  const confirm = useConfirm();
   const tc = useTranslations("common");
   const tp = useTranslations("permissions");
   const [customRoles, setCustomRoles] = useState<CustomRole[] | null>(null);
@@ -61,7 +63,7 @@ export function CustomRolesPanel({ isManager }: { isManager: boolean }) {
   }
 
   async function deleteCustomRole(id: string) {
-    if (!window.confirm(t("confirmDeleteCustomRole"))) return;
+    if (!(await confirm({ message: t("confirmDeleteCustomRole"), tone: "danger", verb: "delete" }))) return;
     await apiFetch(`/company/custom-roles/${id}`, { method: "DELETE" });
     load();
   }

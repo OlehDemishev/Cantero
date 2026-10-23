@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface InspectionTemplateItem {
   id: string;
@@ -17,6 +18,8 @@ interface InspectionTemplate {
 
 export function InspectionTemplatesPanel() {
   const t = useTranslations("quality");
+  const confirm = useConfirm();
+  const td = useTranslations("dialog");
   const tc = useTranslations("common");
 
   const [templates, setTemplates] = useState<InspectionTemplate[] | null>(null);
@@ -61,6 +64,7 @@ export function InspectionTemplatesPanel() {
   }
 
   async function remove(id: string) {
+    if (!(await confirm({ message: td("deleteInspectionTemplate"), tone: "danger", verb: "delete" }))) return;
     setBusy(true);
     try {
       await apiFetch(`/inspection-templates/${id}`, { method: "DELETE" });

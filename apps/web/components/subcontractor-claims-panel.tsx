@@ -7,6 +7,7 @@ import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import { formatCurrency } from "@/lib/format-currency";
 import { formatDate } from "@/lib/format-date";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface Subcontractor {
   id: string;
@@ -48,6 +49,7 @@ const NOTICE_STATUS_STYLES: Record<SubcontractorDefaultNoticeStatus, string> = {
 
 export function SubcontractorClaimsPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("subcontractorClaims");
+  const confirm = useConfirm();
   const tc = useTranslations("common");
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "USD";
@@ -129,7 +131,7 @@ export function SubcontractorClaimsPanel({ projectId }: { projectId: string }) {
   }
 
   async function resolveNotice(id: string, action: "cure" | "terminate") {
-    if (action === "terminate" && !window.confirm(t("confirmTerminate"))) return;
+    if (action === "terminate" && !(await confirm({ message: t("confirmTerminate"), tone: "danger", verb: "terminate" }))) return;
     await apiFetch(`/subcontractor-default-notices/${id}/${action}`, { method: "POST" });
     load();
   }

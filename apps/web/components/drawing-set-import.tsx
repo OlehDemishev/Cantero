@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import type { PDFDocumentProxy } from "pdfjs-dist";
 import { apiFetch, apiUpload } from "@/lib/api-client";
 import { loadPdf, renderPage } from "@/lib/pdf";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface SetPage {
   page: number;
@@ -59,6 +60,8 @@ const rowsFor = (set: DrawingSet): Row[] =>
  */
 export function DrawingSetImport({ projectId, onImported }: { projectId: string; onImported: () => void }) {
   const t = useTranslations("drawingSets");
+  const confirm = useConfirm();
+  const td = useTranslations("dialog");
   const fileRef = useRef<HTMLInputElement>(null);
   // A notification links straight to its set: ?drawingSet=<id>.
   const linkedSetId = useSearchParams().get("drawingSet");
@@ -177,6 +180,8 @@ export function DrawingSetImport({ projectId, onImported }: { projectId: string;
 
   async function discard() {
     if (!set) return;
+    // A set that failed to read has nothing to lose; a ready one has the reviewed sheet list.
+    if (set.status !== "failed" && !(await confirm({ message: td("discardDrawingSet"), tone: "danger", verb: "discard" }))) return;
     await apiFetch(`/drawing-sets/${set.id}`, { method: "DELETE" }).catch(() => undefined);
     current.current = null;
     setSet(null);

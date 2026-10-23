@@ -6,6 +6,7 @@ import { apiFetch } from "@/lib/api-client";
 import { SageApExportPanel } from "@/components/sage-ap-export-panel";
 import { useMe } from "@/lib/use-me";
 import { formatDate } from "@/lib/format-date";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface Supplier {
   id: string;
@@ -86,6 +87,7 @@ interface ApAgingReport {
 
 export function VendorBillsPanel() {
   const t = useTranslations("purchaseOrders");
+  const confirm = useConfirm();
   const tc = useTranslations("common");
   const { data: me } = useMe();
 
@@ -170,10 +172,16 @@ export function VendorBillsPanel() {
   }
 
   async function voidBill(billId: string) {
-    const reason = window.prompt(t("voidBillReasonPrompt"));
-    if (!reason) return;
-    await apiFetch(`/materials/vendor-bills/${billId}/void`, { method: "POST", body: JSON.stringify({ reason }) });
-    loadBills();
+    await confirm({
+      title: t("voidBill"),
+      tone: "danger",
+      verb: "void",
+      reason: { label: t("voidBillReasonPrompt"), required: true },
+      action: async (reason) => {
+        await apiFetch(`/materials/vendor-bills/${billId}/void`, { method: "POST", body: JSON.stringify({ reason }) });
+        loadBills();
+      },
+    });
   }
 
   return (

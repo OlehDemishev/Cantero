@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import type { AnnotationType } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
 import { resetStateInEffect } from "@/lib/effect-reset";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface Point {
   x: number;
@@ -121,6 +122,8 @@ function drawAnnotation(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement
 
 export function DrawingSheetViewer({ sheetId }: { sheetId: string }) {
   const t = useTranslations("drawings");
+  const confirm = useConfirm();
+  const td = useTranslations("dialog");
   const tc = useTranslations("common");
 
   const [sheet, setSheet] = useState<DrawingSheet | null>(null);
@@ -264,7 +267,7 @@ export function DrawingSheetViewer({ sheetId }: { sheetId: string }) {
     if (!tool) return;
     let text: string | undefined;
     if (tool === "text") {
-      text = window.prompt(t("enterCalloutText")) ?? undefined;
+      text = (await confirm({ title: td("addCallout"), verb: "add", reason: { label: t("enterCalloutText"), required: true } })) ?? undefined;
       if (!text) {
         setDraftPoints([]);
         return;
@@ -327,6 +330,7 @@ export function DrawingSheetViewer({ sheetId }: { sheetId: string }) {
   }
 
   async function deleteAnnotation(id: string) {
+    if (!(await confirm({ message: td("deleteAnnotation"), tone: "danger", verb: "delete" }))) return;
     await apiFetch(`/drawing-sheets/${sheetId}/annotations/${id}`, { method: "DELETE" });
     loadAnnotations();
   }

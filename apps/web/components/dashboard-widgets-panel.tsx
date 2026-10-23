@@ -6,6 +6,7 @@ import { DASHBOARD_WIDGET_TYPES, type DashboardWidgetType } from "@cantero/share
 import { apiFetch, downloadBlob, ApiError } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import { formatDate } from "@/lib/format-date";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface CustomReportOption {
   id: string;
@@ -21,6 +22,8 @@ interface Widget {
 
 export function DashboardWidgetsPanel() {
   const t = useTranslations("dashboard");
+  const confirm = useConfirm();
+  const td = useTranslations("dialog");
   const tc = useTranslations("common");
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
@@ -62,6 +65,7 @@ export function DashboardWidgetsPanel() {
   }
 
   async function removeWidget(id: string) {
+    if (!(await confirm({ message: td("removeWidget"), tone: "danger", verb: "remove" }))) return;
     setBusy(true);
     setError(null);
     try {

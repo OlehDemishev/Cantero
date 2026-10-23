@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface MaterialCatalogItem {
   id: string;
@@ -27,6 +28,8 @@ interface DraftComponent {
 
 export function StockKits() {
   const t = useTranslations("stockKits");
+  const confirm = useConfirm();
+  const td = useTranslations("dialog");
   const tc = useTranslations("common");
 
   const [kits, setKits] = useState<StockKit[] | null>(null);
@@ -84,6 +87,7 @@ export function StockKits() {
   }
 
   async function remove(id: string) {
+    if (!(await confirm({ message: td("deleteStockKit"), tone: "danger", verb: "delete" }))) return;
     setBusy(true);
     try {
       await apiFetch(`/materials/stock-kits/${id}`, { method: "DELETE" });

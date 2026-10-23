@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch, apiUpload, downloadBlob, ApiError } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface Subcontractor {
   id: string;
@@ -74,6 +75,8 @@ const STATUS_STYLES: Record<BidRequestStatus, string> = {
 
 export function BidRequestsPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("bidding");
+  const confirm = useConfirm();
+  const td = useTranslations("dialog");
   const tc = useTranslations("common");
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
@@ -221,7 +224,7 @@ export function BidRequestsPanel({ projectId }: { projectId: string }) {
   }
 
   async function cancel(bidRequestId: string) {
-    if (!window.confirm(t("confirmCancel"))) return;
+    if (!(await confirm({ message: t("confirmCancel"), tone: "danger", verb: "cancelItem", cancelLabel: td("keep") }))) return;
     setBusy(true);
     try {
       await apiFetch(`/bid-requests/${bidRequestId}/cancel`, { method: "POST" });
@@ -249,6 +252,7 @@ export function BidRequestsPanel({ projectId }: { projectId: string }) {
   }
 
   async function removeCriterion(bidRequestId: string, criterionId: string) {
+    if (!(await confirm({ message: td("removeCriterion"), tone: "danger", verb: "remove" }))) return;
     setBusy(true);
     try {
       await apiFetch(`/bid-requests/${bidRequestId}/criteria/${criterionId}`, { method: "DELETE" });

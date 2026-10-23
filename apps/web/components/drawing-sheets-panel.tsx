@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch, apiUpload } from "@/lib/api-client";
 import { DrawingSetImport } from "@/components/drawing-set-import";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface DrawingSheet {
   id: string;
@@ -16,6 +17,7 @@ interface DrawingSheet {
 
 export function DrawingSheetsPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("drawings");
+  const confirm = useConfirm();
   const tc = useTranslations("common");
 
   const [sheets, setSheets] = useState<DrawingSheet[] | null>(null);
@@ -57,7 +59,7 @@ export function DrawingSheetsPanel({ projectId }: { projectId: string }) {
   }
 
   async function remove(id: string) {
-    if (!window.confirm(t("confirmDeleteSheet"))) return;
+    if (!(await confirm({ message: t("confirmDeleteSheet"), tone: "danger", verb: "delete" }))) return;
     await apiFetch(`/drawing-sheets/${id}`, { method: "DELETE" });
     load();
   }

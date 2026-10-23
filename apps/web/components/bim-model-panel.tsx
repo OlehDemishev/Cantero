@@ -5,6 +5,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { AutodeskViewer } from "@/components/autodesk-viewer";
 import { resetStateInEffect } from "@/lib/effect-reset";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface BrowserEntry {
   kind: "folder" | "file";
@@ -32,6 +33,7 @@ export function BimModelPanel({
   initial: { autodeskProjectId: string | null; autodeskModelUrn: string | null; autodeskModelName: string | null };
 }) {
   const t = useTranslations("bim");
+  const confirm = useConfirm();
   const locale = useLocale();
 
   const [accProjectId, setAccProjectId] = useState(initial.autodeskProjectId);
@@ -53,7 +55,7 @@ export function BimModelPanel({
   }
 
   async function remove() {
-    if (!confirm(t("confirmRemove"))) return;
+    if (!(await confirm({ message: t("confirmRemove"), tone: "danger", verb: "remove" }))) return;
     setError(null);
     try {
       await apiFetch(`/projects/${projectId}/autodesk/model`, { method: "DELETE" });

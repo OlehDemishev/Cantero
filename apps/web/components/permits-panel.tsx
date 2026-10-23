@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import type { InspectionResult, PermitStatus } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
 import { formatDate } from "@/lib/format-date";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface Permit {
   id: string;
@@ -44,6 +45,7 @@ const RESULT_STYLES: Record<InspectionResult, string> = {
 
 export function PermitsPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("permits");
+  const confirm = useConfirm();
   const tc = useTranslations("common");
 
   const [permits, setPermits] = useState<Permit[] | null>(null);
@@ -105,7 +107,7 @@ export function PermitsPanel({ projectId }: { projectId: string }) {
   }
 
   async function deletePermit(id: string) {
-    if (!window.confirm(t("confirmDeletePermit"))) return;
+    if (!(await confirm({ message: t("confirmDeletePermit"), tone: "danger", verb: "delete" }))) return;
     await apiFetch(`/permits/${id}`, { method: "DELETE" });
     if (expandedId === id) setExpandedId(null);
     load();

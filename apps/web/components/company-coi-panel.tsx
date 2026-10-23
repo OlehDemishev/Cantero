@@ -6,6 +6,7 @@ import { COMPANY_DOCUMENT_TYPES, type CompanyDocumentType } from "@cantero/share
 import { apiFetch } from "@/lib/api-client";
 import { CertificateAttachment } from "@/components/certificate-attachment";
 import { formatDate } from "@/lib/format-date";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface CompanyDocument {
   id: string;
@@ -20,6 +21,7 @@ interface Company {
 
 export function CompanyCoiPanel({ canManage }: { canManage: boolean }) {
   const t = useTranslations("companyCoi");
+  const confirm = useConfirm();
   const tc = useTranslations("common");
 
   const [company, setCompany] = useState<Company | null>(null);
@@ -52,7 +54,7 @@ export function CompanyCoiPanel({ canManage }: { canManage: boolean }) {
   }
 
   async function removeDocument(id: string) {
-    if (!window.confirm(t("confirmDeleteDocument"))) return;
+    if (!(await confirm({ message: t("confirmDeleteDocument"), tone: "danger", verb: "delete" }))) return;
     await apiFetch(`/company/coi-documents/${id}`, { method: "DELETE" });
     load();
   }

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { SUPPORTED_LOCALES } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface WageClassification {
   id: string;
@@ -26,6 +27,8 @@ interface WorkerProfile {
  * `onChanged` lets the parent refresh the header stats (name/role/active) after a save. */
 export function WorkerProfilePanel({ workerId, currency, onChanged }: { workerId: string; currency: string; onChanged: () => void }) {
   const t = useTranslations("team");
+  const confirm = useConfirm();
+  const td = useTranslations("dialog");
   const tc = useTranslations("common");
 
   const [worker, setWorker] = useState<WorkerProfile | null>(null);
@@ -122,6 +125,7 @@ export function WorkerProfilePanel({ workerId, currency, onChanged }: { workerId
   }
 
   async function clearClockInPin() {
+    if (!(await confirm({ message: td("clearClockInPin"), tone: "danger", verb: "remove" }))) return;
     setPinBusy(true);
     try {
       await apiFetch(`/workers/${workerId}/clock-in-pin`, { method: "DELETE" });

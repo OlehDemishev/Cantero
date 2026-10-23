@@ -16,6 +16,7 @@ import { fetchClientLink } from "@/lib/client-link";
 import { useCan } from "@/lib/permissions";
 import { useMe } from "@/lib/use-me";
 import { formatDateTime } from "@/lib/format-date";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface RateCatalogItem {
   id: string;
@@ -96,6 +97,7 @@ interface Estimate {
 }
 export function EstimateDetail({ estimateId }: { estimateId: string }) {
   const t = useTranslations("estimates");
+  const confirm = useConfirm();
   const tc = useTranslations("common");
   const router = useRouter();
   const { data: me } = useMe();
@@ -257,15 +259,16 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
   }
 
   async function declineOnBehalfOfClient() {
-    const note = window.prompt(t("declineOnBehalfNotePrompt"));
-    if (!note || !note.trim()) return;
-    setBusy(true);
-    try {
-      await apiFetch(`/estimates/${estimateId}/decline`, { method: "POST", body: JSON.stringify({ note: note.trim() }) });
-      load();
-    } finally {
-      setBusy(false);
-    }
+    await confirm({
+      title: t("declineOnBehalfOfClient"),
+      tone: "danger",
+      verb: "decline",
+      reason: { label: t("declineOnBehalfNotePrompt"), required: true },
+      action: async (note) => {
+        await apiFetch(`/estimates/${estimateId}/decline`, { method: "POST", body: JSON.stringify({ note }) });
+        load();
+      },
+    });
   }
 
   async function createRevisedVariant() {

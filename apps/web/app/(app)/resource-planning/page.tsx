@@ -7,6 +7,7 @@ import { CrewsPanel } from "@/components/crews-panel";
 import { apiFetch } from "@/lib/api-client";
 import { formatDate, formatDateWithOptions } from "@/lib/format-date";
 import { resetStateInEffect } from "@/lib/effect-reset";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 type ResourceType = "worker" | "equipment";
 
@@ -94,6 +95,7 @@ function isoDaysFromNow(days: number) {
 
 export default function ResourcePlanningPage() {
   const t = useTranslations("resourcePlanning");
+  const confirm = useConfirm();
   const tc = useTranslations("common");
 
   const [calendar, setCalendar] = useState<Calendar | null>(null);
@@ -170,7 +172,7 @@ export default function ResourcePlanningPage() {
   }
 
   async function removeAssignment(id: string) {
-    if (!window.confirm(t("confirmRemoveAssignment"))) return;
+    if (!(await confirm({ message: t("confirmRemoveAssignment"), tone: "danger", verb: "remove" }))) return;
     await apiFetch(`/resource-planning/assignments/${id}`, { method: "DELETE" });
     load();
   }

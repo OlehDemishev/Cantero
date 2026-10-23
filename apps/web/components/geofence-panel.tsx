@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface Project {
   geofenceLat: number | null;
@@ -12,6 +13,8 @@ interface Project {
 
 export function GeofencePanel({ projectId }: { projectId: string }) {
   const t = useTranslations("geofence");
+  const confirm = useConfirm();
+  const td = useTranslations("dialog");
   const tc = useTranslations("common");
 
   const [project, setProject] = useState<Project | null>(null);
@@ -65,6 +68,7 @@ export function GeofencePanel({ projectId }: { projectId: string }) {
   }
 
   async function clearGeofence() {
+    if (!(await confirm({ message: td("clearGeofence"), tone: "danger", verb: "remove" }))) return;
     setBusy(true);
     try {
       await apiFetch(`/projects/${projectId}/geofence`, { method: "DELETE" });

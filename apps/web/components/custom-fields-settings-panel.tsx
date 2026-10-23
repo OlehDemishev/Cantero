@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { CUSTOM_FIELD_ENTITY_TYPES, CUSTOM_FIELD_TYPES, type CustomFieldEntityType, type CustomFieldType } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface FieldDefinition {
   id: string;
@@ -15,6 +16,7 @@ interface FieldDefinition {
 
 export function CustomFieldsSettingsPanel({ canManage }: { canManage: boolean }) {
   const t = useTranslations("customFields");
+  const confirm = useConfirm();
   const tc = useTranslations("common");
 
   const [fields, setFields] = useState<FieldDefinition[] | null>(null);
@@ -58,7 +60,7 @@ export function CustomFieldsSettingsPanel({ canManage }: { canManage: boolean })
   }
 
   async function remove(id: string) {
-    if (!window.confirm(t("confirmDelete"))) return;
+    if (!(await confirm({ message: t("confirmDelete"), tone: "danger", verb: "delete" }))) return;
     await apiFetch(`/custom-fields/definitions/${id}`, { method: "DELETE" });
     load();
   }

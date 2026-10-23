@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { FRINGE_FUND_TYPES, type FringeFundType } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface FringeBenefitFund {
   id: string;
@@ -24,6 +25,7 @@ export interface WageClassification {
 
 export function WageClassificationsPanel() {
   const t = useTranslations("wageClassifications");
+  const confirm = useConfirm();
   const tc = useTranslations("common");
 
   const [classifications, setClassifications] = useState<WageClassification[] | null>(null);
@@ -63,7 +65,7 @@ export function WageClassificationsPanel() {
   }
 
   async function remove(id: string) {
-    if (!window.confirm(t("confirmDeleteClassification"))) return;
+    if (!(await confirm({ message: t("confirmDeleteClassification"), tone: "danger", verb: "delete" }))) return;
     await apiFetch(`/wage-classifications/${id}`, { method: "DELETE" });
     load();
   }
@@ -79,7 +81,7 @@ export function WageClassificationsPanel() {
   }
 
   async function removeFund(id: string) {
-    if (!window.confirm(t("confirmDeleteFund"))) return;
+    if (!(await confirm({ message: t("confirmDeleteFund"), tone: "danger", verb: "delete" }))) return;
     await apiFetch(`/wage-classifications/fringe-funds/${id}`, { method: "DELETE" });
     load();
   }

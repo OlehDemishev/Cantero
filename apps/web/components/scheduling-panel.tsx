@@ -7,6 +7,7 @@ import { TASK_DEPENDENCY_TYPES, type TaskDependencyType } from "@cantero/shared"
 import { apiFetch } from "@/lib/api-client";
 import { CommentsThread } from "@/components/comments-thread";
 import { formatDate, formatDateWithOptions } from "@/lib/format-date";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 type TaskStatus = "planned" | "in_progress" | "done";
 const STATUSES: TaskStatus[] = ["planned", "in_progress", "done"];
@@ -39,6 +40,8 @@ interface CpmResult {
 
 export function SchedulingPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("scheduling");
+  const confirm = useConfirm();
+  const td = useTranslations("dialog");
   const tc = useTranslations("common");
 
   const [tasks, setTasks] = useState<Task[] | null>(null);
@@ -147,6 +150,7 @@ export function SchedulingPanel({ projectId }: { projectId: string }) {
   }
 
   async function removeDependency(dependencyId: string) {
+    if (!(await confirm({ message: td("removeDependency"), tone: "danger", verb: "remove" }))) return;
     await apiFetch(`/tasks/dependencies/${dependencyId}`, { method: "DELETE" });
     load();
   }

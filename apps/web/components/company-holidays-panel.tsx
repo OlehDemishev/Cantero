@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch, ApiError } from "@/lib/api-client";
 import { formatDate } from "@/lib/format-date";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface CompanyHoliday {
   id: string;
@@ -13,6 +14,8 @@ interface CompanyHoliday {
 
 export function CompanyHolidaysPanel({ canManage }: { canManage: boolean }) {
   const t = useTranslations("settings");
+  const confirm = useConfirm();
+  const td = useTranslations("dialog");
   const tc = useTranslations("common");
   const [holidays, setHolidays] = useState<CompanyHoliday[] | null>(null);
   const [form, setForm] = useState({ date: "", label: "" });
@@ -44,6 +47,7 @@ export function CompanyHolidaysPanel({ canManage }: { canManage: boolean }) {
   }
 
   async function remove(id: string) {
+    if (!(await confirm({ message: td("deleteHoliday"), tone: "danger", verb: "delete" }))) return;
     setBusy(true);
     try {
       await apiFetch(`/company/holidays/${id}`, { method: "DELETE" });

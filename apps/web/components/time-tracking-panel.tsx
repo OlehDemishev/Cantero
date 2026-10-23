@@ -6,6 +6,7 @@ import { apiFetch } from "@/lib/api-client";
 import { formatDate } from "@/lib/format-date";
 import { useCrewChoices } from "@/lib/permissions";
 import { resetStateInEffect } from "@/lib/effect-reset";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface Worker {
   id: string;
@@ -27,6 +28,7 @@ interface TimeEntry {
 
 export function TimeTrackingPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("team");
+  const confirm = useConfirm();
   const tc = useTranslations("common");
 
   const TIME_ENTRIES_PAGE_SIZE = 100;
@@ -102,7 +104,7 @@ export function TimeTrackingPanel({ projectId }: { projectId: string }) {
   }
 
   async function deleteEntry(id: string) {
-    if (!window.confirm(t("confirmDeleteEntry"))) return;
+    if (!(await confirm({ message: t("confirmDeleteEntry"), tone: "danger", verb: "delete" }))) return;
     setBusy(true);
     try {
       await apiFetch(`/time-entries/${id}`, { method: "DELETE" });

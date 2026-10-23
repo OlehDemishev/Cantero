@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { resetStateInEffect } from "@/lib/effect-reset";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface Worker {
   id: string;
@@ -36,6 +37,7 @@ const EMPTY_ASSIGN_FORM = { crewId: "", projectId: "", taskId: "", startDate: ""
 
 export function CrewsPanel({ workers, projects }: { workers: Worker[]; projects: Project[] }) {
   const t = useTranslations("resourcePlanning");
+  const confirm = useConfirm();
   const tc = useTranslations("common");
 
   const [crews, setCrews] = useState<Crew[] | null>(null);
@@ -98,7 +100,7 @@ export function CrewsPanel({ workers, projects }: { workers: Worker[]; projects:
   }
 
   async function deleteCrew(id: string) {
-    if (!window.confirm(t("confirmDeleteCrew"))) return;
+    if (!(await confirm({ message: t("confirmDeleteCrew"), tone: "danger", verb: "delete" }))) return;
     await apiFetch(`/resource-planning/crews/${id}`, { method: "DELETE" });
     load();
   }

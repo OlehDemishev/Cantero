@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch, downloadBlob } from "@/lib/api-client";
 import { formatDate } from "@/lib/format-date";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface Company {
   deletionRequestedAt: string | null;
@@ -12,6 +13,7 @@ interface Company {
 /** Exporting the data needs settings.export; asking to delete the company stays with owner and admin. */
 export function DataPrivacyPanel({ canExport, canDelete }: { canExport: boolean; canDelete: boolean }) {
   const t = useTranslations("dataPrivacy");
+  const confirm = useConfirm();
 
   const [company, setCompany] = useState<Company | null>(null);
   const [exporting, setExporting] = useState(false);
@@ -45,7 +47,7 @@ export function DataPrivacyPanel({ canExport, canDelete }: { canExport: boolean;
   }
 
   async function requestDeletion() {
-    if (!window.confirm(t("confirmRequest"))) return;
+    if (!(await confirm({ message: t("confirmRequest"), tone: "danger", verb: "request" }))) return;
     setBusy(true);
     try {
       await apiFetch("/company/deletion-request", { method: "POST" });

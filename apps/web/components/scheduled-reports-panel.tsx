@@ -12,6 +12,7 @@ import {
 import { apiFetch } from "@/lib/api-client";
 import { formatDate } from "@/lib/format-date";
 import { useReportAccess } from "@/lib/report-access";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface ScheduledReport {
   id: string;
@@ -26,6 +27,8 @@ interface ScheduledReport {
 
 export function ScheduledReportsPanel() {
   const t = useTranslations("reports");
+  const confirm = useConfirm();
+  const td = useTranslations("dialog");
   const tc = useTranslations("common");
   const [scheduledReports, setScheduledReports] = useState<ScheduledReport[] | null>(null);
   const [scheduleForm, setScheduleForm] = useState({
@@ -73,6 +76,7 @@ export function ScheduledReportsPanel() {
   }
 
   async function deleteScheduledReport(id: string) {
+    if (!(await confirm({ message: td("deleteScheduledReport"), tone: "danger", verb: "delete" }))) return;
     await apiFetch(`/scheduled-reports/${id}`, { method: "DELETE" });
     load();
   }

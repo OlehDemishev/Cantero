@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import type { ChecklistTemplateType } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
 import { formatDate } from "@/lib/format-date";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 const TYPES: ChecklistTemplateType[] = ["punch_list", "rfi", "safety_briefing", "jha"];
 
@@ -38,6 +39,7 @@ const EMPTY_ITEM: ItemDraft = { title: "", description: "", location: "" };
 
 export default function TemplatesPage() {
   const t = useTranslations("checklistTemplates");
+  const confirm = useConfirm();
   const tc = useTranslations("common");
 
   const [templates, setTemplates] = useState<Template[] | null>(null);
@@ -143,7 +145,7 @@ export default function TemplatesPage() {
   }
 
   async function remove(id: string) {
-    if (!window.confirm(t("confirmDeleteTemplate"))) return;
+    if (!(await confirm({ message: t("confirmDeleteTemplate"), tone: "danger", verb: "delete" }))) return;
     await apiFetch(`/checklist-templates/${id}`, { method: "DELETE" });
     load();
   }

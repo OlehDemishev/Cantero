@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch, ApiError } from "@/lib/api-client";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface TemplateEntry {
   key: string;
@@ -14,6 +15,8 @@ interface TemplateEntry {
 
 export function MessageTemplatesPanel() {
   const t = useTranslations("messageTemplates");
+  const confirm = useConfirm();
+  const td = useTranslations("dialog");
   const [templates, setTemplates] = useState<TemplateEntry[] | null>(null);
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [busyKey, setBusyKey] = useState<string | null>(null);
@@ -42,6 +45,7 @@ export function MessageTemplatesPanel() {
   }
 
   async function reset(key: string) {
+    if (!(await confirm({ message: td("resetMessageTemplate"), tone: "danger", verb: "reset" }))) return;
     setBusyKey(key);
     setErrorKey(null);
     try {

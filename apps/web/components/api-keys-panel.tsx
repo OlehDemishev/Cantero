@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { API_KEY_SCOPES, type ApiKeyScope } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
 import { formatDate } from "@/lib/format-date";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface ApiKey {
   id: string;
@@ -19,6 +20,7 @@ interface ApiKey {
 
 export function ApiKeysPanel() {
   const t = useTranslations("settings");
+  const confirm = useConfirm();
   const tc = useTranslations("common");
   // Dataset scopes read as their /v1 path; SCIM is a different kind of access, so it gets a name.
   const scopeLabel = (scope: string) => (scope === "scim" ? t("apiKeyScopeScim") : scope);
@@ -66,7 +68,7 @@ export function ApiKeysPanel() {
   }
 
   async function revokeApiKey(id: string) {
-    if (!window.confirm(t("confirmRevokeApiKey"))) return;
+    if (!(await confirm({ message: t("confirmRevokeApiKey"), tone: "danger", verb: "revoke" }))) return;
     await apiFetch(`/company/api-keys/${id}`, { method: "DELETE" });
     load();
   }

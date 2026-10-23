@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { HelpTooltip } from "@/components/help-tooltip";
 import { useCan } from "@/lib/permissions";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface ProjectMember {
   id: string;
@@ -21,6 +22,7 @@ interface Project {
 
 export function ProjectMembersPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("projectMembers");
+  const confirm = useConfirm();
   const tc = useTranslations("common");
   const canManage = useCan()("projects.manage");
 
@@ -68,7 +70,7 @@ export function ProjectMembersPanel({ projectId }: { projectId: string }) {
   }
 
   async function removeMember(userId: string) {
-    if (!window.confirm(t("confirmRemove"))) return;
+    if (!(await confirm({ message: t("confirmRemove"), tone: "danger", verb: "remove" }))) return;
     setBusy(true);
     try {
       await apiFetch(`/projects/${projectId}/members/${userId}`, { method: "DELETE" });

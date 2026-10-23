@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface SavedViewRecord<T> {
   id: string;
@@ -20,6 +21,8 @@ export function SavedViewsBar<T extends object>({
   onApply: (filters: T) => void;
 }) {
   const t = useTranslations("savedViews");
+  const confirm = useConfirm();
+  const td = useTranslations("dialog");
 
   const [views, setViews] = useState<SavedViewRecord<T>[] | null>(null);
   const [name, setName] = useState("");
@@ -47,6 +50,7 @@ export function SavedViewsBar<T extends object>({
   }
 
   async function remove(id: string) {
+    if (!(await confirm({ message: td("deleteSavedView"), tone: "danger", verb: "delete" }))) return;
     await apiFetch(`/saved-views/${id}`, { method: "DELETE" });
     load();
   }

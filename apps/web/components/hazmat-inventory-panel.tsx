@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { apiFetch } from "@/lib/api-client";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface HazardousMaterial {
   id: string;
@@ -18,6 +19,8 @@ interface InventoryItem {
 
 export function HazmatInventoryPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("hazmat");
+  const confirm = useConfirm();
+  const td = useTranslations("dialog");
   const tc = useTranslations("common");
 
   const [items, setItems] = useState<InventoryItem[] | null>(null);
@@ -53,6 +56,7 @@ export function HazmatInventoryPanel({ projectId }: { projectId: string }) {
   }
 
   async function removeItem(id: string) {
+    if (!(await confirm({ message: td("deleteHazmatItem"), tone: "danger", verb: "delete" }))) return;
     setBusy(true);
     try {
       await apiFetch(`/hazmat-inventory/${id}`, { method: "DELETE" });

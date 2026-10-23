@@ -8,6 +8,7 @@ import { AGGREGATE_REPORT_DATASETS, REPORT_DATASETS, type ReportDataset } from "
 import { apiFetch, downloadBlob } from "@/lib/api-client";
 import { formatDate } from "@/lib/format-date";
 import { resetStateInEffect } from "@/lib/effect-reset";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface ReportField {
   key: string;
@@ -46,6 +47,7 @@ function formatCell(value: unknown): string {
 
 export function CustomReportsPanel() {
   const t = useTranslations("customReports");
+  const confirm = useConfirm();
   const tc = useTranslations("common");
 
   const [saved, setSaved] = useState<SavedReport[] | null>(null);
@@ -135,7 +137,7 @@ export function CustomReportsPanel() {
   }
 
   async function deleteSaved(id: string) {
-    if (!window.confirm(t("confirmDeleteSavedReport"))) return;
+    if (!(await confirm({ message: t("confirmDeleteSavedReport"), tone: "danger", verb: "delete" }))) return;
     await apiFetch(`/custom-reports/${id}`, { method: "DELETE" });
     if (savedResult?.id === id) setSavedResult(null);
     load();

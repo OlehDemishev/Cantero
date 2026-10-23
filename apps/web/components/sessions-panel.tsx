@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { formatDateTime } from "@/lib/format-date";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface Session {
   id: string;
@@ -15,6 +16,8 @@ interface Session {
 
 export function SessionsPanel() {
   const t = useTranslations("sessions");
+  const confirm = useConfirm();
+  const td = useTranslations("dialog");
   const tc = useTranslations("common");
   const [sessions, setSessions] = useState<Session[] | null>(null);
   const [busy, setBusy] = useState(false);
@@ -26,6 +29,7 @@ export function SessionsPanel() {
   useEffect(load, []);
 
   async function revoke(id: string) {
+    if (!(await confirm({ message: td("revokeSession"), tone: "danger", verb: "revoke" }))) return;
     setBusy(true);
     try {
       await apiFetch(`/auth/sessions/${id}`, { method: "DELETE" });

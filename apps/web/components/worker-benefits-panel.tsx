@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { EmptyState } from "@/components/ui/empty-state";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface BenefitEnrollment {
   id: string;
@@ -15,6 +16,7 @@ interface BenefitEnrollment {
 
 export function WorkerBenefitsPanel({ workerId }: { workerId: string }) {
   const t = useTranslations("team");
+  const confirm = useConfirm();
   const tb = useTranslations("benefits");
   const [benefitEnrollments, setBenefitEnrollments] = useState<BenefitEnrollment[] | null>(null);
   const [benefitsBusy, setBenefitsBusy] = useState(false);
@@ -26,7 +28,7 @@ export function WorkerBenefitsPanel({ workerId }: { workerId: string }) {
   useEffect(load, [workerId]);
 
   async function updateEnrollmentStatus(enrollmentId: string, status: "waived" | "terminated") {
-    if (status === "terminated" && !window.confirm(t("confirmTerminateEnrollment"))) return;
+    if (status === "terminated" && !(await confirm({ message: t("confirmTerminateEnrollment"), tone: "danger", verb: "terminate" }))) return;
     setBenefitsBusy(true);
     try {
       await apiFetch(`/benefits/enrollments/${enrollmentId}/status`, { method: "POST", body: JSON.stringify({ status }) });

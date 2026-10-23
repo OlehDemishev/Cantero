@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { DOCUMENT_CATEGORIES, type DocumentCategory } from "@cantero/shared";
 import { apiFetch, apiUpload, downloadBlob } from "@/lib/api-client";
 import { SignatureRequestsPanel } from "@/components/signature-requests-panel";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface Project {
   id: string;
@@ -32,6 +33,7 @@ function formatSize(bytes: number) {
 
 export default function DocumentsPage() {
   const t = useTranslations("documents");
+  const confirm = useConfirm();
   const tc = useTranslations("common");
 
   const [documents, setDocuments] = useState<Document[] | null>(null);
@@ -76,7 +78,7 @@ export default function DocumentsPage() {
   }
 
   async function remove(doc: Document) {
-    if (!window.confirm(t("confirmDelete"))) return;
+    if (!(await confirm({ message: t("confirmDelete"), tone: "danger", verb: "delete" }))) return;
     setBusy(true);
     try {
       await apiFetch(`/documents/${doc.id}`, { method: "DELETE" });

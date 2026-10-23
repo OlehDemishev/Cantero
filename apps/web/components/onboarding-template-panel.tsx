@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface OnboardingTemplateItem {
   id: string;
@@ -12,6 +13,8 @@ interface OnboardingTemplateItem {
 
 export function OnboardingTemplatePanel() {
   const t = useTranslations("team");
+  const confirm = useConfirm();
+  const td = useTranslations("dialog");
   const tc = useTranslations("common");
 
   const [items, setItems] = useState<OnboardingTemplateItem[] | null>(null);
@@ -38,6 +41,7 @@ export function OnboardingTemplatePanel() {
   }
 
   async function remove(id: string) {
+    if (!(await confirm({ message: td("removeTemplateItem"), tone: "danger", verb: "remove" }))) return;
     setBusy(true);
     try {
       await apiFetch(`/company/onboarding-template/${id}`, { method: "DELETE" });

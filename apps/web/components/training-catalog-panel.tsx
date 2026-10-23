@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { formatDate } from "@/lib/format-date";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface TrainingCourse {
   id: string;
@@ -32,6 +33,8 @@ interface ComplianceGap {
 
 export function TrainingCatalogPanel() {
   const t = useTranslations("training");
+  const confirm = useConfirm();
+  const td = useTranslations("dialog");
   const tc = useTranslations("common");
 
   const [courses, setCourses] = useState<TrainingCourse[] | null>(null);
@@ -74,6 +77,7 @@ export function TrainingCatalogPanel() {
   }
 
   async function deleteCourse(id: string) {
+    if (!(await confirm({ message: td("deleteCourse"), tone: "danger", verb: "delete" }))) return;
     setBusy(true);
     try {
       await apiFetch(`/training/courses/${id}`, { method: "DELETE" });

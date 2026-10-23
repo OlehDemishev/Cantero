@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { useAssignableRoles } from "@/lib/permissions";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface Invite {
   id: string;
@@ -14,6 +15,7 @@ interface Invite {
 
 export function TeamInvitesPanel() {
   const t = useTranslations("settings");
+  const confirm = useConfirm();
   const [invites, setInvites] = useState<Invite[] | null>(null);
   const { roles: assignableRoles } = useAssignableRoles();
   const [inviteForm, setInviteForm] = useState({ email: "", role: "worker" });
@@ -42,7 +44,7 @@ export function TeamInvitesPanel() {
   }
 
   async function revokeInvite(id: string) {
-    if (!window.confirm(t("confirmRevokeInvite"))) return;
+    if (!(await confirm({ message: t("confirmRevokeInvite"), tone: "danger", verb: "revoke" }))) return;
     await apiFetch(`/company/invites/${id}`, { method: "DELETE" });
     load();
   }

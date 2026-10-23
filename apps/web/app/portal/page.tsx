@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { ApiError } from "@/lib/api-client";
 import { getPortalToken, portalApiFetch, signOutPortal, clearPortalToken } from "@/lib/portal-api-client";
 import { formatDate } from "@/lib/format-date";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface Me {
   name: string;
@@ -81,6 +82,7 @@ interface ChangeRequestSummary {
 
 export default function PortalDashboardPage() {
   const t = useTranslations("portal");
+  const confirm = useConfirm();
   const te = useTranslations("estimates");
   const ti = useTranslations("invoices");
   const router = useRouter();
@@ -126,7 +128,7 @@ export default function PortalDashboardPage() {
   }
 
   async function removeCard() {
-    if (!window.confirm(t("confirmRemovePaymentMethod"))) return;
+    if (!(await confirm({ message: t("confirmRemovePaymentMethod"), tone: "danger", verb: "remove" }))) return;
     setPaymentMethodBusy(true);
     try {
       await portalApiFetch("/portal/payment-method", { method: "DELETE" });

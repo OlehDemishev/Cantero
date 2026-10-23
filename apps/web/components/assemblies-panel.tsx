@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface RateCatalogItem {
   id: string;
@@ -28,6 +29,8 @@ interface DraftLine {
 
 export function AssembliesPanel() {
   const t = useTranslations("assemblies");
+  const confirm = useConfirm();
+  const td = useTranslations("dialog");
   const tc = useTranslations("common");
 
   const [assemblies, setAssemblies] = useState<Assembly[] | null>(null);
@@ -80,7 +83,7 @@ export function AssembliesPanel() {
   }
 
   async function remove(id: string) {
-    if (!window.confirm(tc("confirmDelete") ?? "")) return;
+    if (!(await confirm({ message: td("deleteAssembly"), tone: "danger", verb: "delete" }))) return;
     setBusy(true);
     try {
       await apiFetch(`/assemblies/${id}`, { method: "DELETE" });

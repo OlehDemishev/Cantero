@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface UnitOfMeasure {
   id: string;
@@ -16,6 +17,8 @@ const EMPTY_FORM = { code: "", name: "", baseUnitId: "", factorToBase: "" };
 
 export default function UnitsOfMeasurePage() {
   const t = useTranslations("unitsOfMeasure");
+  const confirm = useConfirm();
+  const td = useTranslations("dialog");
   const tc = useTranslations("common");
 
   const [units, setUnits] = useState<UnitOfMeasure[] | null>(null);
@@ -56,6 +59,7 @@ export default function UnitsOfMeasurePage() {
   }
 
   async function handleDelete(id: string) {
+    if (!(await confirm({ message: td("deleteUnit"), tone: "danger", verb: "delete" }))) return;
     setError(null);
     try {
       await apiFetch(`/materials/units-of-measure/${id}`, { method: "DELETE" });

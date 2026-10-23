@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { formatDate } from "@/lib/format-date";
 import { resetStateInEffect } from "@/lib/effect-reset";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface Status {
   connected: boolean;
@@ -14,6 +15,7 @@ interface Status {
 
 export function IntacctSettingsPanel({ canManage }: { canManage: boolean }) {
   const t = useTranslations("intacct");
+  const confirm = useConfirm();
   const [status, setStatus] = useState<Status | null>(null);
   const [itemId, setItemId] = useState("");
   const [busy, setBusy] = useState(false);
@@ -56,7 +58,7 @@ export function IntacctSettingsPanel({ canManage }: { canManage: boolean }) {
   }
 
   async function disconnect() {
-    if (!window.confirm(t("confirmDisconnect"))) return;
+    if (!(await confirm({ message: t("confirmDisconnect"), tone: "danger", verb: "disconnect" }))) return;
     setBusy(true);
     try {
       await apiFetch("/company/intacct/connection", { method: "DELETE" });

@@ -8,6 +8,7 @@ import { useCan } from "@/lib/permissions";
 import { useMe } from "@/lib/use-me";
 import { formatDateTime } from "@/lib/format-date";
 import { ChangeOrderProfitabilityPanel } from "@/components/change-order-profitability-panel";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface RateCatalogItem {
   id: string;
@@ -55,6 +56,7 @@ export function EstimateChangeOrdersPanel({
   currency: string;
 }) {
   const t = useTranslations("estimates");
+  const confirm = useConfirm();
   const tc = useTranslations("common");
   const { data: me } = useMe();
 
@@ -173,15 +175,16 @@ export function EstimateChangeOrdersPanel({
   }
 
   async function declineChangeOrderOnBehalfOfClient(co: ChangeOrder) {
-    const note = window.prompt(t("declineOnBehalfNotePrompt"));
-    if (!note || !note.trim()) return;
-    setBusy(true);
-    try {
-      await apiFetch(`/estimates/${estimateId}/change-orders/${co.id}/decline`, { method: "POST", body: JSON.stringify({ note: note.trim() }) });
-      loadChangeOrders();
-    } finally {
-      setBusy(false);
-    }
+    await confirm({
+      title: t("declineOnBehalfOfClient"),
+      tone: "danger",
+      verb: "decline",
+      reason: { label: t("declineOnBehalfNotePrompt"), required: true },
+      action: async (note) => {
+        await apiFetch(`/estimates/${estimateId}/change-orders/${co.id}/decline`, { method: "POST", body: JSON.stringify({ note }) });
+        loadChangeOrders();
+      },
+    });
   }
 
   return (

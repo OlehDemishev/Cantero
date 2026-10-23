@@ -8,6 +8,7 @@ import { CsvImportButton } from "@/components/csv-import-button";
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import { formatDate } from "@/lib/format-date";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface BankTransaction {
   id: string;
@@ -49,6 +50,8 @@ type MatchTarget = "invoice" | "expense";
 
 export default function BankReconciliationPage() {
   const t = useTranslations("bankReconciliation");
+  const confirm = useConfirm();
+  const td = useTranslations("dialog");
   const tc = useTranslations("common");
   const ti = useTranslations("import");
   const te = useTranslations("expenses");
@@ -100,6 +103,7 @@ export default function BankReconciliationPage() {
   }
 
   async function deleteRule(id: string) {
+    if (!(await confirm({ message: td("deleteBankRule"), tone: "danger", verb: "delete" }))) return;
     setBusy(true);
     try {
       await apiFetch(`/bank-transactions/rules/${id}`, { method: "DELETE" });

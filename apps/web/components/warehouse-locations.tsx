@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface WarehouseLocation {
   id: string;
@@ -50,6 +51,8 @@ function LocationNode({
 
 export function WarehouseLocations({ warehouseId }: { warehouseId: string }) {
   const t = useTranslations("warehouses");
+  const confirm = useConfirm();
+  const td = useTranslations("dialog");
   const [locations, setLocations] = useState<WarehouseLocation[] | null>(null);
   const [form, setForm] = useState({ parentId: "", kind: "zone" as (typeof KINDS)[number], code: "" });
   const [error, setError] = useState<string | null>(null);
@@ -80,6 +83,7 @@ export function WarehouseLocations({ warehouseId }: { warehouseId: string }) {
   }
 
   async function handleDelete(id: string) {
+    if (!(await confirm({ message: td("deleteLocation"), tone: "danger", verb: "delete" }))) return;
     setError(null);
     try {
       await apiFetch(`/materials/warehouse-locations/${id}`, { method: "DELETE" });

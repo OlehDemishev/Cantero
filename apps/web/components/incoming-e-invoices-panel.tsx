@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { apiFetch, apiUpload, downloadBlob } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import { formatDate } from "@/lib/format-date";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface Supplier {
   id: string;
@@ -54,6 +55,7 @@ const STATUS_STYLES: Record<IncomingEInvoice["status"], string> = {
 
 export function IncomingEInvoicesPanel() {
   const t = useTranslations("incomingEInvoices");
+  const confirm = useConfirm();
   const tc = useTranslations("common");
   const { data: me } = useMe();
 
@@ -112,7 +114,7 @@ export function IncomingEInvoicesPanel() {
   }
 
   async function reject(id: string) {
-    const reason = window.prompt(t("rejectReasonPrompt"));
+    const reason = await confirm({ title: t("reject"), tone: "danger", verb: "reject", reason: { label: t("rejectReasonPrompt"), required: true } });
     if (!reason) return;
     setBusyId(id);
     try {

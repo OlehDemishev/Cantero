@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { MARKUP_COST_TYPES, type MarkupCostType } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface MarkupRule {
   id: string;
@@ -13,6 +14,8 @@ interface MarkupRule {
 
 export function MarkupRulesPanel() {
   const t = useTranslations("markupRules");
+  const confirm = useConfirm();
+  const td = useTranslations("dialog");
   const tc = useTranslations("common");
 
   const [rules, setRules] = useState<MarkupRule[] | null>(null);
@@ -41,6 +44,7 @@ export function MarkupRulesPanel() {
   }
 
   async function remove(id: string) {
+    if (!(await confirm({ message: td("deleteMarkupRule"), tone: "danger", verb: "delete" }))) return;
     await apiFetch(`/markup-rules/${id}`, { method: "DELETE" });
     load();
   }

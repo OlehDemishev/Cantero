@@ -7,6 +7,7 @@ import type { PDFPageProxy } from "pdfjs-dist";
 import { TAKEOFF_RATIO_UNITS, type TakeoffRatioUnit } from "@cantero/shared";
 import { apiFetch, apiUpload } from "@/lib/api-client";
 import { loadPdf, pageVertices, renderPage, VertexIndex } from "@/lib/pdf";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface TakeoffPoint {
   x: number;
@@ -60,6 +61,8 @@ const ZOOM_STEP = 1.25;
  * printed on the drawing; counts don't. */
 export function TakeoffPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("takeoff");
+  const confirm = useConfirm();
+  const td = useTranslations("dialog");
   const tc = useTranslations("common");
   const searchParams = useSearchParams();
 
@@ -201,6 +204,7 @@ export function TakeoffPanel({ projectId }: { projectId: string }) {
   }
 
   async function deleteMeasurement(id: string) {
+    if (!(await confirm({ message: td("deleteMeasurement"), tone: "danger", verb: "delete" }))) return;
     if (!detail) return;
     await apiFetch(`/takeoffs/${detail.id}/measurements/${id}`, { method: "DELETE" });
     loadDetail(detail.id, true);

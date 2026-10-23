@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { useCan } from "@/lib/permissions";
 import { useMe } from "@/lib/use-me";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface Matrix {
   permissions: { key: string; section: string; sensitive: boolean }[];
@@ -22,6 +23,7 @@ const cellKey = (role: string, permission: string) => `${role}:${permission}`;
  */
 export function RolePermissionsPanel() {
   const t = useTranslations("permissions");
+  const confirm = useConfirm();
   const ts = useTranslations("settings");
   const can = useCan();
   const { reload: reloadMe } = useMe();
@@ -46,7 +48,7 @@ export function RolePermissionsPanel() {
   if (!allowed || !matrix) return null;
 
   async function toggle(role: string, permission: { key: string; sensitive: boolean }, granted: boolean) {
-    if (granted && permission.sensitive && role === "worker" && !window.confirm(t("confirmSensitive", { role: ts(role) }))) return;
+    if (granted && permission.sensitive && role === "worker" && !(await confirm({ message: t("confirmSensitive", { role: ts(role) }), verb: "continue" }))) return;
     const key = cellKey(role, permission.key);
     const previous = matrix;
     // Flip it at once; the server's answer then settles whether it's still the default.
@@ -65,7 +67,7 @@ export function RolePermissionsPanel() {
   }
 
   async function reset(role?: string) {
-    if (!role && !window.confirm(t("confirmResetAll"))) return;
+    if (!role && !(await confirm({ message: t("confirmResetAll"), tone: "danger", verb: "reset" }))) return;
     await apiFetch("/company/permissions/reset", { method: "POST", body: JSON.stringify(role ? { role } : {}) });
     load();
   }

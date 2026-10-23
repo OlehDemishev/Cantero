@@ -9,6 +9,7 @@ import { apiFetch, downloadBlob, ApiError } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import { formatCurrency } from "@/lib/format-currency";
 import { formatDate } from "@/lib/format-date";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 const PAYMENT_METHODS = ["bank_transfer", "card", "cash", "other"] as const;
 
@@ -58,6 +59,7 @@ interface Invoice {
 
 export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
   const t = useTranslations("invoices");
+  const confirm = useConfirm();
   const tc = useTranslations("common");
   const { data: me } = useMe();
   const [invoice, setInvoice] = useState<Invoice | null>(null);
@@ -154,7 +156,7 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
   }
 
   async function voidInvoice() {
-    const reason = window.prompt(t("voidReasonPrompt"));
+    const reason = await confirm({ title: t("voidInvoice"), tone: "danger", verb: "void", reason: { label: t("voidReasonPrompt"), required: true } });
     if (!reason) return;
     setVoidError(null);
     setBusy(true);

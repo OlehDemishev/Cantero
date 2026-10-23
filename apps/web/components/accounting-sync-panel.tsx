@@ -6,6 +6,7 @@ import type { AccountingProviderType } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
 import { formatDate, formatDateTime } from "@/lib/format-date";
 import { resetStateInEffect } from "@/lib/effect-reset";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface Status {
   connected: boolean;
@@ -41,6 +42,7 @@ const PROVIDER_LABELS: Record<AccountingProviderType, string> = {
 
 export function AccountingSyncPanel({ canManage }: { canManage: boolean }) {
   const t = useTranslations("accountingSync");
+  const confirm = useConfirm();
 
   const [status, setStatus] = useState<Status | null>(null);
   const [busy, setBusy] = useState(false);
@@ -104,7 +106,7 @@ export function AccountingSyncPanel({ canManage }: { canManage: boolean }) {
   }
 
   async function disconnect() {
-    if (!window.confirm(t("confirmDisconnect"))) return;
+    if (!(await confirm({ message: t("confirmDisconnect"), tone: "danger", verb: "disconnect" }))) return;
     setBusy(true);
     try {
       await apiFetch("/company/accounting/connection", { method: "DELETE" });
