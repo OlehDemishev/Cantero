@@ -1,11 +1,10 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
 import { TriagePanel } from "@/components/triage-panel";
 import { DashboardWidgetsPanel } from "@/components/dashboard-widgets-panel";
 import { OnboardingChecklist } from "@/components/onboarding-checklist";
-import { NpsTrendPanel } from "@/components/nps-trend-panel";
-import { EnpsTrendPanel } from "@/components/enps-trend-panel";
 import {
   ChevronRightIcon,
   ClientsIcon,
@@ -24,6 +23,11 @@ import { useReportAccess } from "@/lib/report-access";
 import { formatCurrency } from "@/lib/format-currency";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/ui/page-header";
+
+// The two trend charts carry recharts and sit below the fold: their own chunks, fetched after the
+// page. Neither shows anything until its data is in, so nothing stands in for them meanwhile.
+const NpsTrendPanel = dynamic(() => import("@/components/nps-trend-panel").then((m) => m.NpsTrendPanel), { loading: () => null });
+const EnpsTrendPanel = dynamic(() => import("@/components/enps-trend-panel").then((m) => m.EnpsTrendPanel), { loading: () => null });
 
 interface Overview {
   projectsTotal: number;

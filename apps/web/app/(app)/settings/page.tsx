@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import dynamic from "next/dynamic";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { TabNav, TabPanel, type TabNavItem } from "@/components/ui/tab-nav";
@@ -10,50 +11,24 @@ import { useMe } from "@/lib/use-me";
 import { NotificationPreferencesPanel } from "@/components/notification-preferences-panel";
 import { LanguagePanel } from "@/components/language-panel";
 import { AppearancePanel } from "@/components/appearance-panel";
-import { CompanySettingsPanel } from "@/components/company-settings-panel";
-import { NavItemsSettingsPanel } from "@/components/nav-items-settings-panel";
-import { BillingPlanPanel } from "@/components/billing-plan-panel";
-import { StripeConnectPanel } from "@/components/stripe-connect-panel";
-import { FranchisePanel } from "@/components/franchise-panel";
-import { TeamMembersPanel } from "@/components/team-members-panel";
-import { CustomRolesPanel } from "@/components/custom-roles-panel";
-import { RolePermissionsPanel } from "@/components/role-permissions-panel";
-import { TeamInvitesPanel } from "@/components/team-invites-panel";
-import { ApiKeysPanel } from "@/components/api-keys-panel";
-import { WebhooksPanel } from "@/components/webhooks-panel";
-import { AuditLogPanel } from "@/components/audit-log-panel";
-import { GobdCompliancePanel } from "@/components/gobd-compliance-panel";
-import { CustomFieldsSettingsPanel } from "@/components/custom-fields-settings-panel";
-import { LeadFormSettingsPanel } from "@/components/lead-form-settings-panel";
-import { CustomPortalDomainPanel } from "@/components/custom-portal-domain-panel";
-import { SsoSettingsPanel } from "@/components/sso-settings-panel";
-import { DataPrivacyPanel } from "@/components/data-privacy-panel";
-import { DeletedDocumentsPanel } from "@/components/deleted-documents-panel";
-import { AccountingSyncPanel } from "@/components/accounting-sync-panel";
-import { DocusignSettingsPanel } from "@/components/docusign-settings-panel";
-import { IntacctSettingsPanel } from "@/components/intacct-settings-panel";
-import { MsProjectSettingsPanel } from "@/components/ms-project-settings-panel";
-import { AutodeskSettingsPanel } from "@/components/autodesk-settings-panel";
-import { TwoFactorSettingsPanel } from "@/components/two-factor-settings-panel";
-import { SessionsPanel } from "@/components/sessions-panel";
-import { IntegrationsPanel } from "@/components/integrations-panel";
-import { OnboardingTemplatePanel } from "@/components/onboarding-template-panel";
-import { OffboardingTemplatePanel } from "@/components/offboarding-template-panel";
-import { TrainingCatalogPanel } from "@/components/training-catalog-panel";
-import { BondingCapacityPanel } from "@/components/bonding-capacity-panel";
-import { MarketingCampaignsPanel } from "@/components/marketing-campaigns-panel";
-import { SlaPoliciesPanel } from "@/components/sla-policies-panel";
-import { TaxJurisdictionsPanel } from "@/components/tax-jurisdictions-panel";
-import { BenefitPlansPanel } from "@/components/benefit-plans-panel";
-import { InspectionTemplatesPanel } from "@/components/inspection-templates-panel";
-import { CostCodesPanel } from "@/components/cost-codes-panel";
-import { WageClassificationsPanel } from "@/components/wage-classifications-panel";
-import { MarkupRulesPanel } from "@/components/markup-rules-panel";
-import { SecuritySettingsPanel } from "@/components/security-settings-panel";
-import { ReferralProgramPanel } from "@/components/referral-program-panel";
-import { CompanyCoiPanel } from "@/components/company-coi-panel";
-import { MessageTemplatesPanel } from "@/components/message-templates-panel";
 import { PageHeader } from "@/components/ui/page-header";
+import { Skeleton } from "@/components/ui/skeleton";
+
+// One tab shows at a time: every tab but "account" (the default) is its own chunk, fetched when it is
+// first opened, with a skeleton in its place meanwhile.
+function TabLoading() {
+  return <Skeleton lines={4} />;
+}
+const CompanySettingsTab = dynamic(() => import("@/components/settings-tabs/company-tab").then((m) => m.CompanySettingsTab), { loading: TabLoading });
+const BillingSettingsTab = dynamic(() => import("@/components/settings-tabs/billing-tab").then((m) => m.BillingSettingsTab), { loading: TabLoading });
+const TeamSettingsTab = dynamic(() => import("@/components/settings-tabs/team-tab").then((m) => m.TeamSettingsTab), { loading: TabLoading });
+const SecuritySettingsTab = dynamic(() => import("@/components/settings-tabs/security-tab").then((m) => m.SecuritySettingsTab), { loading: TabLoading });
+const IntegrationsSettingsTab = dynamic(() => import("@/components/settings-tabs/integrations-tab").then((m) => m.IntegrationsSettingsTab), {
+  loading: TabLoading,
+});
+const TemplatesSettingsTab = dynamic(() => import("@/components/settings-tabs/templates-tab").then((m) => m.TemplatesSettingsTab), { loading: TabLoading });
+const OperationsSettingsTab = dynamic(() => import("@/components/settings-tabs/operations-tab").then((m) => m.OperationsSettingsTab), { loading: TabLoading });
+const MarketingSettingsTab = dynamic(() => import("@/components/settings-tabs/marketing-tab").then((m) => m.MarketingSettingsTab), { loading: TabLoading });
 
 const SETTINGS_TAB_KEYS = [
   "account",
@@ -105,79 +80,14 @@ export default function SettingsPage() {
         {activeTab === "account" && <NotificationPreferencesPanel />}
 
         <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
-          {activeTab === "company" && <CompanySettingsPanel isManager={can("settings.company")} />}
-
-          {activeTab === "company" && <NavItemsSettingsPanel canManage={can("settings.company")} />}
-
-          {activeTab === "billing" && <BillingPlanPanel isManager={!!isManager} />}
-          {activeTab === "billing" && isManager && <StripeConnectPanel />}
-
-          {activeTab === "billing" && isManager && <FranchisePanel />}
-
-          {activeTab === "team" && <TeamMembersPanel isManager={can("settings.roles")} />}
-
-          {activeTab === "team" && <RolePermissionsPanel />}
-
-          {activeTab === "team" && <CustomRolesPanel isManager={can("settings.roles")} />}
-
-          {activeTab === "team" && can("settings.roles") && <TeamInvitesPanel />}
-
-          {activeTab === "integrations" && isManager && <ApiKeysPanel />}
-
-          {activeTab === "integrations" && can("settings.integrations") && <WebhooksPanel />}
-
-          {activeTab === "templates" && <MessageTemplatesPanel />}
-
-          {activeTab === "templates" && <CustomFieldsSettingsPanel canManage={can("templates.company")} />}
-
-          {activeTab === "templates" && <LeadFormSettingsPanel token={leadFormToken} canManage={can("settings.company")} onChange={loadLeadFormToken} />}
-
-          {activeTab === "marketing" && <CustomPortalDomainPanel canManage={can("settings.company")} />}
-
-          {activeTab === "team" && <SsoSettingsPanel canManage={isManager} />}
-
-          {activeTab === "integrations" && <AccountingSyncPanel canManage={can("finance.manage")} />}
-
-          {activeTab === "integrations" && <DocusignSettingsPanel canManage={can("settings.integrations")} />}
-
-          {activeTab === "integrations" && <IntacctSettingsPanel canManage={can("finance.manage")} />}
-
-          {activeTab === "integrations" && <MsProjectSettingsPanel canManage={can("settings.integrations")} />}
-
-          {activeTab === "integrations" && <AutodeskSettingsPanel canManage={can("settings.integrations")} />}
-
-          {activeTab === "team" && <TwoFactorSettingsPanel />}
-
-          {activeTab === "team" && <SessionsPanel />}
-
-          {activeTab === "security" && <SecuritySettingsPanel canManage={can("settings.company")} />}
-
-          {activeTab === "integrations" && <IntegrationsPanel canManage={can("settings.company")} />}
-
-          {activeTab === "security" && <DataPrivacyPanel canExport={can("settings.export")} canDelete={!!isManager} />}
-
-          {activeTab === "security" && can("documents.delete") && <DeletedDocumentsPanel />}
-
-          {activeTab === "marketing" && <ReferralProgramPanel />}
-
-          {activeTab === "security" && <CompanyCoiPanel canManage={can("templates.company")} />}
-
-          {activeTab === "security" && can("settings.export") && <AuditLogPanel />}
-
-          {activeTab === "security" && can("finance.export") && <GobdCompliancePanel />}
-
-          {activeTab === "templates" && can("templates.company") && <OnboardingTemplatePanel />}
-          {activeTab === "templates" && can("templates.company") && <OffboardingTemplatePanel />}
-          {activeTab === "templates" && can("training.manage") && <TrainingCatalogPanel />}
-          {activeTab === "billing" && can("finance.view") && <BondingCapacityPanel />}
-          {activeTab === "marketing" && can("finance.manage") && <MarketingCampaignsPanel />}
-          {activeTab === "operations" && can("site.manage") && <SlaPoliciesPanel />}
-          {activeTab === "billing" && can("finance.manage") && <TaxJurisdictionsPanel />}
-          {activeTab === "team" && can("hr.payroll") && <BenefitPlansPanel />}
-          {activeTab === "operations" && can("templates.field") && <InspectionTemplatesPanel />}
-          {activeTab === "operations" && can("pricing.manage") && <CostCodesPanel />}
-          {activeTab === "operations" && can("hr.payroll") && <WageClassificationsPanel />}
-          {activeTab === "operations" && can("pricing.manage") && <MarkupRulesPanel />}
+          {activeTab === "company" && <CompanySettingsTab />}
+          {activeTab === "billing" && <BillingSettingsTab isManager={!!isManager} />}
+          {activeTab === "team" && <TeamSettingsTab isManager={!!isManager} />}
+          {activeTab === "security" && <SecuritySettingsTab isManager={!!isManager} />}
+          {activeTab === "integrations" && <IntegrationsSettingsTab isManager={!!isManager} />}
+          {activeTab === "templates" && <TemplatesSettingsTab leadFormToken={leadFormToken} onLeadFormChange={loadLeadFormToken} />}
+          {activeTab === "operations" && <OperationsSettingsTab />}
+          {activeTab === "marketing" && <MarketingSettingsTab />}
         </div>
       </TabPanel>
     </>

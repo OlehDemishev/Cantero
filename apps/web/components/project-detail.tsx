@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import dynamic from "next/dynamic";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
@@ -11,68 +12,11 @@ import { resetStateInEffect } from "@/lib/effect-reset";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CommentsThread } from "@/components/comments-thread";
-import { SchedulingPanel } from "@/components/scheduling-panel";
-import { ScheduleBaselinePanel } from "@/components/schedule-baseline-panel";
-import { LookAheadPanel } from "@/components/look-ahead-panel";
-import { DailyLogsPanel } from "@/components/daily-logs-panel";
-import { CrewSmsBroadcastPanel } from "@/components/crew-sms-broadcast-panel";
-import { SiteSignInsPanel } from "@/components/site-sign-ins-panel";
-import { WeatherDelayReportPanel } from "@/components/weather-delay-report-panel";
-import { WeatherForecastPanel } from "@/components/weather-forecast-panel";
-import { GeofencePanel } from "@/components/geofence-panel";
-import { CertifiedPayrollPanel } from "@/components/certified-payroll-panel";
-import { PermitsPanel } from "@/components/permits-panel";
-import { SuretyBondsPanel } from "@/components/surety-bonds-panel";
-import { ContractClaimsPanel } from "@/components/contract-claims-panel";
-import { WarrantyRegistrationsPanel } from "@/components/warranty-registrations-panel";
-import { HazmatInventoryPanel } from "@/components/hazmat-inventory-panel";
-import { LienCompliancePanel } from "@/components/lien-compliance-panel";
-import { EnvironmentalPanel } from "@/components/environmental-panel";
-import { ScheduleScenariosPanel } from "@/components/schedule-scenarios-panel";
-import { CommissioningPanel } from "@/components/commissioning-panel";
-import { ProgressTrackingPanel } from "@/components/progress-tracking-panel";
-import { TransmittalsPanel } from "@/components/transmittals-panel";
-import { ConcreteQcPanel } from "@/components/concrete-qc-panel";
 import { ProjectMembersPanel } from "@/components/project-members-panel";
-import { ContractsPanel } from "@/components/contracts-panel";
-import { DrawRequestsPanel } from "@/components/draw-requests-panel";
-import { TakeoffPanel } from "@/components/takeoff-panel";
-import { DrawingSheetsPanel } from "@/components/drawing-sheets-panel";
-import { GreenCertificationsPanel } from "@/components/green-certifications-panel";
 import { PortalMessagesPanel } from "@/components/portal-messages-panel";
-import { CarbonReportPanel } from "@/components/carbon-report-panel";
-import { ProjectCashFlowPanel } from "@/components/project-cash-flow-panel";
 import { CustomFieldsValuesPanel } from "@/components/custom-fields-values-panel";
-import { PunchListPanel } from "@/components/punch-list-panel";
-import { RfiPanel } from "@/components/rfi-panel";
-import { CostImpactSummaryPanel } from "@/components/cost-impact-summary-panel";
-import { MeetingsPanel } from "@/components/meetings-panel";
-import { LongLeadItemsPanel } from "@/components/long-lead-items-panel";
-import { SafetyPanel } from "@/components/safety-panel";
-import { QualityPanel } from "@/components/quality-panel";
-import { SubmittalsPanel } from "@/components/submittals-panel";
-import { WarrantyPanel } from "@/components/warranty-panel";
-import { ProjectCloseoutPanel } from "@/components/project-closeout-panel";
-import { BudgetPanel } from "@/components/budget-panel";
-import { JobCostingPanel } from "@/components/job-costing-panel";
-import { TimeTrackingPanel } from "@/components/time-tracking-panel";
-import { SubcontractorCostsPanel } from "@/components/subcontractor-costs-panel";
-import { SubcontractorAssignmentsPanel } from "@/components/subcontractor-assignments-panel";
-import { BidRequestsPanel } from "@/components/bid-requests-panel";
-import { DocumentsPanel } from "@/components/documents-panel";
-import { GalleryPanel } from "@/components/gallery-panel";
-import { AllowancesPanel } from "@/components/allowances-panel";
-import { UnitPriceTmPanel } from "@/components/unit-price-tm-panel";
-import { ProductivityPanel } from "@/components/productivity-panel";
-import { SubcontractorClaimsPanel } from "@/components/subcontractor-claims-panel";
 import { ClientChangeRequestsPanel } from "@/components/client-change-requests-panel";
-import { SafetyObservationsPanel } from "@/components/safety-observations-panel";
 import { ProjectHealthBadge } from "@/components/project-health-badge";
-import { MsProjectSyncPanel } from "@/components/ms-project-sync-panel";
-import { ScheduleFilesPanel } from "@/components/schedule-files-panel";
-import { IntacctProjectPanel } from "@/components/intacct-project-panel";
-import { AutodeskSyncPanel } from "@/components/autodesk-sync-panel";
-import { BimModelPanel } from "@/components/bim-model-panel";
 import { SUPPORTED_CURRENCIES, createEstimateSchema } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
@@ -83,6 +27,21 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Field, FormError } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
 import { optionalNumber, useFormValidation } from "@/lib/form-validation";
+
+// Only one tab shows at a time, so every tab but the default one is its own chunk, fetched when the
+// tab is first opened (the financials tab alone carries recharts). Each stands in with a skeleton.
+function TabLoading() {
+  return <Skeleton lines={4} className="mt-6" />;
+}
+const ScheduleTab = dynamic(() => import("@/components/project-tabs/schedule-tab").then((m) => m.ScheduleTab), { loading: TabLoading });
+const FinancialsTab = dynamic(() => import("@/components/project-tabs/financials-tab").then((m) => m.FinancialsTab), { loading: TabLoading });
+const FieldTab = dynamic(() => import("@/components/project-tabs/field-tab").then((m) => m.FieldTab), { loading: TabLoading });
+const QualityTab = dynamic(() => import("@/components/project-tabs/quality-tab").then((m) => m.QualityTab), { loading: TabLoading });
+const ComplianceTab = dynamic(() => import("@/components/project-tabs/compliance-tab").then((m) => m.ComplianceTab), { loading: TabLoading });
+const SubcontractorsTab = dynamic(() => import("@/components/project-tabs/subcontractors-tab").then((m) => m.SubcontractorsTab), {
+  loading: TabLoading,
+});
+const DocumentsTab = dynamic(() => import("@/components/project-tabs/documents-tab").then((m) => m.DocumentsTab), { loading: TabLoading });
 
 interface Project {
   id: string;
@@ -452,97 +411,13 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
           </>
         )}
 
-        {activeTab === "schedule" && (
-          <>
-            <SchedulingPanel projectId={projectId} />
-            {can("site.manage") && <ScheduleBaselinePanel projectId={projectId} />}
-            {can("site.manage") && <ScheduleScenariosPanel projectId={projectId} />}
-            <LookAheadPanel projectId={projectId} />
-            {can("site.manage") && <ProgressTrackingPanel projectId={projectId} />}
-            {can("site.manage") && <CommissioningPanel projectId={projectId} />}
-            {can("site.manage") && <ScheduleFilesPanel projectId={projectId} />}
-            {can("site.manage") && <MsProjectSyncPanel projectId={projectId} />}
-          </>
-        )}
-
-        {activeTab === "financials" && (
-          <>
-            {can("finance.view") && <IntacctProjectPanel projectId={projectId} />}
-            {can("costing.view") && <BudgetPanel projectId={projectId} />}
-            {can("costing.view") && <AllowancesPanel projectId={projectId} />}
-            {can("estimates.view") && <UnitPriceTmPanel projectId={projectId} />}
-            {can("costing.view") && <JobCostingPanel projectId={projectId} />}
-            {can("finance.view") && <DrawRequestsPanel projectId={projectId} />}
-            <ProjectCashFlowPanel projectId={projectId} />
-            {can("contracts.view") && <ContractsPanel projectId={projectId} />}
-            {can("estimates.view") && <CostImpactSummaryPanel projectId={projectId} />}
-          </>
-        )}
-
-        {activeTab === "field" && (
-          <>
-            <DailyLogsPanel projectId={projectId} />
-            {can("site.manage") && <CrewSmsBroadcastPanel projectId={projectId} />}
-            <SiteSignInsPanel projectId={projectId} />
-            <WeatherForecastPanel projectId={projectId} />
-            {can("site.manage") && <WeatherDelayReportPanel projectId={projectId} />}
-            {can("projects.manage") && <GeofencePanel projectId={projectId} />}
-            <SafetyPanel projectId={projectId} />
-            <SafetyObservationsPanel projectId={projectId} />
-          </>
-        )}
-
-        {activeTab === "quality" && (
-          <>
-            <PunchListPanel projectId={projectId} />
-            <RfiPanel projectId={projectId} />
-            {can("site.manage") && <MeetingsPanel projectId={projectId} />}
-            {can("site.manage") && <LongLeadItemsPanel projectId={projectId} />}
-            {can("site.manage") && <QualityPanel projectId={projectId} />}
-            {can("site.manage") && <ConcreteQcPanel projectId={projectId} />}
-            {can("site.manage") && <SubmittalsPanel projectId={projectId} />}
-            {can("site.manage") && <TransmittalsPanel projectId={projectId} />}
-            {can("site.manage") && <WarrantyPanel projectId={projectId} />}
-            {project && <AutodeskSyncPanel projectId={projectId} initialAutodeskProjectId={project.autodeskProjectId} />}
-          </>
-        )}
-
-        {activeTab === "compliance" && (
-          <>
-            {can("site.manage") && <PermitsPanel projectId={projectId} />}
-            {can("finance.view") && <SuretyBondsPanel projectId={projectId} />}
-            {can("contracts.view") && <ContractClaimsPanel projectId={projectId} />}
-            {can("site.manage") && <WarrantyRegistrationsPanel projectId={projectId} />}
-            {can("site.manage") && <HazmatInventoryPanel projectId={projectId} />}
-            {can("finance.view") && <LienCompliancePanel projectId={projectId} />}
-            {can("site.manage") && <EnvironmentalPanel projectId={projectId} />}
-            {can("hr.payroll") && <CertifiedPayrollPanel projectId={projectId} />}
-            {can("site.manage") && <GreenCertificationsPanel projectId={projectId} />}
-            {can("site.manage") && <CarbonReportPanel projectId={projectId} />}
-          </>
-        )}
-
-        {activeTab === "subcontractors" && (
-          <>
-            {can("estimates.view") && <BidRequestsPanel projectId={projectId} />}
-            {can("subcontractors.view") && <SubcontractorAssignmentsPanel projectId={projectId} />}
-            {can("finance.view") && <SubcontractorCostsPanel projectId={projectId} />}
-            {can("subcontractors.view") && <SubcontractorClaimsPanel projectId={projectId} />}
-          </>
-        )}
-
-        {activeTab === "documents" && (
-          <>
-            {can("estimates.view") && <TakeoffPanel projectId={projectId} />}
-            <DrawingSheetsPanel projectId={projectId} />
-            {project && <BimModelPanel projectId={projectId} canEdit={can("site.manage")} initial={project} />}
-            <TimeTrackingPanel projectId={projectId} />
-            {can("site.manage") && <ProductivityPanel projectId={projectId} />}
-            <DocumentsPanel projectId={projectId} />
-            <GalleryPanel projectId={projectId} />
-            {can("site.manage") && <ProjectCloseoutPanel projectId={projectId} />}
-          </>
-        )}
+        {activeTab === "schedule" && <ScheduleTab projectId={projectId} />}
+        {activeTab === "financials" && <FinancialsTab projectId={projectId} />}
+        {activeTab === "field" && <FieldTab projectId={projectId} />}
+        {activeTab === "quality" && <QualityTab projectId={projectId} project={project} />}
+        {activeTab === "compliance" && <ComplianceTab projectId={projectId} />}
+        {activeTab === "subcontractors" && <SubcontractorsTab projectId={projectId} />}
+        {activeTab === "documents" && <DocumentsTab projectId={projectId} project={project} />}
       </TabPanel>
     </>
   );

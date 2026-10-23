@@ -1,8 +1,7 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
-import { CustomReportsPanel } from "@/components/custom-reports-panel";
-import { SafetyScorecardPanel } from "@/components/safety-scorecard-panel";
 import { GeofenceViolationsPanel } from "@/components/geofence-violations-panel";
 import { EquipmentUtilizationPanel } from "@/components/equipment-utilization-panel";
 import { CarbonSummaryPanel } from "@/components/carbon-summary-panel";
@@ -27,6 +26,13 @@ import { ScheduledReportsPanel } from "@/components/scheduled-reports-panel";
 import { useMe } from "@/lib/use-me";
 import { useReportAccess } from "@/lib/report-access";
 import { PageHeader } from "@/components/ui/page-header";
+
+// The two chart panels carry recharts: their own chunks, fetched after the page. Each shows its own
+// skeleton once mounted (or nothing, for someone who may not see it), so nothing stands in before that.
+const SafetyScorecardPanel = dynamic(() => import("@/components/safety-scorecard-panel").then((m) => m.SafetyScorecardPanel), {
+  loading: () => null,
+});
+const CustomReportsPanel = dynamic(() => import("@/components/custom-reports-panel").then((m) => m.CustomReportsPanel), { loading: () => null });
 
 export default function ReportsPage() {
   const t = useTranslations("reports");
