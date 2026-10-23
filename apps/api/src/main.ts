@@ -1,6 +1,6 @@
 import "reflect-metadata";
 import { NestFactory } from "@nestjs/core";
-import { Logger, ValidationPipe } from "@nestjs/common";
+import { Logger } from "@nestjs/common";
 import type { NestExpressApplication } from "@nestjs/platform-express";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import { AppModule } from "./app.module";
@@ -11,6 +11,7 @@ import { SentryExceptionsFilter } from "./common/sentry/sentry-exceptions.filter
 import { assertQuickbooksProductionSafety } from "./accounting/quickbooks-production-safety";
 import { assertProductionConfig, productionConfigWarnings } from "./common/config/production-config";
 import { securityHeaders } from "./common/http/security-headers";
+import { globalValidationPipe } from "./common/pipes/global-validation.pipe";
 import { processRole } from "./common/queue/process-role";
 
 // Must run before the Nest app is created so Sentry's instrumentation can hook whatever it needs
@@ -34,7 +35,7 @@ async function bootstrap() {
   // delegates to Nest's normal error-response handling — a no-op response-wise either way, and a
   // no-op error-reporting-wise too when Sentry isn't configured.
   app.useGlobalFilters(new SentryExceptionsFilter(app.getHttpAdapter()));
-  app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+  app.useGlobalPipes(globalValidationPipe());
   app.setGlobalPrefix("api");
 
   // Without this, Express's req.ip is always the immediate socket peer — behind any reverse

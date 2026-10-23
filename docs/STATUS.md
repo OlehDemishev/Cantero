@@ -36,3 +36,18 @@ Verified: up (~14 s warm), second up (no duplicates), down (no leftover processe
 up again (no pending migrations, data kept), down. Docker-unavailable path exits 1 with a message.
 
 Left: merge the PR (the user merges it).
+
+## 2026-10-23 — dashboard widget permissions; optional numeric query params
+
+Dashboard widgets now ask for the same capability as the endpoint they mirror:
+`DASHBOARD_WIDGET_PERMISSIONS` + `canViewDashboardWidget` / `visibleDashboardWidgetTypes` in
+`packages/shared/src/dashboard.ts` (a spec checks each entry against the endpoint's @Requires).
+`DashboardService` takes the AuthUser: create is a 403 for a type the member lacks (custom_report
+also needs a report of the member's company, 400/404 otherwise); list/reorder/exportPdf leave out
+widgets the member can no longer see; project-scoped reports get the viewer like their endpoints.
+`AppValidationPipe` (main.ts) keeps an absent numeric query param undefined — Nest 10 turned it
+into NaN, so every optional `OptionalIntPipe` param (e.g. `GET /job-costing/history` without
+`months`, default 12) answered 400.
+
+Left: the web's add-widget menu (`apps/web/components/dashboard-widgets-panel.tsx`) still offers
+every type; it should use `visibleDashboardWidgetTypes(user.permissions)`.
