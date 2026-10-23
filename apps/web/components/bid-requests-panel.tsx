@@ -476,7 +476,7 @@ export function BidRequestsPanel({ projectId }: { projectId: string }) {
                                       ))}
                                     </select>
                                   ) : (
-                                    <span className="text-gray-300">—</span>
+                                    <span className="text-fg-subtle">—</span>
                                   )}
                                 </td>
                               ))}
@@ -570,7 +570,7 @@ export function BidRequestsPanel({ projectId }: { projectId: string }) {
                                       return (
                                         <td key={b.id} className="px-1 text-right">
                                           {!cell ? (
-                                            <span className="text-gray-300">{t("notMentioned")}</span>
+                                            <span className="text-fg-subtle">{t("notMentioned")}</span>
                                           ) : (
                                             <span className={cell.included ? "text-fg" : "text-danger-fg line-through"}>
                                               {formatCurrency(cell.amount, currency)}

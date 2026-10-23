@@ -4918,6 +4918,9 @@
     "actionType": "Action type",
     "progress": "Progress",
     "targetDate": "Target date",
-    "pin": "Clock-in PIN"
+    "pin": "Clock-in PIN",
+    "skipToContent": "Skip to content",
+    "mainNavigation": "Main navigation",
+    "userMenu": "User menu"
   }
 }

@@ -226,7 +226,8 @@ html:lang(uk) body {
   @apply relative flex w-full items-center gap-3 rounded-lg px-3 py-2 text-theme-sm font-medium;
 }
 @utility menu-item-active {
-  @apply bg-brand-50 text-brand-fg dark:bg-brand-500/[0.12];
+  /* brand-700 on brand-50 is 7:1; brand-500 there was 4.3:1. */
+  @apply bg-brand-50 text-brand-700 dark:bg-brand-500/[0.12] dark:text-brand-fg;
 }
 @utility menu-item-inactive {
   @apply text-fg-muted hover:bg-gray-100 dark:hover:bg-white/5;

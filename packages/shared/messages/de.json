@@ -4918,6 +4918,9 @@
     "actionType": "Maßnahmenart",
     "progress": "Fortschritt",
     "targetDate": "Zieldatum",
-    "pin": "Stempel-PIN"
+    "pin": "Stempel-PIN",
+    "skipToContent": "Zum Inhalt springen",
+    "mainNavigation": "Hauptnavigation",
+    "userMenu": "Benutzermenü"
   }
 }

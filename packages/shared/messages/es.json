@@ -4918,6 +4918,9 @@
     "actionType": "Tipo de acción",
     "progress": "Progreso",
     "targetDate": "Fecha objetivo",
-    "pin": "PIN de fichaje"
+    "pin": "PIN de fichaje",
+    "skipToContent": "Saltar al contenido",
+    "mainNavigation": "Navegación principal",
+    "userMenu": "Menú de usuario"
   }
 }

@@ -4918,6 +4918,9 @@
     "actionType": "Тип дії",
     "progress": "Прогрес",
     "targetDate": "Цільова дата",
-    "pin": "PIN для відмітки"
+    "pin": "PIN для відмітки",
+    "skipToContent": "Перейти до вмісту",
+    "mainNavigation": "Головна навігація",
+    "userMenu": "Меню користувача"
   }
 }
