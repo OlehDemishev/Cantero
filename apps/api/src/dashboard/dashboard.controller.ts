@@ -20,7 +20,7 @@ export class DashboardController {
 
   @Get()
   list(@CurrentUser() user: AuthUser) {
-    return this.service.list(user.companyId, user.userId);
+    return this.service.list(user.companyId, user.userId, user.role);
   }
 
   @Post()
@@ -36,13 +36,13 @@ export class DashboardController {
     @CurrentUser() user: AuthUser,
     @Body(new ZodValidationPipe(reorderDashboardWidgetsSchema)) body: ReorderDashboardWidgetsInput,
   ) {
-    return this.service.reorder(user.companyId, user.userId, body.orderedIds);
+    return this.service.reorder(user.companyId, user.userId, user.role, body.orderedIds);
   }
 
   @Get("export.pdf")
   @Header("Content-Type", "application/pdf")
   async exportPdf(@CurrentUser() user: AuthUser) {
-    const buffer = await this.service.exportPdf(user.companyId, user.userId);
+    const buffer = await this.service.exportPdf(user.companyId, user.userId, user.role);
     return new StreamableFile(buffer, { disposition: `attachment; filename="dashboard.pdf"` });
   }
 

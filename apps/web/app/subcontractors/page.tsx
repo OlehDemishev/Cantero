@@ -16,7 +16,6 @@ interface Subcontractor {
   specialization: string | null;
   bio: string | null;
   publicListed: boolean;
-  publicToken: string | null;
   licenseNumber: string | null;
   bondingCapacity: string | null;
   safetyProgramSummary: string | null;

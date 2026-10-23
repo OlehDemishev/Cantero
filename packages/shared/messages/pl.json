@@ -2709,6 +2709,7 @@
     "ipAllowlistHint": "Jeden adres IP lub blok CIDR na linię. Pozostaw puste, aby zezwolić na dowolny adres IP.",
     "calendarFeed": "Kanał kalendarza",
     "calendarFeedHint": "Zasubskrybuj ten adres URL w Google Calendar, Outlook lub Apple Calendar, aby zobaczyć terminy zadań i kamieni milowych.",
+    "calendarFeedAskManager": "Kanał kalendarza jest skonfigurowany — poproś menedżera o link.",
     "generateCalendarFeed": "Wygeneruj URL kanału",
     "regenerateCalendarFeed": "Wygeneruj ponownie URL kanału",
     "managerOnlyHint": "Tylko właściciele i administratorzy mogą konfigurować integracje."
@@ -3521,6 +3522,7 @@
     "noWorkers": "Żaden pracownik nie ma ustawionego PIN-u kiosku — ustaw go w profilu pracownika.",
     "enterPin": "Wprowadź swój PIN",
     "wrongPin": "Nieprawidłowy PIN — spróbuj ponownie.",
+    "pinExpired": "Weryfikacja PIN wygasła — wprowadź PIN ponownie.",
     "submitPin": "Dalej",
     "project": "Projekt",
     "selectProject": "Wybierz projekt...",

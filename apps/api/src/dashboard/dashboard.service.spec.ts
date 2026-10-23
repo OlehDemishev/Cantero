@@ -63,7 +63,7 @@ describe("DashboardService", () => {
       ]);
       reports.revenueTrend.mockResolvedValue([{ month: "2026-08", revenue: 100 }]);
 
-      const result = await service.list(COMPANY_A, USER_1);
+      const result = await service.list(COMPANY_A, USER_1, "accountant");
 
       expect(reports.revenueTrend).toHaveBeenCalledWith(COMPANY_A, 6);
       expect(reports.cashFlowForecast).toHaveBeenCalledWith(COMPANY_A);
@@ -76,16 +76,24 @@ describe("DashboardService", () => {
       ]);
       customReports.run.mockResolvedValue({ columns: [], rows: [] });
 
-      const result = await service.list(COMPANY_A, USER_1);
+      const result = await service.list(COMPANY_A, USER_1, "accountant");
 
-      expect(customReports.run).toHaveBeenCalledWith(COMPANY_A, "report-1");
+      expect(customReports.run).toHaveBeenCalledWith(COMPANY_A, "report-1", { userId: USER_1, role: "accountant" });
       expect(result[0].data).toEqual({ columns: [], rows: [] });
+    });
+
+    it("runs the portfolio widget as the dashboard's owner, so restricted projects stay hidden", async () => {
+      prisma.dashboardWidget.findMany.mockResolvedValue([{ id: "w-1", type: "portfolio_summary", config: null }]);
+
+      await service.list(COMPANY_A, USER_1, "accountant");
+
+      expect(reports.portfolio).toHaveBeenCalledWith(COMPANY_A, { userId: USER_1, role: "accountant" });
     });
 
     it("returns null data for a custom_report widget missing its customReportId, without throwing", async () => {
       prisma.dashboardWidget.findMany.mockResolvedValue([{ id: "w-1", type: "custom_report", config: null }]);
 
-      const result = await service.list(COMPANY_A, USER_1);
+      const result = await service.list(COMPANY_A, USER_1, "accountant");
 
       expect(result[0].data).toBeNull();
       expect(customReports.run).not.toHaveBeenCalled();
@@ -95,7 +103,7 @@ describe("DashboardService", () => {
       prisma.dashboardWidget.findMany.mockResolvedValue([{ id: "w-1", type: "revenue_trend", config: null }]);
       reports.revenueTrend.mockRejectedValue(new Error("db down"));
 
-      const result = await service.list(COMPANY_A, USER_1);
+      const result = await service.list(COMPANY_A, USER_1, "accountant");
 
       expect(result[0].data).toBeNull();
     });
@@ -139,7 +147,7 @@ describe("DashboardService", () => {
       prisma.dashboardWidget.findMany.mockResolvedValue([{ id: "w-1", type: "revenue_trend", config: null }]);
       reports.revenueTrend.mockResolvedValue([{ month: "2026-07", revenue: 50 }, { month: "2026-08", revenue: 100 }]);
 
-      await service.exportPdf(COMPANY_A, USER_1);
+      await service.exportPdf(COMPANY_A, USER_1, "accountant");
 
       expect(pdf.render).toHaveBeenCalledWith(
         expect.objectContaining({

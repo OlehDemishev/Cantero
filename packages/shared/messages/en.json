@@ -2709,6 +2709,7 @@
     "ipAllowlistHint": "One IP or CIDR block per line. Leave empty to allow any IP.",
     "calendarFeed": "Calendar feed",
     "calendarFeedHint": "Subscribe to this URL from Google Calendar, Outlook, or Apple Calendar to see task and milestone due dates.",
+    "calendarFeedAskManager": "A calendar feed is set up — ask a manager for its link.",
     "generateCalendarFeed": "Generate feed URL",
     "regenerateCalendarFeed": "Regenerate feed URL",
     "managerOnlyHint": "Only owners and admins can configure integrations."
@@ -3521,6 +3522,7 @@
     "noWorkers": "No workers have a kiosk PIN set yet — set one from a worker's profile.",
     "enterPin": "Enter your PIN",
     "wrongPin": "Wrong PIN — try again.",
+    "pinExpired": "Your PIN check timed out — enter your PIN again.",
     "submitPin": "Continue",
     "project": "Project",
     "selectProject": "Select a project...",

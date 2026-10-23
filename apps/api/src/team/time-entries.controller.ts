@@ -1,8 +1,11 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from "@nestjs/common";
+import { JwtService } from "@nestjs/jwt";
 import {
+  createKioskTimeEntrySchema,
   createTimeEntrySchema,
   updateTimeEntrySchema,
   type AuthUser,
+  type CreateKioskTimeEntryInput,
   type CreateTimeEntryInput,
   type UpdateTimeEntryInput,
 } from "@cantero/shared";
@@ -13,6 +16,7 @@ import { ProjectResource } from "../common/project-access/project-resource.decor
 import { OpenToAllRoles } from "../common/decorators/roles.decorator";
 import { CREW, SelfScopeService } from "../common/permissions/self-scope.service";
 import { DateQueryPipe } from "../common/pipes/query-pipes";
+import { verifyKioskToken } from "./kiosk-token";
 
 const TIME_ENTRIES_PAGE_SIZE = 100;
 
@@ -23,6 +27,7 @@ export class TimeEntriesController {
   constructor(
     private readonly service: TimeEntriesService,
     private readonly selfScope: SelfScopeService,
+    private readonly jwt: JwtService,
   ) {}
 
   @Get()
@@ -45,6 +50,20 @@ export class TimeEntriesController {
   ) {
     await this.selfScope.assertOwnWorker(user, body.workerId, CREW.time);
     return this.service.create(user.companyId, body);
+  }
+
+  /** Kiosk clock-in: the worker is whoever the kiosk token (from a correct PIN on
+   * POST /workers/:id/verify-clock-in-pin) names, not whatever the device sends — so the session
+   * the kiosk runs under can't log hours for a worker who didn't enter their PIN. No crew-time
+   * self-scope check: the PIN, not the device account, is what identifies the worker here. */
+  @Post("kiosk")
+  createFromKiosk(
+    @CurrentUser() user: AuthUser,
+    @Body(new ZodValidationPipe(createKioskTimeEntrySchema)) body: CreateKioskTimeEntryInput,
+  ) {
+    const { kioskToken, ...entry } = body;
+    const workerId = verifyKioskToken(this.jwt, kioskToken, user);
+    return this.service.create(user.companyId, { ...entry, workerId });
   }
 
   @Patch(":id")

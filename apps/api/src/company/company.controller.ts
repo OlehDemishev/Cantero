@@ -32,10 +32,10 @@ import { Requires } from "../common/decorators/permissions.decorator";
 export class CompanyController {
   constructor(private readonly service: CompanyService) {}
 
-  @OpenToAllRoles("every member reads their own company's profile")
+  @OpenToAllRoles("every member reads their own company's profile; credentials and bank details need settings.company")
   @Get()
   get(@CurrentUser() user: AuthUser) {
-    return this.service.get(user.companyId);
+    return this.service.get(user.companyId, !!user.permissions?.includes("settings.company"));
   }
 
   @OpenToAllRoles("the referral link is shared by any member")

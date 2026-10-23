@@ -24,7 +24,9 @@ export default function KioskPage() {
   const [selectedWorker, setSelectedWorker] = useState<KioskWorker | null>(null);
   const [pin, setPin] = useState("");
   const [pinError, setPinError] = useState<string | null>(null);
-  const [verified, setVerified] = useState(false);
+  // The short-lived token a correct PIN returns; the kiosk time-entry endpoint requires it and
+  // only logs hours for the worker it names. Null until the PIN is verified.
+  const [kioskToken, setKioskToken] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [entryForm, setEntryForm] = useState({ projectId: "", hours: "8" });
   const [done, setDone] = useState(false);
@@ -53,7 +55,7 @@ export default function KioskPage() {
     setSelectedWorker(worker);
     setPin("");
     setPinError(null);
-    setVerified(false);
+    setKioskToken(null);
     setDone(false);
   }
 
@@ -61,7 +63,7 @@ export default function KioskPage() {
     setSelectedWorker(null);
     setPin("");
     setPinError(null);
-    setVerified(false);
+    setKioskToken(null);
     setDone(false);
     setEntryForm({ projectId: "", hours: "8" });
   }
@@ -71,12 +73,12 @@ export default function KioskPage() {
     setBusy(true);
     setPinError(null);
     try {
-      const { valid } = await apiFetch<{ valid: boolean }>(`/workers/${selectedWorker.id}/verify-clock-in-pin`, {
+      const result = await apiFetch<{ valid: boolean; kioskToken?: string }>(`/workers/${selectedWorker.id}/verify-clock-in-pin`, {
         method: "POST",
         body: JSON.stringify({ pin }),
       });
-      if (valid) {
-        setVerified(true);
+      if (result.valid && result.kioskToken) {
+        setKioskToken(result.kioskToken);
       } else {
         setPinError(t("wrongPin"));
         setPin("");
@@ -88,13 +90,13 @@ export default function KioskPage() {
 
   async function submitEntry(e: React.FormEvent) {
     e.preventDefault();
-    if (!selectedWorker || !entryForm.projectId) return;
+    if (!selectedWorker || !kioskToken || !entryForm.projectId) return;
     setBusy(true);
     try {
-      await apiFetch("/time-entries", {
+      await apiFetch("/time-entries/kiosk", {
         method: "POST",
         body: JSON.stringify({
-          workerId: selectedWorker.id,
+          kioskToken,
           projectId: entryForm.projectId,
           hours: Number(entryForm.hours),
           date: new Date().toISOString(),
@@ -102,6 +104,15 @@ export default function KioskPage() {
       });
       setDone(true);
       setTimeout(reset, 2500);
+    } catch (err) {
+      // The PIN check expired (the token lasts two minutes; the API answers 403) — back to the PIN prompt.
+      if (err instanceof ApiError && err.status === 403) {
+        setKioskToken(null);
+        setPin("");
+        setPinError(t("pinExpired"));
+        return;
+      }
+      throw err;
     } finally {
       setBusy(false);
     }
@@ -145,7 +156,7 @@ export default function KioskPage() {
               <p className="rounded-lg border border-success-200 bg-success-50 dark:bg-success-500/15 px-4 py-3 text-center text-sm text-success-700 dark:text-success-500">
                 {t("entrySaved")}
               </p>
-            ) : !verified ? (
+            ) : !kioskToken ? (
               <>
                 <label className="flex flex-col gap-1.5 text-sm">
                   <span className="font-medium text-gray-700 dark:text-gray-200">{t("enterPin")}</span>

@@ -2709,6 +2709,7 @@
     "ipAllowlistHint": "Una IP o bloque CIDR por línea. Déjelo vacío para permitir cualquier IP.",
     "calendarFeed": "Feed de calendario",
     "calendarFeedHint": "Suscríbase a esta URL desde Google Calendar, Outlook o Apple Calendar para ver las fechas de tareas e hitos.",
+    "calendarFeedAskManager": "Hay un feed de calendario configurado — pida el enlace a un responsable.",
     "generateCalendarFeed": "Generar URL del feed",
     "regenerateCalendarFeed": "Regenerar URL del feed",
     "managerOnlyHint": "Solo los propietarios y administradores pueden configurar integraciones."
@@ -3521,6 +3522,7 @@
     "noWorkers": "Ningún trabajador tiene un PIN de kiosco configurado — configure uno desde el perfil del trabajador.",
     "enterPin": "Introduzca su PIN",
     "wrongPin": "PIN incorrecto — inténtelo de nuevo.",
+    "pinExpired": "La verificación del PIN ha caducado — introduzca su PIN de nuevo.",
     "submitPin": "Continuar",
     "project": "Proyecto",
     "selectProject": "Seleccione un proyecto...",

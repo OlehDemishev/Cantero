@@ -1,7 +1,8 @@
 import { Test } from "@nestjs/testing";
 import { BadRequestException } from "@nestjs/common";
 import { promises as dnsPromises } from "node:dns";
-import { CompanyService } from "./company.service";
+import { Prisma } from "@prisma/client";
+import { COMPANY_MEMBER_SELECT, COMPANY_SECRET_FIELDS, CompanyService } from "./company.service";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { StorageService } from "../common/storage/storage.service";
 import { AuditService } from "../common/audit/audit.service";
@@ -48,7 +49,7 @@ describe("CompanyService — referral program", () => {
     it("returns the company as-is when it already has a referralCode", async () => {
       prisma.company.findUniqueOrThrow.mockResolvedValue({ id: COMPANY_A, referralCode: "existing" });
 
-      const result = await service.get(COMPANY_A);
+      const result = await service.get(COMPANY_A, false);
 
       expect(result.referralCode).toBe("existing");
       expect(prisma.company.update).not.toHaveBeenCalled();
@@ -58,12 +59,46 @@ describe("CompanyService — referral program", () => {
       prisma.company.findUniqueOrThrow.mockResolvedValue({ id: COMPANY_A, referralCode: null });
       prisma.company.update.mockResolvedValue({ id: COMPANY_A, referralCode: "backfilled" });
 
-      const result = await service.get(COMPANY_A);
+      const result = await service.get(COMPANY_A, false);
 
       expect(prisma.company.update).toHaveBeenCalledWith(
         expect.objectContaining({ where: { id: COMPANY_A }, data: expect.objectContaining({ referralCode: expect.any(String) }) }),
       );
       expect(result.referralCode).toBe("backfilled");
+    });
+
+    const SECRETS = {
+      calendarFeedToken: "feed-token",
+      slackWebhookUrl: "https://hooks.slack.com/services/x",
+      teamsWebhookUrl: null,
+      franchiseLinkCode: "link-code",
+      iban: "DE89370400440532013000",
+      ssoCert: "-----BEGIN CERTIFICATE-----",
+      ipAllowlist: ["203.0.113.4"],
+    };
+
+    it("leaves credentials and bank details out for a member without settings.company, but says what's set up", async () => {
+      prisma.company.findUniqueOrThrow.mockResolvedValue({ id: COMPANY_A, name: "Acme", referralCode: "existing", ...SECRETS });
+
+      const result = (await service.get(COMPANY_A, false)) as Record<string, unknown>;
+
+      for (const field of COMPANY_SECRET_FIELDS) expect(result).not.toHaveProperty(field);
+      expect(result).toMatchObject({ name: "Acme", hasSlackWebhook: true, hasTeamsWebhook: false, hasCalendarFeed: true });
+    });
+
+    it("includes them for a member with settings.company", async () => {
+      prisma.company.findUniqueOrThrow.mockResolvedValue({ id: COMPANY_A, referralCode: "existing", ...SECRETS });
+
+      const result = await service.get(COMPANY_A, true);
+
+      expect(result).toMatchObject(SECRETS);
+    });
+
+    it("classifies every company column as either member-visible or secret", () => {
+      const member = Object.keys(COMPANY_MEMBER_SELECT);
+      const secret: string[] = [...COMPANY_SECRET_FIELDS];
+      expect(member.filter((f) => secret.includes(f))).toEqual([]);
+      expect(Object.keys(Prisma.CompanyScalarFieldEnum).filter((f) => !member.includes(f) && !secret.includes(f))).toEqual([]);
     });
   });
 

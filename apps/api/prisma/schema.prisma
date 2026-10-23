@@ -845,6 +845,7 @@ model User {
   commentMentions     CommentMention[]
   savedViews          SavedView[]
   customReports       CustomReport[]
+  scheduledReports    ScheduledReport[]    @relation("ScheduledReportCreator")
   sessions            UserSession[]
   passwordResetTokens PasswordResetToken[]
   ssoLoginCodes       SsoLoginCode[]
@@ -4091,9 +4092,15 @@ model ScheduledReport {
   active          Boolean                  @default(true)
   nextRunAt       DateTime
   lastSentAt      DateTime?
+  /// Who the report runs as: whoever created it or last changed it. Its numbers leave out the
+  /// restricted projects that member can't see, and it isn't sent once they lose the report's
+  /// permission. Null for reports from before this was recorded (or whose author was deleted):
+  /// those run with every restricted project left out — see ScheduledReportsService.viewerFor().
+  createdById     String?
   createdAt       DateTime                 @default(now())
 
-  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdBy User?   @relation("ScheduledReportCreator", fields: [createdById], references: [id], onDelete: SetNull)
 
   @@index([companyId])
   @@index([active, nextRunAt])

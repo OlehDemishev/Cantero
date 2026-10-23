@@ -291,10 +291,51 @@ describe("SubcontractorsService", () => {
 
       await service.setPublicListed(COMPANY_A, "sub-1", true);
 
-      expect(prisma.subcontractor.update).toHaveBeenCalledWith({
-        where: { id: "sub-1" },
-        data: { publicListed: true, publicToken: "existing-token" },
-      });
+      expect(prisma.subcontractor.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: "sub-1" },
+          data: { publicListed: true, publicToken: "existing-token" },
+        }),
+      );
+    });
+
+    it("reads the stored token explicitly (it's globally omitted) and doesn't return it", async () => {
+      prisma.subcontractor.findFirst.mockResolvedValue({ publicToken: "existing-token" });
+      prisma.subcontractor.update.mockResolvedValue({});
+
+      await service.setPublicListed(COMPANY_A, "sub-1", true);
+
+      expect(prisma.subcontractor.findFirst.mock.calls[0][0].select).toEqual({ publicToken: true });
+      const select = prisma.subcontractor.update.mock.calls[0][0].select;
+      expect(select).toBeDefined();
+      expect(select).not.toHaveProperty("publicToken");
+      expect(select).not.toHaveProperty("taxId");
+    });
+  });
+
+  describe("publicLink()", () => {
+    it("returns the token of a published profile", async () => {
+      prisma.subcontractor.findFirst.mockResolvedValue({ publicListed: true, publicToken: "tok" });
+
+      await expect(service.publicLink(COMPANY_A, "sub-1")).resolves.toEqual({ token: "tok" });
+      expect(prisma.subcontractor.findFirst.mock.calls[0][0].where).toEqual({ id: "sub-1", companyId: COMPANY_A });
+    });
+
+    it("refuses while the profile isn't published, and 404s for another company's sub", async () => {
+      prisma.subcontractor.findFirst.mockResolvedValueOnce({ publicListed: false, publicToken: "tok" }).mockResolvedValueOnce(null);
+
+      await expect(service.publicLink(COMPANY_A, "sub-1")).rejects.toThrow(BadRequestException);
+      await expect(service.publicLink(COMPANY_A, "sub-1")).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe("list()", () => {
+    it("never selects the public profile token", async () => {
+      prisma.subcontractor.findMany.mockResolvedValue([]);
+
+      await service.list(COMPANY_A);
+
+      expect(prisma.subcontractor.findMany.mock.calls[0][0].select).not.toHaveProperty("publicToken");
     });
   });
 

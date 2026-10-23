@@ -45,7 +45,7 @@ export class CustomReportsController {
     @CurrentUser() user: AuthUser,
     @Body(new ZodValidationPipe(reportDefinitionSchema)) body: ReportDefinitionInput,
   ) {
-    return this.service.preview(user.companyId, body);
+    return this.service.preview(user.companyId, body, user);
   }
 
   @Delete(":id")
@@ -55,13 +55,13 @@ export class CustomReportsController {
 
   @Get(":id/run")
   run(@CurrentUser() user: AuthUser, @Param("id") id: string) {
-    return this.service.run(user.companyId, id);
+    return this.service.run(user.companyId, id, user);
   }
 
   @Get(":id/export.csv")
   @Header("Content-Type", "text/csv")
   async exportCsv(@CurrentUser() user: AuthUser, @Param("id") id: string, @Res({ passthrough: true }) res: Response) {
-    const csv = await this.service.exportCsv(user.companyId, id);
+    const csv = await this.service.exportCsv(user.companyId, id, user);
     res.set("Content-Disposition", 'attachment; filename="report.csv"');
     return csv;
   }

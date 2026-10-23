@@ -135,7 +135,7 @@ export class WorkersController {
     @Param("id") id: string,
     @Body(new ZodValidationPipe(verifyClockInPinSchema)) body: VerifyClockInPinInput,
   ) {
-    return this.service.verifyClockInPin(user.companyId, id, body.pin);
+    return this.service.verifyClockInPin(user.companyId, user.userId, id, body.pin);
   }
 
   @Requires("hr.cases")

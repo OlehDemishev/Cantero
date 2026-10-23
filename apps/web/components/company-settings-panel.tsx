@@ -15,9 +15,10 @@ interface Company {
   city: string | null;
   postalCode: string | null;
   vatId: string | null;
-  iban: string | null;
-  datevConsultantNumber: string | null;
-  datevClientNumber: string | null;
+  // Only sent to members with settings.company (absent for everyone else, who sees the form read-only).
+  iban?: string | null;
+  datevConsultantNumber?: string | null;
+  datevClientNumber?: string | null;
   datevFiscalYearStartMonth: number | null;
   datevFiscalYearStartDay: number | null;
   datevChartOfAccounts: "skr03" | "skr04" | null;

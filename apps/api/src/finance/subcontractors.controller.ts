@@ -179,6 +179,13 @@ export class SubcontractorsController {
     return this.service.addPayment(user.companyId, { userId: user.userId, name: user.name }, id, body);
   }
 
+  /** A GET, but it hands out the link to the sub's public page — same permission as publishing it. */
+  @Requires("subcontractors.manage")
+  @Get(":id/public-link")
+  publicLink(@CurrentUser() user: AuthUser, @Param("id") id: string) {
+    return this.service.publicLink(user.companyId, id);
+  }
+
   @Patch(":id/public-listed")
   setPublicListed(
     @CurrentUser() user: AuthUser,

@@ -5,6 +5,7 @@ import { PdfService } from "../common/pdf/pdf.service";
 import { ReportsService } from "../reports/reports.service";
 import { CustomReportsService } from "../reports/custom-reports.service";
 import { LaborCostService } from "../team/labor-cost.service";
+import type { ProjectViewer } from "../common/project-access/project-access.service";
 
 @Injectable()
 export class DashboardService {
@@ -19,7 +20,9 @@ export class DashboardService {
   /** Every widget renders from an existing report/insight endpoint — this is the only place
    * that maps a widget's type + config to the right one of those, so adding a widget type never
    * means writing a new query, just wiring an existing one in here. */
-  private async resolveData(companyId: string, type: DashboardWidgetType, config: Record<string, unknown> | null) {
+  /** `viewer` is the member whose dashboard this is — every report that hides restricted
+   * projects from a member hides them here too. */
+  private async resolveData(companyId: string, viewer: ProjectViewer, type: DashboardWidgetType, config: Record<string, unknown> | null) {
     const cfg = config ?? {};
     switch (type) {
       case "revenue_trend":
@@ -27,11 +30,11 @@ export class DashboardService {
       case "cash_flow_forecast":
         return this.reports.cashFlowForecast(companyId);
       case "project_margins":
-        return this.reports.projectMargins(companyId);
+        return this.reports.projectMargins(companyId, viewer);
       case "portfolio_summary":
-        return this.reports.portfolio(companyId);
+        return this.reports.portfolio(companyId, viewer);
       case "invoice_aging":
-        return this.reports.invoiceAging(companyId);
+        return this.reports.invoiceAging(companyId, viewer);
       case "warehouse_turnover":
         return this.reports.warehouseTurnover(companyId);
       case "labor_cost":
@@ -41,15 +44,15 @@ export class DashboardService {
         });
       case "custom_report":
         if (typeof cfg.customReportId !== "string") return null;
-        return this.customReports.run(companyId, cfg.customReportId);
+        return this.customReports.run(companyId, cfg.customReportId, viewer);
       case "backlog":
         return this.reports.backlog(companyId);
       case "compliance_calendar":
-        return this.reports.complianceCalendar(companyId, typeof cfg.lookaheadDays === "number" ? cfg.lookaheadDays : undefined);
+        return this.reports.complianceCalendar(companyId, typeof cfg.lookaheadDays === "number" ? cfg.lookaheadDays : undefined, viewer);
     }
   }
 
-  async list(companyId: string, userId: string) {
+  async list(companyId: string, userId: string, role: string) {
     const widgets = await this.prisma.dashboardWidget.findMany({
       where: { companyId, userId },
       orderBy: { sortOrder: "asc" },
@@ -57,7 +60,7 @@ export class DashboardService {
     return Promise.all(
       widgets.map(async (w) => ({
         ...w,
-        data: await this.resolveData(companyId, w.type, w.config as Record<string, unknown> | null).catch(() => null),
+        data: await this.resolveData(companyId, { userId, role }, w.type, w.config as Record<string, unknown> | null).catch(() => null),
       })),
     );
   }
@@ -85,21 +88,21 @@ export class DashboardService {
     return { ok: true };
   }
 
-  async reorder(companyId: string, userId: string, orderedIds: string[]) {
+  async reorder(companyId: string, userId: string, role: string, orderedIds: string[]) {
     await Promise.all(
       orderedIds.map((id, index) =>
         this.prisma.dashboardWidget.updateMany({ where: { id, companyId, userId }, data: { sortOrder: index } }),
       ),
     );
-    return this.list(companyId, userId);
+    return this.list(companyId, userId, role);
   }
 
   /** A tabular KPI summary of the user's current dashboard — reuses PdfService's table-document
    * renderer rather than attempting to rasterize each widget's chart, consistent with the rest
    * of the app's PDF exports (invoices, estimates, closeout) all being table-shaped. */
-  async exportPdf(companyId: string, userId: string): Promise<Buffer> {
+  async exportPdf(companyId: string, userId: string, role: string): Promise<Buffer> {
     const [widgets, company] = await Promise.all([
-      this.list(companyId, userId),
+      this.list(companyId, userId, role),
       this.prisma.company.findUniqueOrThrow({ where: { id: companyId }, select: { name: true } }),
     ]);
     const rows = widgets.map((w) => ({

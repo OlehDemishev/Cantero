@@ -8,6 +8,7 @@ import { CertificateAttachment } from "@/components/certificate-attachment";
 import { SubcontractorPrequalificationPanel } from "@/components/subcontractor-prequalification-panel";
 import { apiFetch } from "@/lib/api-client";
 import { formatDate } from "@/lib/format-date";
+import { useCan } from "@/lib/permissions";
 
 const DOCUMENT_TYPES: SubcontractorDocumentType[] = ["general_liability_insurance", "workers_comp_insurance", "license", "bonding", "other"];
 
@@ -19,7 +20,6 @@ interface Subcontractor {
   specialization: string | null;
   bio: string | null;
   publicListed: boolean;
-  publicToken: string | null;
   licenseNumber: string | null;
   bondingCapacity: string | null;
   safetyProgramSummary: string | null;
@@ -122,6 +122,7 @@ export function SubcontractorListItem({
   });
   const [linkCopied, setLinkCopied] = useState(false);
   const [busy, setBusy] = useState(false);
+  const can = useCan();
   const [scorecard, setScorecard] = useState<Scorecard | null>(null);
   const [reviews, setReviews] = useState<PerformanceReview[] | null>(null);
   const [reviewForm, setReviewForm] = useState({ rating: "5", onTime: "", safetyIncidents: "0", reworkCount: "0", wouldHireAgain: "", comments: "" });
@@ -280,9 +281,11 @@ export function SubcontractorListItem({
     }
   }
 
-  function copyLink(token: string) {
-    const url = `${window.location.origin}/subcontractor-profile/${token}`;
-    navigator.clipboard.writeText(url);
+  // The token isn't in the list response (anyone with subcontractors.view sees that) — it's
+  // fetched from the manage-only endpoint when someone actually copies the link.
+  async function copyLink() {
+    const { token } = await apiFetch<{ token: string }>(`/finance/subcontractors/${s.id}/public-link`);
+    await navigator.clipboard.writeText(`${window.location.origin}/subcontractor-profile/${token}`);
     setLinkCopied(true);
     setTimeout(() => setLinkCopied(false), 2000);
   }
@@ -521,8 +524,8 @@ export function SubcontractorListItem({
                 />
                 {t("makePublic")}
               </label>
-              {s.publicListed && s.publicToken && (
-                <button onClick={() => copyLink(s.publicToken!)} className="btn-secondary px-2 py-0.5 text-xs">
+              {s.publicListed && can("subcontractors.manage") && (
+                <button onClick={copyLink} className="btn-secondary px-2 py-0.5 text-xs">
                   {linkCopied ? tc("saved") : t("copyPublicLink")}
                 </button>
               )}

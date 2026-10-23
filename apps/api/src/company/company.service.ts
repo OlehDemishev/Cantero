@@ -1,6 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { promises as dns } from "node:dns";
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
+import type { Prisma } from "@prisma/client";
 import type { LinkToParentCompanyInput, SetCustomPortalDomainInput, UpdateCompanyInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { StorageService } from "../common/storage/storage.service";
@@ -20,6 +21,116 @@ const ALLOWED_LOGO_MIME_TYPES = new Set(["image/png", "image/jpeg"]);
  * this check can provision. */
 const CUSTOM_PORTAL_DOMAIN_CNAME_TARGET = "portal.cantero.dev";
 
+/**
+ * Company fields only members holding "settings.company" receive from GET /company: credentials
+ * (chat webhook URLs, the calendar feed token, the franchise link code), the SSO and IP-allowlist
+ * configuration, and bank/accountant identifiers. Every other member gets COMPANY_MEMBER_SELECT
+ * plus has* flags saying whether the credentials are set.
+ */
+export const COMPANY_SECRET_FIELDS = [
+  "stripeAccountId",
+  "ssoEntryPoint",
+  "ssoIssuer",
+  "ssoCert",
+  "franchiseLinkCode",
+  "ipAllowlist",
+  "slackWebhookUrl",
+  "teamsWebhookUrl",
+  "calendarFeedToken",
+  "iban",
+  "datevConsultantNumber",
+  "datevClientNumber",
+] as const;
+
+/**
+ * What every member of the company may read about it — an explicit allowlist, so a column added
+ * later stays out of the response until someone decides it belongs here (company.service.spec
+ * fails until every column is in this list or COMPANY_SECRET_FIELDS). publicLeadFormToken and
+ * coiPublicToken are here on purpose: they're the links the company publishes on its website or
+ * hands to general contractors, not credentials.
+ */
+export const COMPANY_MEMBER_SELECT = {
+  id: true,
+  name: true,
+  unitSystem: true,
+  currency: true,
+  locale: true,
+  country: true,
+  createdAt: true,
+  stripeChargesEnabled: true,
+  onboardingCompletedAt: true,
+  logoStorageKey: true,
+  logoMimeType: true,
+  brandColor: true,
+  approvalThresholdAmount: true,
+  requiredApprovalCount: true,
+  changeOrderApprovalThresholdAmount: true,
+  changeOrderRequiredApprovalCount: true,
+  leadFollowUpEnabled: true,
+  estimateRemindersEnabled: true,
+  changeOrderRemindersEnabled: true,
+  enpsSurveysEnabled: true,
+  lastEnpsSentAt: true,
+  budgetAlertThresholdPercent: true,
+  lateFeePercentPerMonth: true,
+  payrollTaxBurdenPercent: true,
+  workersCompBurdenPercent: true,
+  benefitsBurdenPercent: true,
+  otherBurdenPercent: true,
+  requireSubcontractorPrequalification: true,
+  subcontractorEmrThreshold: true,
+  defaultPaymentTermsDays: true,
+  rfiSlaDays: true,
+  punchListSlaDays: true,
+  submittalEscalationEnabled: true,
+  inventoryCostingMethod: true,
+  rateCatalogApprovalThresholdPercent: true,
+  npsDetractorFollowUpEnabled: true,
+  invoiceRemindersEnabled: true,
+  workerSmsNotificationsEnabled: true,
+  publicLeadFormToken: true,
+  customPortalDomain: true,
+  customPortalDomainVerifiedAt: true,
+  ssoDomain: true,
+  deletionRequestedAt: true,
+  deletionRequestedByUserId: true,
+  reviewRequestUrl: true,
+  parentCompanyId: true,
+  sessionTimeoutMinutes: true,
+  passwordMinLength: true,
+  passwordRequireSymbol: true,
+  hideCostDataFromRoles: true,
+  hiddenNavItems: true,
+  referralCode: true,
+  referredByCompanyId: true,
+  ptoAccrualHoursPerMonth: true,
+  reportingCurrency: true,
+  address: true,
+  city: true,
+  postalCode: true,
+  vatId: true,
+  datevFiscalYearStartMonth: true,
+  datevFiscalYearStartDay: true,
+  datevChartOfAccounts: true,
+  datevSachkontenlaenge: true,
+  datevReceivablesAccount: true,
+  datevPayablesAccount: true,
+  datevRevenueAccountStandard: true,
+  datevRevenueAccountReduced: true,
+  datevRevenueAccountExempt: true,
+  datevExpenseAccountSubcontractors: true,
+  peppolScheme: true,
+  peppolParticipantId: true,
+  coiPublicToken: true,
+  coiPubliclyShared: true,
+  bondingCapacityLimit: true,
+} as const satisfies Prisma.CompanySelect;
+
+const COMPANY_FULL_SELECT = {
+  ...COMPANY_MEMBER_SELECT,
+  ...(Object.fromEntries(COMPANY_SECRET_FIELDS.map((f) => [f, true])) as Record<(typeof COMPANY_SECRET_FIELDS)[number], true>),
+} satisfies Prisma.CompanySelect;
+
 @Injectable()
 export class CompanyService {
   constructor(
@@ -30,14 +141,31 @@ export class CompanyService {
     private readonly exchangeRates: ExchangeRateService,
   ) {}
 
-  async get(companyId: string) {
-    const company = await this.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
+  /**
+   * The company profile for one of its members. `withSecrets` (the caller holds
+   * "settings.company") adds COMPANY_SECRET_FIELDS; everyone else gets COMPANY_MEMBER_SELECT and
+   * only learns whether the chat webhooks and calendar feed are set up.
+   */
+  async get(companyId: string, withSecrets: boolean) {
+    let company = await this.prisma.company.findUniqueOrThrow({ where: { id: companyId }, select: COMPANY_FULL_SELECT });
     // Backfill for a company that existed before the referral program (or was seeded directly,
     // bypassing AuthService.signup()) rather than requiring a one-off migration script.
     if (!company.referralCode) {
-      return this.prisma.company.update({ where: { id: companyId }, data: { referralCode: randomBytes(4).toString("hex") } });
+      company = await this.prisma.company.update({
+        where: { id: companyId },
+        data: { referralCode: randomBytes(4).toString("hex") },
+        select: COMPANY_FULL_SELECT,
+      });
     }
-    return company;
+    const flags = {
+      hasSlackWebhook: !!company.slackWebhookUrl,
+      hasTeamsWebhook: !!company.teamsWebhookUrl,
+      hasCalendarFeed: !!company.calendarFeedToken,
+    };
+    if (withSecrets) return { ...company, ...flags };
+    const member: Record<string, unknown> = {};
+    for (const key of Object.keys(COMPANY_MEMBER_SELECT)) member[key] = company[key as keyof typeof company];
+    return { ...(member as Prisma.CompanyGetPayload<{ select: typeof COMPANY_MEMBER_SELECT }>), ...flags };
   }
 
   /** How many companies signed up using this one's referral link. */

@@ -2709,6 +2709,7 @@
     "ipAllowlistHint": "Eine IP oder ein CIDR-Block pro Zeile. Leer lassen, um jede IP zuzulassen.",
     "calendarFeed": "Kalender-Feed",
     "calendarFeedHint": "Abonnieren Sie diese URL in Google Kalender, Outlook oder Apple Kalender, um Aufgaben- und Meilenstein-Termine zu sehen.",
+    "calendarFeedAskManager": "Ein Kalender-Feed ist eingerichtet — den Link erhalten Sie von einer Führungskraft.",
     "generateCalendarFeed": "Feed-URL erzeugen",
     "regenerateCalendarFeed": "Feed-URL neu erzeugen",
     "managerOnlyHint": "Nur Eigentümer und Administratoren können Integrationen konfigurieren."
@@ -3521,6 +3522,7 @@
     "noWorkers": "Für keinen Mitarbeiter ist eine Kiosk-PIN festgelegt — legen Sie eine im Mitarbeiterprofil fest.",
     "enterPin": "PIN eingeben",
     "wrongPin": "Falsche PIN — versuchen Sie es erneut.",
+    "pinExpired": "Die PIN-Prüfung ist abgelaufen — geben Sie Ihre PIN erneut ein.",
     "submitPin": "Weiter",
     "project": "Projekt",
     "selectProject": "Projekt auswählen...",

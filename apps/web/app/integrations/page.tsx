@@ -7,9 +7,10 @@ import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { apiFetch } from "@/lib/api-client";
 
 interface Company {
-  slackWebhookUrl: string | null;
-  teamsWebhookUrl: string | null;
-  calendarFeedToken: string | null;
+  // Whether each is set up — the webhook URLs and feed token themselves only reach settings.company holders.
+  hasSlackWebhook: boolean;
+  hasTeamsWebhook: boolean;
+  hasCalendarFeed: boolean;
   publicLeadFormToken: string | null;
 }
 interface AccountingStatus {
@@ -62,21 +63,21 @@ export default function IntegrationsPage() {
       titleKey: "slack",
       descriptionKey: "slackDescription",
       href: "/settings?tab=integrations",
-      status: company === null ? "loading" : company.slackWebhookUrl ? "connected" : "not-connected",
+      status: company === null ? "loading" : company.hasSlackWebhook ? "connected" : "not-connected",
     },
     {
       id: "teams",
       titleKey: "teams",
       descriptionKey: "teamsDescription",
       href: "/settings?tab=integrations",
-      status: company === null ? "loading" : company.teamsWebhookUrl ? "connected" : "not-connected",
+      status: company === null ? "loading" : company.hasTeamsWebhook ? "connected" : "not-connected",
     },
     {
       id: "calendar-feed",
       titleKey: "calendarFeed",
       descriptionKey: "calendarFeedDescription",
       href: "/settings?tab=integrations",
-      status: company === null ? "loading" : company.calendarFeedToken ? "connected" : "not-connected",
+      status: company === null ? "loading" : company.hasCalendarFeed ? "connected" : "not-connected",
     },
     {
       id: "webhooks",

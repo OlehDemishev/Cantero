@@ -4,12 +4,14 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import {
   SCHEDULED_REPORT_FREQUENCIES,
+  SCHEDULED_REPORT_KEYS,
   SCHEDULED_REPORT_TYPES,
   type ScheduledReportFrequency,
   type ScheduledReportType,
 } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
 import { formatDate } from "@/lib/format-date";
+import { useReportAccess } from "@/lib/report-access";
 
 interface ScheduledReport {
   id: string;
@@ -34,6 +36,10 @@ export function ScheduledReportsPanel() {
   });
   const [scheduleBusy, setScheduleBusy] = useState(false);
   const [sentNowId, setSentNowId] = useState<string | null>(null);
+  // A scheduled report runs as whoever sets it up, so only the reports they can open are offered.
+  const canView = useReportAccess();
+  const reportTypes = SCHEDULED_REPORT_TYPES.filter((ty) => canView(SCHEDULED_REPORT_KEYS[ty]));
+  const selectedType: ScheduledReportType | undefined = reportTypes.includes(scheduleForm.reportType) ? scheduleForm.reportType : reportTypes[0];
 
   function load() {
     apiFetch<ScheduledReport[]>("/scheduled-reports").then(setScheduledReports);
@@ -47,12 +53,12 @@ export function ScheduledReportsPanel() {
       .split(",")
       .map((s) => s.trim())
       .filter(Boolean);
-    if (recipientEmails.length === 0) return;
+    if (recipientEmails.length === 0 || !selectedType) return;
     setScheduleBusy(true);
     try {
       await apiFetch("/scheduled-reports", {
         method: "POST",
-        body: JSON.stringify({ name: scheduleForm.name, reportType: scheduleForm.reportType, frequency: scheduleForm.frequency, recipientEmails }),
+        body: JSON.stringify({ name: scheduleForm.name, reportType: selectedType, frequency: scheduleForm.frequency, recipientEmails }),
       });
       setScheduleForm({ name: "", reportType: "overview", frequency: "weekly", recipientEmails: "" });
       load();
@@ -94,10 +100,10 @@ export function ScheduledReportsPanel() {
               <span className="font-medium text-gray-700 dark:text-gray-200">{t("reportType")}</span>
               <select
                 className="input"
-                value={scheduleForm.reportType}
+                value={selectedType ?? ""}
                 onChange={(e) => setScheduleForm((f) => ({ ...f, reportType: e.target.value as ScheduledReportType }))}
               >
-                {SCHEDULED_REPORT_TYPES.map((ty) => (
+                {reportTypes.map((ty) => (
                   <option key={ty} value={ty}>
                     {t(`reportType_${ty}`)}
                   </option>
@@ -129,7 +135,7 @@ export function ScheduledReportsPanel() {
               onChange={(e) => setScheduleForm((f) => ({ ...f, recipientEmails: e.target.value }))}
             />
           </label>
-          <button type="submit" disabled={scheduleBusy} className="btn-primary self-start">
+          <button type="submit" disabled={scheduleBusy || !selectedType} className="btn-primary self-start">
             {t("createSchedule")}
           </button>
         </form>

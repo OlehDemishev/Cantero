@@ -2709,6 +2709,7 @@
     "ipAllowlistHint": "Одна IP-адреса або блок CIDR на рядок. Залиште порожнім, щоб дозволити будь-яку IP.",
     "calendarFeed": "Календарна стрічка",
     "calendarFeedHint": "Підпишіться на цю URL-адресу в Google Calendar, Outlook або Apple Calendar, щоб бачити терміни завдань і етапів.",
+    "calendarFeedAskManager": "Календарну стрічку налаштовано — попросіть посилання в керівника.",
     "generateCalendarFeed": "Згенерувати URL стрічки",
     "regenerateCalendarFeed": "Перегенерувати URL стрічки",
     "managerOnlyHint": "Налаштовувати інтеграції можуть лише власники та адміністратори."
@@ -3521,6 +3522,7 @@
     "noWorkers": "Жоден працівник не має встановленого PIN кіоску — встановіть його в профілі працівника.",
     "enterPin": "Введіть свій PIN",
     "wrongPin": "Невірний PIN — спробуйте ще раз.",
+    "pinExpired": "Перевірка PIN-коду минула — введіть PIN ще раз.",
     "submitPin": "Далі",
     "project": "Проєкт",
     "selectProject": "Оберіть проєкт...",

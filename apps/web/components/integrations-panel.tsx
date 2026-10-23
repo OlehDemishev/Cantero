@@ -4,11 +4,14 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch, API_URL } from "@/lib/api-client";
 
+/** The credentials are only in GET /company for members with settings.company — everyone else
+ * gets the has* flags instead. */
 interface Company {
-  ipAllowlist: string[];
-  slackWebhookUrl: string | null;
-  teamsWebhookUrl: string | null;
-  calendarFeedToken: string | null;
+  ipAllowlist?: string[];
+  slackWebhookUrl?: string | null;
+  teamsWebhookUrl?: string | null;
+  calendarFeedToken?: string | null;
+  hasCalendarFeed: boolean;
 }
 
 export function IntegrationsPanel({ canManage }: { canManage: boolean }) {
@@ -17,17 +20,19 @@ export function IntegrationsPanel({ canManage }: { canManage: boolean }) {
 
   const [form, setForm] = useState({ ipAllowlist: "", slackWebhookUrl: "", teamsWebhookUrl: "" });
   const [calendarFeedToken, setCalendarFeedToken] = useState<string | null>(null);
+  const [hasCalendarFeed, setHasCalendarFeed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [saved, setSaved] = useState(false);
 
   function load() {
     apiFetch<Company>("/company").then((c) => {
       setForm({
-        ipAllowlist: c.ipAllowlist.join("\n"),
+        ipAllowlist: (c.ipAllowlist ?? []).join("\n"),
         slackWebhookUrl: c.slackWebhookUrl ?? "",
         teamsWebhookUrl: c.teamsWebhookUrl ?? "",
       });
-      setCalendarFeedToken(c.calendarFeedToken);
+      setCalendarFeedToken(c.calendarFeedToken ?? null);
+      setHasCalendarFeed(c.hasCalendarFeed);
     });
   }
 
@@ -121,6 +126,7 @@ export function IntegrationsPanel({ canManage }: { canManage: boolean }) {
         <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("calendarFeed")}</h3>
         <p className="mb-2 text-xs text-gray-500 dark:text-gray-400">{t("calendarFeedHint")}</p>
         {feedUrl && <p className="mb-2 break-all rounded bg-gray-50 dark:bg-gray-700 p-2 font-mono text-xs">{feedUrl}</p>}
+        {!canManage && hasCalendarFeed && <p className="mb-2 text-xs text-gray-500 dark:text-gray-400">{t("calendarFeedAskManager")}</p>}
         {canManage && (
           <button onClick={generateCalendarFeed} disabled={busy} className="btn-secondary px-3 py-1 text-xs">
             {calendarFeedToken ? t("regenerateCalendarFeed") : t("generateCalendarFeed")}

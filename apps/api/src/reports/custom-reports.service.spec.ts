@@ -4,8 +4,10 @@ import { CustomReportsService } from "./custom-reports.service";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { ReportsService } from "./reports.service";
 import { LaborCostService } from "../team/labor-cost.service";
+import { ProjectAccessService } from "../common/project-access/project-access.service";
 
 const COMPANY_A = "company-a";
+const VIEWER = { userId: "user-1", role: "accountant" };
 
 describe("CustomReportsService", () => {
   let service: CustomReportsService;
@@ -17,7 +19,10 @@ describe("CustomReportsService", () => {
     customFieldValue: { findMany: jest.Mock };
   };
 
+  let projectAccess: { visibleWhere: jest.Mock };
+
   beforeEach(async () => {
+    projectAccess = { visibleWhere: jest.fn().mockResolvedValue({}) };
     prisma = {
       project: { findMany: jest.fn().mockResolvedValue([]) },
       invoice: { findMany: jest.fn().mockResolvedValue([]) },
@@ -32,6 +37,7 @@ describe("CustomReportsService", () => {
         { provide: PrismaService, useValue: prisma },
         { provide: ReportsService, useValue: {} },
         { provide: LaborCostService, useValue: {} },
+        { provide: ProjectAccessService, useValue: projectAccess },
       ],
     }).compile();
 
@@ -44,7 +50,7 @@ describe("CustomReportsService", () => {
         { name: "Riverside Reno", address: "1 River Rd", handoverDate: null, warrantyMonths: null, createdAt: new Date(), client: { name: "Acme" } },
       ]);
 
-      const result = await service.preview(COMPANY_A, { dataset: "projects", columns: ["address", "name"] });
+      const result = await service.preview(COMPANY_A, { dataset: "projects", columns: ["address", "name"] }, VIEWER);
 
       expect(result.columns.map((c) => c.key)).toEqual(["name", "address"]);
       expect(result.rows).toEqual([{ name: "Riverside Reno", address: "1 River Rd" }]);
@@ -58,25 +64,30 @@ describe("CustomReportsService", () => {
         dateFrom: "2026-01-01T00:00:00.000Z",
         dateTo: "2026-12-31T00:00:00.000Z",
         statusEquals: "paid",
-      });
+      }, VIEWER);
 
-      expect(prisma.invoice.findMany).toHaveBeenCalledWith(
+      expect(prisma.invoice.findMany.mock.calls[0][0].where.AND[0]).toEqual(
         expect.objectContaining({
-          where: expect.objectContaining({
-            companyId: COMPANY_A,
-            status: "paid",
-            createdAt: { gte: new Date("2026-01-01T00:00:00.000Z"), lte: new Date("2026-12-31T00:00:00.000Z") },
-          }),
+          companyId: COMPANY_A,
+          status: "paid",
+          createdAt: { gte: new Date("2026-01-01T00:00:00.000Z"), lte: new Date("2026-12-31T00:00:00.000Z") },
         }),
       );
     });
 
     it("silently ignores statusEquals for a dataset with no status field", async () => {
-      await service.preview(COMPANY_A, { dataset: "projects", columns: ["name"], statusEquals: "paid" });
+      await service.preview(COMPANY_A, { dataset: "projects", columns: ["name"], statusEquals: "paid" }, VIEWER);
 
-      expect(prisma.project.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({ where: expect.not.objectContaining({ status: expect.anything() }) }),
-      );
+      expect(prisma.project.findMany.mock.calls[0][0].where.AND[0]).not.toHaveProperty("status");
+    });
+
+    it("leaves out rows of projects the viewer can't see", async () => {
+      projectAccess.visibleWhere.mockResolvedValue({ projectId: { notIn: ["restricted-1"] } });
+
+      await service.preview(COMPANY_A, { dataset: "invoices", columns: ["number"] }, VIEWER);
+
+      expect(projectAccess.visibleWhere).toHaveBeenCalledWith(COMPANY_A, "Invoice", "user-1", "accountant");
+      expect(prisma.invoice.findMany.mock.calls[0][0].where.AND[1]).toEqual({ projectId: { notIn: ["restricted-1"] } });
     });
   });
 
@@ -84,7 +95,7 @@ describe("CustomReportsService", () => {
     it("throws when the saved report doesn't belong to this company", async () => {
       prisma.customReport.findFirst.mockResolvedValue(null);
 
-      await expect(service.run(COMPANY_A, "report-1")).rejects.toThrow(NotFoundException);
+      await expect(service.run(COMPANY_A, "report-1", VIEWER)).rejects.toThrow(NotFoundException);
     });
 
     it("re-runs a saved report's stored definition and renders it as CSV", async () => {
@@ -101,7 +112,7 @@ describe("CustomReportsService", () => {
         { name: "Garage Extension", address: null, handoverDate: null, warrantyMonths: null, createdAt: new Date(), client: null },
       ]);
 
-      const csv = await service.exportCsv(COMPANY_A, "report-1");
+      const csv = await service.exportCsv(COMPANY_A, "report-1", VIEWER);
 
       expect(csv).toBe('Name,Address\r\nRiverside Reno,1 River Rd\r\nGarage Extension,');
     });
