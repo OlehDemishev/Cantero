@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { BadRequestException, NotFoundException } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import { ConfigService } from "@nestjs/config";
@@ -21,6 +22,8 @@ jest.mock("@node-saml/node-saml", () => ({
 
 const COMPANY_A = "company-a";
 const ACTOR = { userId: "user-1", name: "Owner" };
+const NONCE = "n".repeat(43);
+const sha256 = (raw: string) => createHash("sha256").update(raw).digest("hex");
 
 describe("SsoService", () => {
   let service: SsoService;
@@ -28,8 +31,12 @@ describe("SsoService", () => {
     samlConsumedAssertion: { deleteMany: jest.Mock; create: jest.Mock };
     company: { update: jest.Mock; findFirst: jest.Mock; findUnique: jest.Mock; findUniqueOrThrow: jest.Mock };
     user: { findUnique: jest.Mock; create: jest.Mock };
+    ssoLoginCode: { deleteMany: jest.Mock; create: jest.Mock; findUnique: jest.Mock };
+    membership: { findUnique: jest.Mock };
   };
   let audit: { record: jest.Mock };
+  let jwt: { sign: jest.Mock };
+  let sessions: { create: jest.Mock };
 
   beforeEach(async () => {
     jest.clearAllMocks();
@@ -37,8 +44,12 @@ describe("SsoService", () => {
       company: { update: jest.fn(), findFirst: jest.fn(), findUnique: jest.fn(), findUniqueOrThrow: jest.fn().mockResolvedValue({}) },
       user: { findUnique: jest.fn(), create: jest.fn() },
       samlConsumedAssertion: { deleteMany: jest.fn(), create: jest.fn() },
+      ssoLoginCode: { deleteMany: jest.fn().mockResolvedValue({ count: 1 }), create: jest.fn(), findUnique: jest.fn() },
+      membership: { findUnique: jest.fn() },
     };
     audit = { record: jest.fn() };
+    jwt = { sign: jest.fn().mockReturnValue("signed-jwt") };
+    sessions = { create: jest.fn().mockResolvedValue("session-1") };
 
     const module = await Test.createTestingModule({
       providers: [
@@ -46,8 +57,8 @@ describe("SsoService", () => {
         { provide: PrismaService, useValue: prisma },
         { provide: AuditService, useValue: audit },
         { provide: ConfigService, useValue: { get: jest.fn().mockReturnValue(undefined) } },
-        { provide: JwtService, useValue: { sign: jest.fn().mockReturnValue("signed-jwt") } },
-        { provide: SessionsService, useValue: { create: jest.fn().mockResolvedValue("session-1") } },
+        { provide: JwtService, useValue: jwt },
+        { provide: SessionsService, useValue: sessions },
       ],
     }).compile();
 
@@ -81,7 +92,7 @@ describe("SsoService", () => {
     it("rejects when no company has SSO configured for the email's domain", async () => {
       prisma.company.findFirst.mockResolvedValue(null);
 
-      await expect(service.startLogin("user@unknown.com")).rejects.toThrow(NotFoundException);
+      await expect(service.startLogin("user@unknown.com", NONCE)).rejects.toThrow(NotFoundException);
     });
 
     it("builds an IdP redirect URL for a domain with SSO configured", async () => {
@@ -93,9 +104,10 @@ describe("SsoService", () => {
       });
       getAuthorizeUrlAsync.mockResolvedValue("https://idp.example/sso?SAMLRequest=...");
 
-      const result = await service.startLogin("user@acme.com");
+      const result = await service.startLogin("user@acme.com", NONCE);
 
       expect(result.redirectUrl).toBe("https://idp.example/sso?SAMLRequest=...");
+      expect(getAuthorizeUrlAsync).toHaveBeenCalledWith(NONCE, undefined, {});
     });
   });
 
@@ -112,14 +124,14 @@ describe("SsoService", () => {
     it("rejects when SSO isn't configured for the company", async () => {
       prisma.company.findUnique.mockResolvedValue({ id: COMPANY_A, ssoEntryPoint: null });
 
-      await expect(service.handleAcs(COMPANY_A, "response", {})).rejects.toThrow(NotFoundException);
+      await expect(service.handleAcs(COMPANY_A, "response", NONCE)).rejects.toThrow(NotFoundException);
     });
 
     it("rejects an assertion whose email domain doesn't match the company's configured SSO domain", async () => {
       prisma.company.findUnique.mockResolvedValue(configuredCompany);
       validatePostResponseAsync.mockResolvedValue({ profile: profileFor("user@other.com") });
 
-      await expect(service.handleAcs(COMPANY_A, "response", {})).rejects.toThrow(BadRequestException);
+      await expect(service.handleAcs(COMPANY_A, "response", NONCE)).rejects.toThrow(BadRequestException);
       expect(prisma.user.create).not.toHaveBeenCalled();
     });
 
@@ -128,7 +140,7 @@ describe("SsoService", () => {
       validatePostResponseAsync.mockResolvedValue({ profile: profileFor("user@acme.com") });
       prisma.user.findUnique.mockResolvedValue({ id: "existing-user", email: "user@acme.com", memberships: [] });
 
-      await expect(service.handleAcs(COMPANY_A, "response", {})).rejects.toThrow(BadRequestException);
+      await expect(service.handleAcs(COMPANY_A, "response", NONCE)).rejects.toThrow(BadRequestException);
     });
 
     it("just-in-time provisions a new user as worker on first sign-in", async () => {
@@ -142,9 +154,9 @@ describe("SsoService", () => {
         memberships: [{ role: "worker" }],
       });
 
-      const result = await service.handleAcs(COMPANY_A, "response", {});
+      const result = await service.handleAcs(COMPANY_A, "response", NONCE);
 
-      expect(result.accessToken).toBe("signed-jwt");
+      expect(result.code).toEqual(expect.any(String));
       expect(prisma.user.create).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({
@@ -165,9 +177,9 @@ describe("SsoService", () => {
         memberships: [{ role: "admin" }],
       });
 
-      const result = await service.handleAcs(COMPANY_A, "response", {});
+      const result = await service.handleAcs(COMPANY_A, "response", NONCE);
 
-      expect(result.accessToken).toBe("signed-jwt");
+      expect(result.code).toEqual(expect.any(String));
       expect(prisma.user.create).not.toHaveBeenCalled();
     });
 
@@ -176,7 +188,7 @@ describe("SsoService", () => {
       validatePostResponseAsync.mockResolvedValue({ profile: profileFor("returning@acme.com", "_abc", "2099-01-01T00:00:00Z") });
       prisma.user.findUnique.mockResolvedValue({ id: "u", email: "returning@acme.com", name: "R", memberships: [{ role: "admin" }] });
 
-      await service.handleAcs(COMPANY_A, "response", {});
+      await service.handleAcs(COMPANY_A, "response", NONCE);
 
       expect(prisma.samlConsumedAssertion.create).toHaveBeenCalledWith({
         data: { companyId: COMPANY_A, assertionId: "_abc", expiresAt: new Date("2099-01-01T00:00:00Z") },
@@ -188,7 +200,7 @@ describe("SsoService", () => {
       validatePostResponseAsync.mockResolvedValue({ profile: profileFor("returning@acme.com") });
       prisma.samlConsumedAssertion.create.mockRejectedValue(Object.assign(new Error("unique"), { code: "P2002" }));
 
-      await expect(service.handleAcs(COMPANY_A, "response", {})).rejects.toThrow(/already used/);
+      await expect(service.handleAcs(COMPANY_A, "response", NONCE)).rejects.toThrow(/already used/);
       expect(prisma.user.findUnique).not.toHaveBeenCalled();
     });
 
@@ -196,16 +208,94 @@ describe("SsoService", () => {
       prisma.company.findUnique.mockResolvedValue(configuredCompany);
       validatePostResponseAsync.mockResolvedValue({ profile: { nameID: "returning@acme.com", email: "returning@acme.com", getAssertionXml: () => "<Assertion/>" } });
 
-      await expect(service.handleAcs(COMPANY_A, "response", {})).rejects.toThrow(/no ID/);
+      await expect(service.handleAcs(COMPANY_A, "response", NONCE)).rejects.toThrow(/no ID/);
       expect(prisma.samlConsumedAssertion.create).not.toHaveBeenCalled();
+    });
+
+    it("hands back a one-time code bound to the nonce instead of a token, storing only hashes", async () => {
+      prisma.company.findUnique.mockResolvedValue(configuredCompany);
+      validatePostResponseAsync.mockResolvedValue({ profile: profileFor("returning@acme.com") });
+      prisma.user.findUnique.mockResolvedValue({ id: "u", email: "returning@acme.com", name: "R", memberships: [{ role: "admin" }] });
+
+      const { code } = await service.handleAcs(COMPANY_A, "response", NONCE);
+
+      expect(code.length).toBeGreaterThanOrEqual(40);
+      expect(jwt.sign).not.toHaveBeenCalled();
+      expect(sessions.create).not.toHaveBeenCalled();
+      const { data } = prisma.ssoLoginCode.create.mock.calls[0][0];
+      expect(data).toEqual({ codeHash: sha256(code), nonceHash: sha256(NONCE), userId: "u", companyId: COMPANY_A, expiresAt: expect.any(Date) });
+      expect(data.expiresAt.getTime() - Date.now()).toBeLessThanOrEqual(60_000);
+    });
+
+    it.each([undefined, "", "short"])("refuses an assertion without the login page's nonce in RelayState (%p)", async (relayState) => {
+      await expect(service.handleAcs(COMPANY_A, "response", relayState)).rejects.toThrow(/login page/);
+      expect(validatePostResponseAsync).not.toHaveBeenCalled();
     });
 
     it("doesn't record anything for an assertion that fails the domain check", async () => {
       prisma.company.findUnique.mockResolvedValue(configuredCompany);
       validatePostResponseAsync.mockResolvedValue({ profile: profileFor("user@other.com") });
 
-      await expect(service.handleAcs(COMPANY_A, "response", {})).rejects.toThrow(BadRequestException);
+      await expect(service.handleAcs(COMPANY_A, "response", NONCE)).rejects.toThrow(BadRequestException);
       expect(prisma.samlConsumedAssertion.create).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("exchangeCode()", () => {
+    const META = { userAgent: "Chrome", ipAddress: "1.2.3.4" };
+    const record = (overrides: Record<string, unknown> = {}) => ({
+      id: "code-1",
+      codeHash: sha256("the-code"),
+      nonceHash: sha256(NONCE),
+      userId: "user-1",
+      companyId: COMPANY_A,
+      expiresAt: new Date(Date.now() + 30_000),
+      ...overrides,
+    });
+
+    it("issues an access token for the code's user and deletes the code", async () => {
+      prisma.ssoLoginCode.findUnique.mockResolvedValue(record());
+      prisma.membership.findUnique.mockResolvedValue({ role: "admin", customRole: null, user: { email: "a@acme.com", name: "A" } });
+
+      await expect(service.exchangeCode("the-code", NONCE, META)).resolves.toEqual({ accessToken: "signed-jwt" });
+
+      expect(prisma.ssoLoginCode.findUnique).toHaveBeenCalledWith({ where: { codeHash: sha256("the-code") } });
+      expect(prisma.ssoLoginCode.deleteMany).toHaveBeenCalledWith({ where: { id: "code-1" } });
+      expect(sessions.create).toHaveBeenCalledWith("user-1", COMPANY_A, META);
+      expect(jwt.sign).toHaveBeenCalledWith(expect.objectContaining({ userId: "user-1", companyId: COMPANY_A, role: "admin", sid: "session-1" }));
+    });
+
+    it("refuses an unknown code", async () => {
+      prisma.ssoLoginCode.findUnique.mockResolvedValue(null);
+      await expect(service.exchangeCode("nope", NONCE, META)).rejects.toThrow(BadRequestException);
+      expect(jwt.sign).not.toHaveBeenCalled();
+    });
+
+    it("refuses a code another request already redeemed", async () => {
+      prisma.ssoLoginCode.findUnique.mockResolvedValue(record());
+      prisma.ssoLoginCode.deleteMany.mockResolvedValue({ count: 0 });
+      await expect(service.exchangeCode("the-code", NONCE, META)).rejects.toThrow(/already used/);
+      expect(jwt.sign).not.toHaveBeenCalled();
+    });
+
+    it("refuses an expired code", async () => {
+      prisma.ssoLoginCode.findUnique.mockResolvedValue(record({ expiresAt: new Date(Date.now() - 1) }));
+      await expect(service.exchangeCode("the-code", NONCE, META)).rejects.toThrow(BadRequestException);
+      expect(jwt.sign).not.toHaveBeenCalled();
+    });
+
+    it("refuses a code presented with another browser's nonce, and burns it", async () => {
+      prisma.ssoLoginCode.findUnique.mockResolvedValue(record());
+      await expect(service.exchangeCode("the-code", "x".repeat(43), META)).rejects.toThrow(/another browser/);
+      expect(prisma.ssoLoginCode.deleteMany).toHaveBeenCalledWith({ where: { id: "code-1" } });
+      expect(sessions.create).not.toHaveBeenCalled();
+    });
+
+    it("refuses when the membership was removed in the meantime", async () => {
+      prisma.ssoLoginCode.findUnique.mockResolvedValue(record());
+      prisma.membership.findUnique.mockResolvedValue(null);
+      await expect(service.exchangeCode("the-code", NONCE, META)).rejects.toThrow(BadRequestException);
+      expect(sessions.create).not.toHaveBeenCalled();
     });
   });
 });

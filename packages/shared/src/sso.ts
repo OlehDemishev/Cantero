@@ -15,7 +15,21 @@ export const updateSsoConfigSchema = z.object({
 });
 export type UpdateSsoConfigInput = z.infer<typeof updateSsoConfigSchema>;
 
+/// A random value the login page keeps in sessionStorage for the length of one SSO sign-in. It
+/// travels to the IdP and back as SAML RelayState, the ACS binds the one-time code to it, and the
+/// code is only exchanged together with it — so the sign-in completes only in the browser tab
+/// that started it (no login CSRF via someone else's callback link).
+export const ssoNonceSchema = z.string().regex(/^[A-Za-z0-9_-]{32,128}$/, "Invalid SSO nonce");
+
 export const startSsoLoginSchema = z.object({
   email: z.string().email(),
+  nonce: ssoNonceSchema,
 });
 export type StartSsoLoginInput = z.infer<typeof startSsoLoginSchema>;
+
+/// The browser's half of the SSO hand-off: the one-time code from /sso/callback plus its nonce.
+export const exchangeSsoCodeSchema = z.object({
+  code: z.string().min(1).max(200),
+  nonce: ssoNonceSchema,
+});
+export type ExchangeSsoCodeInput = z.infer<typeof exchangeSsoCodeSchema>;

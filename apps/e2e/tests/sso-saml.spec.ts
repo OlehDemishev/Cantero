@@ -60,8 +60,9 @@ function spIssuer() {
 async function signInViaIdp(page: Page, email: string, respond: (email: string) => string) {
   let samlRequestSeen = false;
   await page.route(`${idp.entryPoint}**`, async (route) => {
-    samlRequestSeen = new URL(route.request().url()).searchParams.has("SAMLRequest");
-    await route.fulfill({ contentType: "text/html", body: autoPostPage(acsUrl(), respond(email)) });
+    const params = new URL(route.request().url()).searchParams;
+    samlRequestSeen = params.has("SAMLRequest");
+    await route.fulfill({ contentType: "text/html", body: autoPostPage(acsUrl(), respond(email), params.get("RelayState")) });
   });
   await page.goto("/login");
   await page.getByRole("button", { name: "Sign in with company SSO instead" }).click();
@@ -82,6 +83,29 @@ test("a new employee signs in through the company IdP and is provisioned as a wo
   expect(me.user.name).toBe("New Hire");
   expect(me.user.role).toBe("worker");
   expect(me.company.id).toBe(companyId);
+});
+
+test("the one-time code from the callback is useless outside the tab that started the sign-in", async ({ page, browser }) => {
+  const email = `link.${Date.now()}@${SSO_DOMAIN}`;
+  // Stop at the callback before the page redeems the code, as if the URL had been copied out.
+  let code: string | null = null;
+  await page.route((url) => url.pathname === "/sso/callback" && url.searchParams.has("code"), async (route) => {
+    code = new URL(route.request().url()).searchParams.get("code");
+    await route.fulfill({ contentType: "text/html", body: "<!doctype html><title>held</title>" });
+  });
+  await signInViaIdp(page, email, (e) => signedSamlResponse(idp, { email: e, displayName: "Link", spIssuer: spIssuer(), acsUrl: acsUrl() }));
+  expect(code).toBeTruthy();
+
+  // The same callback link opened in another browser (another person's, say) has no nonce to match.
+  const other = await browser.newPage();
+  await other.goto(`/sso/callback?code=${encodeURIComponent(code!)}`);
+  await expect(other.getByText(/started in another browser/)).toBeVisible();
+  expect(new URL(other.url()).search).toBe("");
+  expect(await other.evaluate(() => localStorage.getItem("cantero_token"))).toBeNull();
+  await other.close();
+
+  // Nor can it be redeemed directly with a guessed nonce.
+  await expect(api("POST", "/auth/sso/exchange", null, { code, nonce: "x".repeat(43) })).rejects.toThrow();
 });
 
 test("an assertion altered after signing is rejected", async ({ page }) => {

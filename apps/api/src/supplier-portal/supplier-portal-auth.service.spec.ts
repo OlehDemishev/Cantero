@@ -9,7 +9,7 @@ import { MailService } from "../common/mail/mail.service";
 describe("SupplierPortalAuthService", () => {
   let service: SupplierPortalAuthService;
   let prisma: {
-    supplier: { findMany: jest.Mock };
+    supplier: { findMany: jest.Mock; updateMany: jest.Mock };
     supplierPortalLoginToken: { create: jest.Mock; findUnique: jest.Mock; update: jest.Mock };
   };
   let mail: { send: jest.Mock };
@@ -17,7 +17,7 @@ describe("SupplierPortalAuthService", () => {
 
   beforeEach(async () => {
     prisma = {
-      supplier: { findMany: jest.fn() },
+      supplier: { findMany: jest.fn(), updateMany: jest.fn() },
       supplierPortalLoginToken: { create: jest.fn(), findUnique: jest.fn(), update: jest.fn() },
     };
     mail = { send: jest.fn() };
@@ -94,7 +94,7 @@ describe("SupplierPortalAuthService", () => {
         supplierId: "supplier-1",
         usedAt: null,
         expiresAt: new Date(Date.now() + 1000 * 60),
-        supplier: { companyId: "company-a", name: "Jane", company: { name: "Acme Co" } },
+        supplier: { portalTokenVersion: 2, companyId: "company-a", name: "Jane", company: { name: "Acme Co" } },
       });
 
       const result = await service.verify("good-token");
@@ -103,8 +103,18 @@ describe("SupplierPortalAuthService", () => {
         where: { id: "tok-1" },
         data: { usedAt: expect.any(Date) },
       });
-      expect(portalJwt.sign).toHaveBeenCalledWith({ supplierId: "supplier-1", companyId: "company-a" });
+      expect(portalJwt.sign).toHaveBeenCalledWith({ supplierId: "supplier-1", companyId: "company-a", tokenVersion: 2 });
       expect(result).toEqual({ accessToken: "signed-jwt", supplierName: "Jane", companyName: "Acme Co" });
+    });
+  });
+
+  describe("logout()", () => {
+    it("bumps the supplier's portalTokenVersion within its own company, retiring every token issued so far", async () => {
+      await expect(service.logout({ supplierId: "supplier-1", companyId: "company-a" })).resolves.toEqual({ ok: true });
+      expect(prisma.supplier.updateMany).toHaveBeenCalledWith({
+        where: { id: "supplier-1", companyId: "company-a" },
+        data: { portalTokenVersion: { increment: 1 } },
+      });
     });
   });
 });

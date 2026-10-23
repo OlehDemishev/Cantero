@@ -3,9 +3,11 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { ApiError } from "@/lib/api-client";
 import {
   getSubcontractorPortalToken,
   subcontractorPortalApiFetch,
+  signOutSubcontractorPortal,
   clearSubcontractorPortalToken,
 } from "@/lib/subcontractor-portal-api-client";
 import { SignaturePad } from "@/components/signature-pad";
@@ -113,7 +115,15 @@ export default function SubcontractorPortalDashboardPage() {
       router.replace("/subcontractor-portal/login");
       return;
     }
-    subcontractorPortalApiFetch<Me>("/subcontractor-portal/me").then(setMe);
+    subcontractorPortalApiFetch<Me>("/subcontractor-portal/me")
+      .then(setMe)
+      .catch((err) => {
+        // Signed out on another device, or no longer on file: back to the sign-in page.
+        if (err instanceof ApiError && err.status === 401) {
+          clearSubcontractorPortalToken();
+          router.replace("/subcontractor-portal/login");
+        }
+      });
     subcontractorPortalApiFetch<Assignment[]>("/subcontractor-portal/projects").then((list) => {
       setAssignments(list);
       if (list[0]) setForm((f) => ({ ...f, projectId: f.projectId || list[0].project.id }));
@@ -125,8 +135,8 @@ export default function SubcontractorPortalDashboardPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  function logout() {
-    clearSubcontractorPortalToken();
+  async function logout() {
+    await signOutSubcontractorPortal();
     router.replace("/subcontractor-portal/login");
   }
 

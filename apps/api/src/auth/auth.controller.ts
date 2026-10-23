@@ -11,10 +11,13 @@ import {
   type ResetPasswordInput,
   type SignupInput,
   type Verify2faInput,
+  type AuthUser,
 } from "@cantero/shared";
 import { Public } from "../common/decorators/public.decorator";
+import { CurrentUser } from "../common/decorators/current-user.decorator";
+import { OpenToAllRoles } from "../common/decorators/roles.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
-import type { SessionMeta } from "../common/sessions/sessions.service";
+import { SessionsService, type SessionMeta } from "../common/sessions/sessions.service";
 import { AuthService } from "./auth.service";
 import { TwoFactorService } from "./two-factor.service";
 import { PasswordResetService } from "./password-reset.service";
@@ -29,6 +32,7 @@ export class AuthController {
     private readonly authService: AuthService,
     private readonly twoFactorService: TwoFactorService,
     private readonly passwordResetService: PasswordResetService,
+    private readonly sessions: SessionsService,
   ) {}
 
   @Public()
@@ -59,5 +63,14 @@ export class AuthController {
   @Post("reset-password")
   resetPassword(@Body(new ZodValidationPipe(resetPasswordSchema)) body: ResetPasswordInput) {
     return this.passwordResetService.resetPassword(body);
+  }
+
+  /** Ends the session this request's token belongs to. The web calls it on "Sign out" before it
+   * forgets the token, so a copy of the token (another tab, a log, a shared device's storage)
+   * stops working too. */
+  @OpenToAllRoles("signing out of one's own session")
+  @Post("logout")
+  logout(@CurrentUser() user: AuthUser) {
+    return this.sessions.revokeCurrent(user.userId, user.sid);
   }
 }

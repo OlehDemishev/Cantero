@@ -43,6 +43,46 @@ export function clearToken(): void {
   localStorage.removeItem(TOKEN_KEY);
 }
 
+/** How long sign-out waits for the API before going ahead locally anyway. */
+const LOGOUT_TIMEOUT_MS = 3000;
+
+/**
+ * The "Sign out" button: ends the session on the server, wipes this account's cached API reads
+ * (the IndexedDB read cache and the service worker's /api/ cache) so the next person on a shared
+ * device can't browse them offline, then forgets the token. The server call is best effort —
+ * offline or an unreachable API never keeps anyone signed in here. Queued unsent writes are kept
+ * on purpose: they stay in this account's own store and go out on its next sign-in.
+ */
+export async function signOutSession(): Promise<void> {
+  const token = getToken();
+  if (token) {
+    try {
+      await fetch(`${API_URL}/auth/logout`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        signal: AbortSignal.timeout(LOGOUT_TIMEOUT_MS),
+      });
+    } catch {
+      // offline or timed out — the token is still dropped below
+    }
+  }
+  const account = accountOf(token);
+  await Promise.all([account ? forgetCachedReads(account.key) : undefined, clearApiResponseCache()]);
+  clearToken();
+}
+
+/** Deletes the service worker's API response cache (public/sw.js API_CACHE, "<version>-api") from
+ * the page itself, so it works whether or not a worker controls this tab right now. */
+async function clearApiResponseCache(): Promise<void> {
+  try {
+    if (typeof caches === "undefined") return;
+    const names = await caches.keys();
+    await Promise.all(names.filter((name) => name.endsWith("-api")).map((name) => caches.delete(name)));
+  } catch {
+    // Cache Storage unavailable (private mode, insecure origin) — nothing was cached there then
+  }
+}
+
 export class ApiError extends Error {
   constructor(
     public status: number,

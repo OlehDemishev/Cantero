@@ -1,8 +1,18 @@
-const CACHE_VERSION = "cantero-v1";
+// v2: drops v1's page cache, which could hold navigations to token-bearing URLs (see below).
+const CACHE_VERSION = "cantero-v2";
 const PAGES_CACHE = `${CACHE_VERSION}-pages`;
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const API_CACHE = `${CACHE_VERSION}-api`;
 const OFFLINE_URL = "/offline.html";
+
+// Pages whose URL is itself a credential: the SSO callback's one-time code, reset and magic-link
+// tokens, and the public signing/survey/feedback/invite links. Cache Storage keys by full URL, so
+// caching these would keep the credential on the device long after it was used.
+const TOKEN_PAGE = /^\/(?:sso\/|reset-password|portal\/verify|supplier-portal\/verify|subcontractor-portal\/verify|sign\/|survey\/|enps-survey\/|service-feedback\/|accept-invite\/|estimate\/|change-order\/|contract\/|lead\/|company-coi\/)/;
+
+function isCacheablePage(url) {
+  return !url.search && !TOKEN_PAGE.test(url.pathname);
+}
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -49,6 +59,11 @@ self.addEventListener("fetch", (event) => {
   // Navigations (HTML pages): network-first, cache successful responses, fall back
   // to the last cached copy of that page, and finally to a generic offline page.
   if (request.mode === "navigate") {
+    if (!isCacheablePage(url)) {
+      // Never stored, and never answered from the cache either — only the generic offline page.
+      event.respondWith(fetch(request).catch(() => caches.match(OFFLINE_URL)));
+      return;
+    }
     event.respondWith(
       fetch(request)
         .then((response) => {
@@ -99,6 +114,7 @@ self.addEventListener("fetch", (event) => {
 // own that the signed-in user changed. api-client.ts's setToken() posts this message on a
 // detected account switch (same trigger that clears the IndexedDB offline store), so a device
 // reused across accounts never serves one account's cached API reads to another while offline.
+// Sign-out (signOutSession in api-client.ts) deletes the same cache from the page directly.
 self.addEventListener("message", (event) => {
   if (event.data?.type === "CLEAR_API_CACHE") {
     event.waitUntil(caches.delete(API_CACHE));

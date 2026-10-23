@@ -3,7 +3,7 @@ import { BadRequestException, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { MailService } from "../common/mail/mail.service";
-import { SubcontractorPortalJwtService } from "./subcontractor-portal-jwt.service";
+import { SubcontractorPortalJwtService, type PortalSubcontractorContext } from "./subcontractor-portal-jwt.service";
 import { html } from "../common/mail/html";
 
 const LOGIN_TOKEN_TTL_MS = 15 * 60 * 1000;
@@ -56,7 +56,18 @@ export class SubcontractorPortalAuthService {
     const accessToken = this.portalJwt.sign({
       subcontractorId: record.subcontractorId,
       companyId: record.subcontractor.companyId,
+      tokenVersion: record.subcontractor.portalTokenVersion,
     });
     return { accessToken, subcontractorName: record.subcontractor.name, companyName: record.subcontractor.company.name };
+  }
+
+  /** Signs the subcontractor out of the portal on every device: bumping portalTokenVersion retires every
+   * portal token issued to them so far, which SubcontractorPortalAuthGuard then refuses. */
+  async logout(portal: PortalSubcontractorContext): Promise<{ ok: true }> {
+    await this.prisma.subcontractor.updateMany({
+      where: { id: portal.subcontractorId, companyId: portal.companyId },
+      data: { portalTokenVersion: { increment: 1 } },
+    });
+    return { ok: true };
   }
 }

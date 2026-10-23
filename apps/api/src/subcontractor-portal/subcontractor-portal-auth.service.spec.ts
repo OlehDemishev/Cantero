@@ -9,7 +9,7 @@ import { MailService } from "../common/mail/mail.service";
 describe("SubcontractorPortalAuthService", () => {
   let service: SubcontractorPortalAuthService;
   let prisma: {
-    subcontractor: { findMany: jest.Mock };
+    subcontractor: { findMany: jest.Mock; updateMany: jest.Mock };
     subcontractorPortalLoginToken: { create: jest.Mock; findUnique: jest.Mock; update: jest.Mock };
   };
   let mail: { send: jest.Mock };
@@ -17,7 +17,7 @@ describe("SubcontractorPortalAuthService", () => {
 
   beforeEach(async () => {
     prisma = {
-      subcontractor: { findMany: jest.fn() },
+      subcontractor: { findMany: jest.fn(), updateMany: jest.fn() },
       subcontractorPortalLoginToken: { create: jest.fn(), findUnique: jest.fn(), update: jest.fn() },
     };
     mail = { send: jest.fn() };
@@ -94,7 +94,7 @@ describe("SubcontractorPortalAuthService", () => {
         subcontractorId: "sub-1",
         usedAt: null,
         expiresAt: new Date(Date.now() + 1000 * 60),
-        subcontractor: { companyId: "company-a", name: "Jane", company: { name: "Acme Co" } },
+        subcontractor: { portalTokenVersion: 2, companyId: "company-a", name: "Jane", company: { name: "Acme Co" } },
       });
 
       const result = await service.verify("good-token");
@@ -103,8 +103,18 @@ describe("SubcontractorPortalAuthService", () => {
         where: { id: "tok-1" },
         data: { usedAt: expect.any(Date) },
       });
-      expect(portalJwt.sign).toHaveBeenCalledWith({ subcontractorId: "sub-1", companyId: "company-a" });
+      expect(portalJwt.sign).toHaveBeenCalledWith({ subcontractorId: "sub-1", companyId: "company-a", tokenVersion: 2 });
       expect(result).toEqual({ accessToken: "signed-jwt", subcontractorName: "Jane", companyName: "Acme Co" });
+    });
+  });
+
+  describe("logout()", () => {
+    it("bumps the subcontractor's portalTokenVersion within its own company, retiring every token issued so far", async () => {
+      await expect(service.logout({ subcontractorId: "subcontractor-1", companyId: "company-a" })).resolves.toEqual({ ok: true });
+      expect(prisma.subcontractor.updateMany).toHaveBeenCalledWith({
+        where: { id: "subcontractor-1", companyId: "company-a" },
+        data: { portalTokenVersion: { increment: 1 } },
+      });
     });
   });
 });

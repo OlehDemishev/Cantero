@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { getPortalToken, portalApiFetch, clearPortalToken } from "@/lib/portal-api-client";
+import { ApiError } from "@/lib/api-client";
+import { getPortalToken, portalApiFetch, signOutPortal, clearPortalToken } from "@/lib/portal-api-client";
 import { formatDate } from "@/lib/format-date";
 
 interface Me {
@@ -103,7 +104,15 @@ export default function PortalDashboardPage() {
   const [changeRequestMessage, setChangeRequestMessage] = useState<string | null>(null);
 
   function loadMe() {
-    portalApiFetch<Me>("/portal/me").then(setMe);
+    portalApiFetch<Me>("/portal/me")
+      .then(setMe)
+      .catch((err) => {
+        // Signed out on another device, or no longer on file: back to the sign-in page.
+        if (err instanceof ApiError && err.status === 401) {
+          clearPortalToken();
+          router.replace("/portal/login");
+        }
+      });
   }
 
   async function saveCard() {
@@ -225,8 +234,8 @@ export default function PortalDashboardPage() {
     }
   }
 
-  function logout() {
-    clearPortalToken();
+  async function logout() {
+    await signOutPortal();
     router.replace("/portal/login");
   }
 

@@ -3,7 +3,7 @@ import { BadRequestException, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { MailService } from "../common/mail/mail.service";
-import { SupplierPortalJwtService } from "./supplier-portal-jwt.service";
+import { SupplierPortalJwtService, type PortalSupplierContext } from "./supplier-portal-jwt.service";
 import { html } from "../common/mail/html";
 
 const LOGIN_TOKEN_TTL_MS = 15 * 60 * 1000;
@@ -56,7 +56,18 @@ export class SupplierPortalAuthService {
     const accessToken = this.portalJwt.sign({
       supplierId: record.supplierId,
       companyId: record.supplier.companyId,
+      tokenVersion: record.supplier.portalTokenVersion,
     });
     return { accessToken, supplierName: record.supplier.name, companyName: record.supplier.company.name };
+  }
+
+  /** Signs the supplier out of the portal on every device: bumping portalTokenVersion retires every
+   * portal token issued to them so far, which SupplierPortalAuthGuard then refuses. */
+  async logout(portal: PortalSupplierContext): Promise<{ ok: true }> {
+    await this.prisma.supplier.updateMany({
+      where: { id: portal.supplierId, companyId: portal.companyId },
+      data: { portalTokenVersion: { increment: 1 } },
+    });
+    return { ok: true };
   }
 }

@@ -110,6 +110,7 @@
     "useSsoPasswordInstead": "Zaloguj się hasłem",
     "ssoError": "Nie udało się rozpocząć logowania SSO — sprawdź domenę e-mail lub skontaktuj się z administratorem.",
     "ssoSigningIn": "Logowanie…",
+    "ssoStartedElsewhere": "To logowanie zostało rozpoczęte w innej przeglądarce lub karcie albo zostało już użyte. Rozpocznij je ponownie na stronie logowania.",
     "backToLogin": "Powrót do logowania",
     "forgotPassword": "Nie pamiętasz hasła?",
     "forgotPasswordTitle": "Zresetuj hasło",

@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type SVGProps } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { clearToken, getToken } from "@/lib/api-client";
+import { clearToken, getToken, signOutSession } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import { OfflineOthersNotice } from "@/components/offline-others-notice";
 import { useCan } from "@/lib/permissions";
@@ -353,8 +353,8 @@ function AppHeader({ me }: { me: NonNullable<ReturnType<typeof useMe>["data"]> }
     else toggleMobileSidebar();
   }
 
-  function signOut() {
-    clearToken();
+  async function signOut() {
+    await signOutSession();
     router.replace("/login");
   }
 

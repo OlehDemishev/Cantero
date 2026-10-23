@@ -3,7 +3,7 @@ import { BadRequestException, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { MailService } from "../common/mail/mail.service";
-import { PortalJwtService } from "./portal-jwt.service";
+import { PortalJwtService, type PortalClientContext } from "./portal-jwt.service";
 import { html } from "../common/mail/html";
 
 const LOGIN_TOKEN_TTL_MS = 15 * 60 * 1000;
@@ -58,7 +58,21 @@ export class PortalAuthService {
 
     await this.prisma.clientPortalLoginToken.update({ where: { id: record.id }, data: { usedAt: new Date() } });
 
-    const accessToken = this.portalJwt.sign({ clientId: record.clientId, companyId: record.client.companyId });
+    const accessToken = this.portalJwt.sign({
+      clientId: record.clientId,
+      companyId: record.client.companyId,
+      tokenVersion: record.client.portalTokenVersion,
+    });
     return { accessToken, clientName: record.client.name, companyName: record.client.company.name };
+  }
+
+  /** Signs the client out of the portal on every device: bumping portalTokenVersion retires every
+   * portal token issued to them so far, which PortalAuthGuard then refuses. */
+  async logout(portal: PortalClientContext): Promise<{ ok: true }> {
+    await this.prisma.client.updateMany({
+      where: { id: portal.clientId, companyId: portal.companyId },
+      data: { portalTokenVersion: { increment: 1 } },
+    });
+    return { ok: true };
   }
 }

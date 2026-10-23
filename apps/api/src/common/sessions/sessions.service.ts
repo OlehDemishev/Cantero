@@ -76,6 +76,16 @@ export class SessionsService {
     });
   }
 
+  /** "Sign out": ends the session the caller's own token carries, so that token stops working
+   * everywhere it may have been copied to rather than only being forgotten by this browser. Scoped
+   * to the caller, and a no-op for an already revoked session. */
+  async revokeCurrent(userId: string, sessionId: string | undefined): Promise<{ ok: true }> {
+    if (sessionId) {
+      await this.prisma.userSession.updateMany({ where: { id: sessionId, userId, revokedAt: null }, data: { revokedAt: new Date() } });
+    }
+    return { ok: true };
+  }
+
   async revoke(userId: string, sessionId: string): Promise<{ ok: true }> {
     const session = await this.prisma.userSession.findUnique({ where: { id: sessionId } });
     if (!session) throw new NotFoundException("Session not found");

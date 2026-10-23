@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { getSupplierPortalToken, supplierPortalApiFetch, clearSupplierPortalToken } from "@/lib/supplier-portal-api-client";
+import { ApiError } from "@/lib/api-client";
+import { getSupplierPortalToken, supplierPortalApiFetch, signOutSupplierPortal, clearSupplierPortalToken } from "@/lib/supplier-portal-api-client";
 import { formatDate } from "@/lib/format-date";
 
 interface Me {
@@ -53,13 +54,21 @@ export default function SupplierPortalDashboardPage() {
       router.replace("/supplier-portal/login");
       return;
     }
-    supplierPortalApiFetch<Me>("/supplier-portal/me").then(setMe);
+    supplierPortalApiFetch<Me>("/supplier-portal/me")
+      .then(setMe)
+      .catch((err) => {
+        // Signed out on another device, or no longer on file: back to the sign-in page.
+        if (err instanceof ApiError && err.status === 401) {
+          clearSupplierPortalToken();
+          router.replace("/supplier-portal/login");
+        }
+      });
     loadOrders();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  function logout() {
-    clearSupplierPortalToken();
+  async function logout() {
+    await signOutSupplierPortal();
     router.replace("/supplier-portal/login");
   }
 

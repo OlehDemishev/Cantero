@@ -110,6 +110,7 @@
     "useSsoPasswordInstead": "Sign in with a password instead",
     "ssoError": "Couldn't start SSO sign-in — check the email domain or contact your administrator.",
     "ssoSigningIn": "Signing you in…",
+    "ssoStartedElsewhere": "This sign-in was started in another browser or tab, or has already been used. Start it again from the sign-in page.",
     "backToLogin": "Back to sign in",
     "forgotPassword": "Forgot password?",
     "forgotPasswordTitle": "Reset your password",

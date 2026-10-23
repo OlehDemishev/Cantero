@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch, ApiError, setToken } from "@/lib/api-client";
+import { beginSsoNonce } from "@/lib/sso-nonce";
 
 type LoginResult = { accessToken: string; companyId: string } | { requires2fa: true; challengeToken: string };
 
@@ -54,7 +55,7 @@ export default function LoginPage() {
     try {
       const res = await apiFetch<{ redirectUrl: string }>("/auth/sso/start", {
         method: "POST",
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, nonce: beginSsoNonce() }),
       });
       window.location.href = res.redirectUrl;
     } catch (err) {

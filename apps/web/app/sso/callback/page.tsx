@@ -1,23 +1,37 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch, setToken } from "@/lib/api-client";
+import { takeSsoNonce } from "@/lib/sso-nonce";
 
 export default function SsoCallbackPage() {
   const t = useTranslations("auth");
-  const searchParams = useSearchParams();
   const [error, setError] = useState<string | null>(null);
+  // The code and nonce are single-use; a second effect run (React StrictMode in dev) must not try again.
+  const started = useRef(false);
 
   useEffect(() => {
-    const token = searchParams.get("token");
-    const errorParam = searchParams.get("error");
+    if (started.current) return;
+    started.current = true;
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("code");
+    const errorParam = params.get("error");
+    // First thing: the one-time code leaves the address bar and this history entry, so it can't be
+    // copied, bookmarked, synced or reported from here on.
+    if (code) window.history.replaceState(null, "", window.location.pathname);
+    const nonce = takeSsoNonce();
 
     async function signIn() {
       if (errorParam) throw new Error(errorParam);
-      if (!token) throw new Error(t("ssoError"));
-      setToken(token);
+      if (!code) throw new Error(t("ssoError"));
+      // No nonce means this tab never started an SSO sign-in — e.g. a callback link someone sent.
+      if (!nonce) throw new Error(t("ssoStartedElsewhere"));
+      const { accessToken } = await apiFetch<{ accessToken: string }>("/auth/sso/exchange", {
+        method: "POST",
+        body: JSON.stringify({ code, nonce }),
+      });
+      setToken(accessToken);
       const me = await apiFetch<{ locale: string }>("/me");
       document.cookie = `NEXT_LOCALE=${me.locale};path=/;max-age=31536000`;
       window.location.href = "/dashboard";

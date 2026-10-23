@@ -1,10 +1,10 @@
-import { randomBytes } from "node:crypto";
+import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
 import * as bcrypt from "bcryptjs";
 import { SAML } from "@node-saml/node-saml";
-import type { AuthUser, UpdateSsoConfigInput } from "@cantero/shared";
+import { ssoNonceSchema, type AuthUser, type UpdateSsoConfigInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
 import { SessionsService, type SessionMeta } from "../common/sessions/sessions.service";
@@ -17,6 +17,11 @@ interface SsoConfig {
 }
 
 const ASSERTION_FALLBACK_RETENTION_MS = 7 * 24 * 60 * 60 * 1000;
+/** How long the browser has to trade the code from /sso/callback for a token — it does so at once. */
+const LOGIN_CODE_TTL_MS = 60 * 1000;
+const INVALID_CODE = "This sign-in has expired or was already used — start the sign-in again";
+
+const sha256 = (raw: string) => createHash("sha256").update(raw).digest("hex");
 
 @Injectable()
 export class SsoService {
@@ -67,7 +72,7 @@ export class SsoService {
   }
 
   /** Resolves the login email's domain to a company with SSO configured, and returns the IdP redirect URL. Never confirms/denies whether an email itself is registered — only whether its domain has SSO. */
-  async startLogin(email: string): Promise<{ redirectUrl: string }> {
+  async startLogin(email: string, nonce: string): Promise<{ redirectUrl: string }> {
     const domain = email.split("@")[1]?.toLowerCase();
     if (!domain) throw new BadRequestException("Invalid email");
 
@@ -81,12 +86,20 @@ export class SsoService {
       ssoIssuer: company.ssoIssuer!,
       ssoCert: company.ssoCert!,
     });
-    const redirectUrl = await saml.getAuthorizeUrlAsync("", undefined, {});
+    // The nonce rides through the IdP as RelayState and comes back with the assertion (see handleAcs).
+    const redirectUrl = await saml.getAuthorizeUrlAsync(nonce, undefined, {});
     return { redirectUrl };
   }
 
-  /** Validates the IdP's SAML response, just-in-time provisions the user (as "worker") on first sign-in, and returns our own access token. */
-  async handleAcs(companyId: string, samlResponse: string, meta: SessionMeta): Promise<{ accessToken: string }> {
+  /** Validates the IdP's SAML response, just-in-time provisions the user (as "worker") on first
+   * sign-in, and returns a one-time code for the browser to exchange (exchangeCode) — never the
+   * access token itself, which would otherwise sit in the callback URL, the browser history and
+   * anything that logs URLs. `relayState` is the nonce the login page started with; an assertion
+   * arriving without one (IdP-initiated, or POSTed by another site) can't be tied to a browser, so
+   * it's refused. */
+  async handleAcs(companyId: string, samlResponse: string, relayState: string | undefined): Promise<{ code: string }> {
+    const nonce = ssoNonceSchema.safeParse(relayState);
+    if (!nonce.success) throw new BadRequestException("Start the sign-in from the Cantero login page");
     const company = await this.prisma.company.findUnique({ where: { id: companyId } });
     if (!company?.ssoEntryPoint || !company.ssoIssuer || !company.ssoCert) {
       throw new NotFoundException("SSO isn't configured for this company");
@@ -107,7 +120,7 @@ export class SsoService {
 
     let user = await this.prisma.user.findUnique({
       where: { email },
-      include: { memberships: { where: { companyId }, include: { customRole: true } } },
+      include: { memberships: { where: { companyId } } },
     });
     if (user && user.memberships.length === 0) {
       throw new BadRequestException("This email belongs to an account in a different company — contact your administrator");
@@ -124,24 +137,54 @@ export class SsoService {
           name: (profile?.["displayName"] as string | undefined) ?? email,
           memberships: { create: { companyId, role: "worker" } },
         },
-        include: { memberships: { where: { companyId }, include: { customRole: true } } },
+        include: { memberships: { where: { companyId } } },
       });
       user = created;
       this.audit.record(companyId, { name: "SSO" }, "sso.user_provisioned", "User", created.id, `Provisioned ${email} via SSO`);
     }
 
-    const membership = user.memberships[0];
-    const sid = await this.sessions.create(user.id, companyId, meta);
+    const code = randomBytes(32).toString("base64url");
+    await this.prisma.ssoLoginCode.deleteMany({ where: { expiresAt: { lt: new Date() } } });
+    await this.prisma.ssoLoginCode.create({
+      data: {
+        codeHash: sha256(code),
+        nonceHash: sha256(nonce.data),
+        userId: user.id,
+        companyId,
+        expiresAt: new Date(Date.now() + LOGIN_CODE_TTL_MS),
+      },
+    });
+    return { code };
+  }
+
+  /** Trades a code from handleAcs for an access token. The code is deleted on the first attempt,
+   * right or wrong, so it can't be tried twice; the nonce must be the one this browser tab kept
+   * in sessionStorage when it started the sign-in. */
+  async exchangeCode(code: string, nonce: string, meta: SessionMeta): Promise<{ accessToken: string }> {
+    const record = await this.prisma.ssoLoginCode.findUnique({ where: { codeHash: sha256(code) } });
+    if (!record) throw new BadRequestException(INVALID_CODE);
+    const { count } = await this.prisma.ssoLoginCode.deleteMany({ where: { id: record.id } });
+    if (count !== 1 || record.expiresAt < new Date()) throw new BadRequestException(INVALID_CODE);
+    if (!timingSafeEqual(Buffer.from(sha256(nonce)), Buffer.from(record.nonceHash))) {
+      throw new BadRequestException("This sign-in was started in another browser window — start the sign-in again");
+    }
+
+    const membership = await this.prisma.membership.findUnique({
+      where: { userId_companyId: { userId: record.userId, companyId: record.companyId } },
+      include: { customRole: true, user: { select: { email: true, name: true } } },
+    });
+    if (!membership) throw new BadRequestException(INVALID_CODE);
+
+    const sid = await this.sessions.create(record.userId, record.companyId, meta);
     const accessToken = this.jwt.sign({
-      userId: user.id,
-      companyId,
-      email: user.email,
-      name: user.name,
+      userId: record.userId,
+      companyId: record.companyId,
+      email: membership.user.email,
+      name: membership.user.name,
       role: membership.role,
       additionalRoles: membership.customRole?.basePermissions,
       sid,
     } satisfies AuthUser);
-
     return { accessToken };
   }
 

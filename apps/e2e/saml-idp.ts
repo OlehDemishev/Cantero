@@ -91,9 +91,11 @@ export function signedSamlResponse(idp: TestIdp, input: AssertionInput): string 
 
 /** What the IdP's login page would send back to the browser: a form that immediately POSTs the
  * base64 SAMLResponse to the SP's ACS URL — the standard HTTP-POST binding. */
-export function autoPostPage(acsUrl: string, samlResponseXml: string): string {
+/** `relayState` is echoed back as a real IdP does — the SP's sign-in nonce rides in it. */
+export function autoPostPage(acsUrl: string, samlResponseXml: string, relayState?: string | null): string {
   const encoded = Buffer.from(samlResponseXml, "utf-8").toString("base64");
+  const relay = relayState ? `<input type="hidden" name="RelayState" value="${relayState.replace(/"/g, "&quot;")}">` : "";
   return `<!doctype html><html><body onload="document.forms[0].submit()">
-<form method="POST" action="${acsUrl}"><input type="hidden" name="SAMLResponse" value="${encoded}"></form>
+<form method="POST" action="${acsUrl}"><input type="hidden" name="SAMLResponse" value="${encoded}">${relay}</form>
 </body></html>`;
 }

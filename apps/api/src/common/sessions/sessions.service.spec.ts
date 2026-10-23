@@ -36,6 +36,21 @@ describe("SessionsService", () => {
     });
   });
 
+  describe("revokeCurrent", () => {
+    it("revokes only the caller's own live session named by the token's sid", async () => {
+      await expect(service.revokeCurrent("user-1", "session-1")).resolves.toEqual({ ok: true });
+      expect(prisma.userSession.updateMany).toHaveBeenCalledWith({
+        where: { id: "session-1", userId: "user-1", revokedAt: null },
+        data: { revokedAt: expect.any(Date) },
+      });
+    });
+
+    it("does nothing for a token without a sid", async () => {
+      await expect(service.revokeCurrent("user-1", undefined)).resolves.toEqual({ ok: true });
+      expect(prisma.userSession.updateMany).not.toHaveBeenCalled();
+    });
+  });
+
   describe("revokeAllInCompany", () => {
     it("revokes the person's live sessions in that company (and unattributed legacy ones), not elsewhere", async () => {
       await expect(service.revokeAllInCompany("user-1", "company-1")).resolves.toBe(2);

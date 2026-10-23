@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { clearToken, getToken } from "@/lib/api-client";
+import { clearToken, getToken, signOutSession } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import { useOfflineQueue } from "@/lib/offline-queue";
 import { fetchCached } from "@/lib/offline-cache";
@@ -77,8 +77,8 @@ export default function FieldPage() {
     localStorage.setItem(PROJECT_STORAGE_KEY, id);
   }
 
-  function signOut() {
-    clearToken();
+  async function signOut() {
+    await signOutSession();
     router.replace("/login");
   }
 

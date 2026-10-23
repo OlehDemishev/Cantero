@@ -16,6 +16,25 @@ export function clearSupplierPortalToken(): void {
   localStorage.removeItem(TOKEN_KEY);
 }
 
+/** The portal's "Sign out": retires this supplier's portal tokens on the server (every device — the
+ * portal has no per-device sessions), then forgets this one. Best effort: offline or an
+ * unreachable API still signs this browser out. */
+export async function signOutSupplierPortal(): Promise<void> {
+  const token = getSupplierPortalToken();
+  if (token) {
+    try {
+      await fetch(`${API_URL}/supplier-portal/auth/logout`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        signal: AbortSignal.timeout(3000),
+      });
+    } catch {
+      // offline or timed out
+    }
+  }
+  clearSupplierPortalToken();
+}
+
 /** Same shape as subcontractorPortalApiFetch — kept separate so a supplier-portal session never shares a token slot with any other session. */
 export async function supplierPortalApiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
   const token = getSupplierPortalToken();

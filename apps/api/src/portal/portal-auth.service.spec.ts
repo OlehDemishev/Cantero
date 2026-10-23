@@ -9,7 +9,7 @@ import { MailService } from "../common/mail/mail.service";
 describe("PortalAuthService", () => {
   let service: PortalAuthService;
   let prisma: {
-    client: { findMany: jest.Mock };
+    client: { findMany: jest.Mock; updateMany: jest.Mock };
     clientPortalLoginToken: { create: jest.Mock; findUnique: jest.Mock; update: jest.Mock };
   };
   let mail: { send: jest.Mock };
@@ -17,7 +17,7 @@ describe("PortalAuthService", () => {
 
   beforeEach(async () => {
     prisma = {
-      client: { findMany: jest.fn() },
+      client: { findMany: jest.fn(), updateMany: jest.fn() },
       clientPortalLoginToken: { create: jest.fn(), findUnique: jest.fn(), update: jest.fn() },
     };
     mail = { send: jest.fn() };
@@ -94,7 +94,7 @@ describe("PortalAuthService", () => {
         clientId: "client-1",
         usedAt: null,
         expiresAt: new Date(Date.now() + 1000 * 60),
-        client: { companyId: "company-a", name: "Jane", company: { name: "Acme Co" } },
+        client: { portalTokenVersion: 2, companyId: "company-a", name: "Jane", company: { name: "Acme Co" } },
       });
 
       const result = await service.verify("good-token");
@@ -103,8 +103,18 @@ describe("PortalAuthService", () => {
         where: { id: "tok-1" },
         data: { usedAt: expect.any(Date) },
       });
-      expect(portalJwt.sign).toHaveBeenCalledWith({ clientId: "client-1", companyId: "company-a" });
+      expect(portalJwt.sign).toHaveBeenCalledWith({ clientId: "client-1", companyId: "company-a", tokenVersion: 2 });
       expect(result).toEqual({ accessToken: "signed-jwt", clientName: "Jane", companyName: "Acme Co" });
+    });
+  });
+
+  describe("logout()", () => {
+    it("bumps the client's portalTokenVersion within its own company, retiring every token issued so far", async () => {
+      await expect(service.logout({ clientId: "client-1", companyId: "company-a" })).resolves.toEqual({ ok: true });
+      expect(prisma.client.updateMany).toHaveBeenCalledWith({
+        where: { id: "client-1", companyId: "company-a" },
+        data: { portalTokenVersion: { increment: 1 } },
+      });
     });
   });
 });

@@ -110,6 +110,7 @@
     "useSsoPasswordInstead": "Iniciar sesión con contraseña",
     "ssoError": "No se pudo iniciar el inicio de sesión SSO — verifique el dominio de correo o contacte a su administrador.",
     "ssoSigningIn": "Iniciando sesión…",
+    "ssoStartedElsewhere": "Este inicio de sesión se inició en otro navegador o pestaña, o ya se ha utilizado. Vuelva a iniciarlo desde la página de inicio de sesión.",
     "backToLogin": "Volver al inicio de sesión",
     "forgotPassword": "¿Olvidó su contraseña?",
     "forgotPasswordTitle": "Restablecer contraseña",

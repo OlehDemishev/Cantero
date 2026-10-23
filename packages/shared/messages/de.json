@@ -110,6 +110,7 @@
     "useSsoPasswordInstead": "Stattdessen mit Passwort anmelden",
     "ssoError": "SSO-Anmeldung konnte nicht gestartet werden — prüfen Sie die E-Mail-Domain oder wenden Sie sich an Ihren Administrator.",
     "ssoSigningIn": "Sie werden angemeldet…",
+    "ssoStartedElsewhere": "Diese Anmeldung wurde in einem anderen Browser oder Tab gestartet oder bereits verwendet. Starten Sie sie erneut über die Anmeldeseite.",
     "backToLogin": "Zurück zur Anmeldung",
     "forgotPassword": "Passwort vergessen?",
     "forgotPasswordTitle": "Passwort zurücksetzen",
