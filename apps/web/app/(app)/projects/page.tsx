@@ -12,6 +12,10 @@ import { useCan } from "@/lib/permissions";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/ui/page-header";
+import { createProjectSchema } from "@cantero/shared";
+import { Field, FormError } from "@/components/ui/field";
+import { Button } from "@/components/ui/button";
+import { optionalText, useFormValidation } from "@/lib/form-validation";
 
 interface Client {
   id: string;
@@ -40,6 +44,8 @@ export default function ProjectsPage() {
   const { data: clients = [] } = useApi<Client[]>(seesClients ? "/clients" : null);
   const [form, setForm] = useState({ name: "", address: "", clientId: "" });
   const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const { errors, validate, clearError, formRef } = useFormValidation(createProjectSchema);
   const [filters, setFilters] = useState<ProjectFilters>(EMPTY_FILTERS);
   const [showCreateForm, setShowCreateForm] = useState(false);
 
@@ -49,19 +55,17 @@ export default function ProjectsPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    const body = validate({ name: form.name.trim(), address: optionalText(form.address), clientId: form.clientId || undefined });
+    if (!body) return;
     setSubmitting(true);
+    setSubmitError(null);
     try {
-      await apiFetch("/projects", {
-        method: "POST",
-        body: JSON.stringify({
-          name: form.name,
-          address: form.address || undefined,
-          clientId: form.clientId || undefined,
-        }),
-      });
+      await apiFetch("/projects", { method: "POST", body: JSON.stringify(body) });
       setForm({ name: "", address: "", clientId: "" });
       setShowCreateForm(false);
       load();
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : tc("error"));
     } finally {
       setSubmitting(false);
     }
@@ -103,36 +107,45 @@ export default function ProjectsPage() {
               <CloseIcon className="size-4" />
             </button>
           </div>
-          <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-            <input
-              required
-              autoFocus
-              placeholder={tc("name")}
-              className="input"
-              value={form.name}
-              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-            />
-            <input
-              placeholder={t("address")}
-              className="input"
-              value={form.address}
-              onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))}
-            />
-            <select
-              className="input"
-              value={form.clientId}
-              onChange={(e) => setForm((f) => ({ ...f, clientId: e.target.value }))}
-            >
-              <option value="">{t("noClient")}</option>
-              {clients.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-            <button type="submit" disabled={submitting} className="btn-primary">
+          <form ref={formRef} onSubmit={handleSubmit} noValidate className="flex flex-col gap-3">
+            <Field label={tc("name")} error={errors.name}>
+              <input
+                required
+                autoFocus
+                className="input"
+                value={form.name}
+                onChange={(e) => {
+                  setForm((f) => ({ ...f, name: e.target.value }));
+                  clearError("name");
+                }}
+              />
+            </Field>
+            <Field label={t("address")} error={errors.address}>
+              <input
+                className="input"
+                value={form.address}
+                onChange={(e) => {
+                  setForm((f) => ({ ...f, address: e.target.value }));
+                  clearError("address");
+                }}
+              />
+            </Field>
+            {seesClients && (
+              <Field label={t("client")} error={errors.clientId}>
+                <select className="input" value={form.clientId} onChange={(e) => setForm((f) => ({ ...f, clientId: e.target.value }))}>
+                  <option value="">{t("noClient")}</option>
+                  {clients.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            )}
+            <FormError>{submitError}</FormError>
+            <Button type="submit" loading={submitting}>
               {tc("create")}
-            </button>
+            </Button>
           </form>
         </div>
       )}

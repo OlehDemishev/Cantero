@@ -73,13 +73,16 @@ import { ScheduleFilesPanel } from "@/components/schedule-files-panel";
 import { IntacctProjectPanel } from "@/components/intacct-project-panel";
 import { AutodeskSyncPanel } from "@/components/autodesk-sync-panel";
 import { BimModelPanel } from "@/components/bim-model-panel";
-import { SUPPORTED_CURRENCIES } from "@cantero/shared";
+import { SUPPORTED_CURRENCIES, createEstimateSchema } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import { useCan } from "@/lib/permissions";
 import type { Permission } from "@cantero/shared";
 import { formatCurrency } from "@/lib/format-currency";
 import { PageHeader } from "@/components/ui/page-header";
+import { Field, FormError } from "@/components/ui/field";
+import { Button } from "@/components/ui/button";
+import { optionalNumber, useFormValidation } from "@/lib/form-validation";
 
 interface Project {
   id: string;
@@ -152,6 +155,8 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
     templateId: "",
   });
   const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const { errors, validate, clearError, formRef } = useFormValidation(createEstimateSchema);
   const [currencyBusy, setCurrencyBusy] = useState(false);
   const [budgetThresholdBusy, setBudgetThresholdBusy] = useState(false);
   const [budgetThresholdDraft, setBudgetThresholdDraft] = useState("");
@@ -243,22 +248,31 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
     }
   }
 
+  function updateEstimateField(field: keyof typeof form, value: string) {
+    setForm((f) => ({ ...f, [field]: value }));
+    clearError(field);
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    const input = validate({
+      projectId,
+      name: form.name.trim(),
+      laborRatePerHour: optionalNumber(form.laborRatePerHour),
+      markupPercent: optionalNumber(form.markupPercent),
+      taxPercent: optionalNumber(form.taxPercent),
+    });
+    if (!input) return;
     setSubmitting(true);
+    setSubmitError(null);
     try {
-      const body = JSON.stringify({
-        projectId,
-        name: form.name,
-        laborRatePerHour: Number(form.laborRatePerHour),
-        markupPercent: Number(form.markupPercent),
-        taxPercent: Number(form.taxPercent),
-      });
       const estimate = await apiFetch<{ id: string }>(
         form.templateId ? `/estimates/from-template/${form.templateId}` : "/estimates",
-        { method: "POST", body },
+        { method: "POST", body: JSON.stringify(input) },
       );
       router.push(`/estimates/${estimate.id}`);
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : tc("error"));
     } finally {
       setSubmitting(false);
     }
@@ -350,15 +364,10 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
           <div className="mt-6 grid grid-cols-1 gap-8 lg:grid-cols-3">
             <div className="card lg:col-span-1">
               <h2 className="mb-4 text-sm font-semibold text-fg-muted">{t("newEstimate")}</h2>
-              <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+              <form ref={formRef} onSubmit={handleSubmit} noValidate className="flex flex-col gap-3">
                 {templates.length > 0 && (
-                  <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-                    {t("startFromTemplate")}
-                    <select
-                      className="input mt-1"
-                      value={form.templateId}
-                      onChange={(e) => setForm((f) => ({ ...f, templateId: e.target.value }))}
-                    >
+                  <Field label={t("startFromTemplate")} size="sm">
+                    <select className="input" value={form.templateId} onChange={(e) => updateEstimateField("templateId", e.target.value)}>
                       <option value="">{t("blankEstimate")}</option>
                       {templates.map((tpl) => (
                         <option key={tpl.id} value={tpl.id}>
@@ -366,51 +375,50 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
                         </option>
                       ))}
                     </select>
-                  </label>
+                  </Field>
                 )}
-                <input
-                  required
-                  placeholder={tc("name")}
-                  className="input"
-                  value={form.name}
-                  onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                />
-                <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-                  {t("laborRate")} ({me?.company.currency})
+                <Field label={tc("name")} size="sm" error={errors.name}>
+                  <input required className="input" value={form.name} onChange={(e) => updateEstimateField("name", e.target.value)} />
+                </Field>
+                <Field label={`${t("laborRate")} (${me?.company.currency ?? ""})`} size="sm" error={errors.laborRatePerHour}>
                   <input
                     required
                     type="number"
                     step="0.01"
-                    className="input mt-1"
+                    min="0"
+                    className="input"
                     value={form.laborRatePerHour}
-                    onChange={(e) => setForm((f) => ({ ...f, laborRatePerHour: e.target.value }))}
+                    onChange={(e) => updateEstimateField("laborRatePerHour", e.target.value)}
                   />
-                </label>
-                <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-                  {t("markup")}
+                </Field>
+                <Field label={t("markup")} size="sm" error={errors.markupPercent}>
                   <input
                     required
                     type="number"
                     step="0.1"
-                    className="input mt-1"
+                    min="0"
+                    max="500"
+                    className="input"
                     value={form.markupPercent}
-                    onChange={(e) => setForm((f) => ({ ...f, markupPercent: e.target.value }))}
+                    onChange={(e) => updateEstimateField("markupPercent", e.target.value)}
                   />
-                </label>
-                <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-                  {t("tax")}
+                </Field>
+                <Field label={t("tax")} size="sm" error={errors.taxPercent}>
                   <input
                     required
                     type="number"
                     step="0.1"
-                    className="input mt-1"
+                    min="0"
+                    max="100"
+                    className="input"
                     value={form.taxPercent}
-                    onChange={(e) => setForm((f) => ({ ...f, taxPercent: e.target.value }))}
+                    onChange={(e) => updateEstimateField("taxPercent", e.target.value)}
                   />
-                </label>
-                <button type="submit" disabled={submitting} className="btn-primary">
+                </Field>
+                <FormError>{submitError}</FormError>
+                <Button type="submit" loading={submitting}>
                   {tc("create")}
-                </button>
+                </Button>
               </form>
             </div>
 

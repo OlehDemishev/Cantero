@@ -15,8 +15,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useMe } from "@/lib/use-me";
 import { formatDate } from "@/lib/format-date";
 import { formatCurrency } from "@/lib/format-currency";
-import { FormError } from "@/components/ui/field";
 import { PageHeader } from "@/components/ui/page-header";
+import { createClientSchema } from "@cantero/shared";
+import { Field, FormError } from "@/components/ui/field";
+import { Button } from "@/components/ui/button";
+import { optionalNumber, optionalText, useFormValidation } from "@/lib/form-validation";
 
 type ClientStage = "lead" | "contacted" | "qualified" | "won" | "lost";
 const STAGES: ClientStage[] = ["lead", "contacted", "qualified", "won", "lost"];
@@ -66,6 +69,8 @@ export default function ClientsPage() {
   const { data: workers = [] } = useApi<Worker[]>("/workers");
   const [form, setForm] = useState({ name: "", email: "", phone: "", estimatedValue: "", ownerWorkerId: "" });
   const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const { errors, validate, clearError, formRef } = useFormValidation(createClientSchema);
   const [showCreateForm, setShowCreateForm] = useState(false);
 
   const [pendingLostId, setPendingLostId] = useState<string | null>(null);
@@ -84,23 +89,30 @@ export default function ClientsPage() {
     void reloadSummary();
   }
 
+  function updateField(field: keyof typeof form, value: string) {
+    setForm((f) => ({ ...f, [field]: value }));
+    clearError(field);
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    const body = validate({
+      name: form.name.trim(),
+      email: optionalText(form.email),
+      phone: optionalText(form.phone),
+      estimatedValue: optionalNumber(form.estimatedValue),
+      ownerWorkerId: form.ownerWorkerId || undefined,
+    });
+    if (!body) return;
     setSubmitting(true);
+    setSubmitError(null);
     try {
-      await apiFetch("/clients", {
-        method: "POST",
-        body: JSON.stringify({
-          name: form.name,
-          email: form.email || undefined,
-          phone: form.phone || undefined,
-          estimatedValue: form.estimatedValue ? Number(form.estimatedValue) : undefined,
-          ownerWorkerId: form.ownerWorkerId || undefined,
-        }),
-      });
+      await apiFetch("/clients", { method: "POST", body: JSON.stringify(body) });
       setForm({ name: "", email: "", phone: "", estimatedValue: "", ownerWorkerId: "" });
       setShowCreateForm(false);
       load();
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : tc("error"));
     } finally {
       setSubmitting(false);
     }
@@ -224,51 +236,33 @@ export default function ClientsPage() {
               <CloseIcon className="size-4" />
             </button>
           </div>
-          <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-            <input
-              required
-              autoFocus
-              placeholder={tc("name")}
-              className="input"
-              value={form.name}
-              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-            />
-            <input
-              placeholder={tc("email")}
-              type="email"
-              className="input"
-              value={form.email}
-              onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-            />
-            <input
-              placeholder={tc("phone")}
-              className="input"
-              value={form.phone}
-              onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
-            />
-            <input
-              type="number"
-              min="0"
-              placeholder={t("estimatedValue")}
-              className="input"
-              value={form.estimatedValue}
-              onChange={(e) => setForm((f) => ({ ...f, estimatedValue: e.target.value }))}
-            />
-            <select
-              className="input"
-              value={form.ownerWorkerId}
-              onChange={(e) => setForm((f) => ({ ...f, ownerWorkerId: e.target.value }))}
-            >
-              <option value="">{t("owner")}</option>
-              {workers.map((w) => (
-                <option key={w.id} value={w.id}>
-                  {w.name}
-                </option>
-              ))}
-            </select>
-            <button type="submit" disabled={submitting} className="btn-primary">
+          <form ref={formRef} onSubmit={handleSubmit} noValidate className="flex flex-col gap-3">
+            <Field label={tc("name")} error={errors.name}>
+              <input required autoFocus className="input" value={form.name} onChange={(e) => updateField("name", e.target.value)} />
+            </Field>
+            <Field label={tc("email")} error={errors.email}>
+              <input type="email" className="input" value={form.email} onChange={(e) => updateField("email", e.target.value)} />
+            </Field>
+            <Field label={tc("phone")} error={errors.phone}>
+              <input type="tel" className="input" value={form.phone} onChange={(e) => updateField("phone", e.target.value)} />
+            </Field>
+            <Field label={t("estimatedValue")} error={errors.estimatedValue}>
+              <input type="number" min="0" className="input" value={form.estimatedValue} onChange={(e) => updateField("estimatedValue", e.target.value)} />
+            </Field>
+            <Field label={t("owner")} error={errors.ownerWorkerId}>
+              <select className="input" value={form.ownerWorkerId} onChange={(e) => updateField("ownerWorkerId", e.target.value)}>
+                <option value="">{tc("none")}</option>
+                {workers.map((w) => (
+                  <option key={w.id} value={w.id}>
+                    {w.name}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <FormError>{submitError}</FormError>
+            <Button type="submit" loading={submitting}>
               {tc("create")}
-            </button>
+            </Button>
           </form>
         </div>
       )}
@@ -375,13 +369,14 @@ export default function ClientsPage() {
                           </div>
                         ) : convertingId === c.id ? (
                           <form onSubmit={(e) => submitConvert(e, c.id)} className="mt-2 flex flex-col gap-1.5">
-                            <input
-                              required
-                              className="input text-xs"
-                              placeholder={t("projectName")}
-                              value={convertForm.name}
-                              onChange={(e) => setConvertForm((f) => ({ ...f, name: e.target.value }))}
-                            />
+                            <Field label={t("projectName")} size="sm">
+                              <input
+                                required
+                                className="input text-xs"
+                                value={convertForm.name}
+                                onChange={(e) => setConvertForm((f) => ({ ...f, name: e.target.value }))}
+                              />
+                            </Field>
                             <div className="flex gap-1.5">
                               <button type="submit" disabled={convertBusy} className="btn-primary px-2 py-0.5 text-xs">
                                 {t("convertToProject")}

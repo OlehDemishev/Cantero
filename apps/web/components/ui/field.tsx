@@ -50,14 +50,18 @@ export function Field({ label, hint, error, id, size = "md", hideLabel = false, 
   const compact = size === "sm";
   return (
     <div className={`flex flex-col ${compact ? "gap-1 text-xs" : "gap-1.5 text-sm"} ${className}`}>
-      <label htmlFor={controlId} className={hideLabel ? "sr-only" : compact ? "text-fg-subtle" : "text-fg-muted"}>
-        {label}
+      {/* The "*" sits outside the <label> so the control's accessible name is just the label text;
+          `required` itself tells assistive tech the field is required. */}
+      <span className={hideLabel ? "sr-only" : undefined}>
+        <label htmlFor={controlId} className={compact ? "text-fg-subtle" : "text-fg-muted"}>
+          {label}
+        </label>
         {only?.props.required && (
           <span aria-hidden="true" className="text-danger-fg">
             {" *"}
           </span>
         )}
-      </label>
+      </span>
       {control}
       {hint && (
         <p id={hintId} className="text-xs text-fg-subtle">

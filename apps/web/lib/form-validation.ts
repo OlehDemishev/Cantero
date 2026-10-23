@@ -30,16 +30,19 @@ function issueMessage(issue: ZodIssue, t: Translate): string {
       return t("invalid");
     case "not_multiple_of":
       return t("wholeNumber");
+    case "custom":
+      // .refine() messages are English for the API; "x is required" ones still mean required here.
+      return /required/i.test(issue.message) ? t("required") : t("invalid");
     default:
       return t("invalid");
   }
 }
 
-/** First message per top-level field. */
+/** First message per field, keyed by its dotted path ("name", "foreignPayment.exchangeRate"). */
 export function issuesToFieldErrors(issues: ZodIssue[], t: Translate): FieldErrors {
   const errors: FieldErrors = {};
   for (const issue of issues) {
-    const key = String(issue.path[0] ?? "_form");
+    const key = issue.path.length > 0 ? issue.path.join(".") : "_form";
     if (!errors[key]) errors[key] = issueMessage(issue, t);
   }
   return errors;

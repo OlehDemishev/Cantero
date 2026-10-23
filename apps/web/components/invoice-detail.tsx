@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
-import { SUPPORTED_CURRENCIES } from "@cantero/shared";
+import { SUPPORTED_CURRENCIES, recordPaymentSchema } from "@cantero/shared";
 import { DocumentsPanel } from "@/components/documents-panel";
 import { apiFetch, downloadBlob, ApiError } from "@/lib/api-client";
 import { ErrorState } from "@/components/ui/error-state";
@@ -15,8 +15,10 @@ import { useConfirm } from "@/components/ui/confirm-dialog";
 import { Badge } from "@/components/ui/badge";
 import { statusTone } from "@/lib/status-tone";
 import { Alert } from "@/components/ui/alert";
-import { FormError } from "@/components/ui/field";
+import { Field, FormError } from "@/components/ui/field";
 import { PageHeader } from "@/components/ui/page-header";
+import { Button } from "@/components/ui/button";
+import { optionalNumber, useFormValidation } from "@/lib/form-validation";
 
 const PAYMENT_METHODS = ["bank_transfer", "card", "cash", "other"] as const;
 
@@ -72,6 +74,7 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [loadError, setLoadError] = useState<Error | null>(null);
   const [paymentForm, setPaymentForm] = useState({ amount: "", method: "bank_transfer" as (typeof PAYMENT_METHODS)[number] });
+  const paymentValidation = useFormValidation(recordPaymentSchema);
   const [foreignPayment, setForeignPayment] = useState(false);
   const [foreignPaymentForm, setForeignPaymentForm] = useState<{
     currency: (typeof SUPPORTED_CURRENCIES)[number];
@@ -226,23 +229,22 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
 
   async function recordPayment(e: React.FormEvent) {
     e.preventDefault();
+    const body = paymentValidation.validate(
+      foreignPayment
+        ? {
+            method: paymentForm.method,
+            foreignPayment: {
+              currency: foreignPaymentForm.currency,
+              foreignAmount: optionalNumber(foreignPaymentForm.foreignAmount),
+              exchangeRate: optionalNumber(foreignPaymentForm.exchangeRate),
+            },
+          }
+        : { amount: optionalNumber(paymentForm.amount), method: paymentForm.method },
+    );
+    if (!body) return;
     setBusy(true);
     try {
-      await apiFetch(`/invoices/${invoiceId}/payments`, {
-        method: "POST",
-        body: JSON.stringify(
-          foreignPayment
-            ? {
-                method: paymentForm.method,
-                foreignPayment: {
-                  currency: foreignPaymentForm.currency,
-                  foreignAmount: Number(foreignPaymentForm.foreignAmount),
-                  exchangeRate: Number(foreignPaymentForm.exchangeRate),
-                },
-              }
-            : { amount: Number(paymentForm.amount), method: paymentForm.method },
-        ),
-      });
+      await apiFetch(`/invoices/${invoiceId}/payments`, { method: "POST", body: JSON.stringify(body) });
       setPaymentForm({ amount: "", method: "bank_transfer" });
       setForeignPaymentForm({ currency: SUPPORTED_CURRENCIES[0], foreignAmount: "", exchangeRate: "" });
       setForeignPayment(false);
@@ -410,69 +412,88 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
           )}
 
           {(invoice.status === "sent" || invoice.status === "paid") && balanceDue > 0 && (
-            <form onSubmit={recordPayment} className="mt-4 flex flex-col gap-2">
-              <div className="flex flex-wrap items-end gap-2">
+            <form ref={paymentValidation.formRef} onSubmit={recordPayment} noValidate className="mt-4 flex flex-col gap-2">
+              <div className="flex flex-wrap items-start gap-2">
                 {!foreignPayment && (
-                  <input
-                    required
-                    type="number"
-                    step="0.01"
-                    placeholder={t("amount")}
-                    className="input w-32"
-                    value={paymentForm.amount}
-                    onChange={(e) => setPaymentForm((f) => ({ ...f, amount: e.target.value }))}
-                  />
+                  <Field label={t("amount")} size="sm" error={paymentValidation.errors.amount}>
+                    <input
+                      required
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      className="input w-32"
+                      value={paymentForm.amount}
+                      onChange={(e) => {
+                        setPaymentForm((f) => ({ ...f, amount: e.target.value }));
+                        paymentValidation.clearError("amount");
+                      }}
+                    />
+                  </Field>
                 )}
-                <select
-                  className="input w-auto"
-                  value={paymentForm.method}
-                  onChange={(e) => setPaymentForm((f) => ({ ...f, method: e.target.value as (typeof PAYMENT_METHODS)[number] }))}
-                >
-                  {PAYMENT_METHODS.map((m) => (
-                    <option key={m} value={m}>
-                      {t(m)}
-                    </option>
-                  ))}
-                </select>
-                <button type="submit" disabled={busy} className="btn-secondary">
+                <Field label={t("method")} size="sm">
+                  <select
+                    className="input w-auto"
+                    value={paymentForm.method}
+                    onChange={(e) => setPaymentForm((f) => ({ ...f, method: e.target.value as (typeof PAYMENT_METHODS)[number] }))}
+                  >
+                    {PAYMENT_METHODS.map((m) => (
+                      <option key={m} value={m}>
+                        {t(m)}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+                <Button type="submit" variant="secondary" loading={busy} className="self-end">
                   {t("recordPayment")}
-                </button>
+                </Button>
               </div>
               <label className="flex items-center gap-1.5 text-xs text-fg-subtle">
                 <input type="checkbox" checked={foreignPayment} onChange={(e) => setForeignPayment(e.target.checked)} />
                 {t("paidInForeignCurrency")}
               </label>
               {foreignPayment && (
-                <div className="flex flex-wrap items-end gap-2">
-                  <select
-                    className="input w-auto"
-                    value={foreignPaymentForm.currency}
-                    onChange={(e) => setForeignPaymentForm((f) => ({ ...f, currency: e.target.value as (typeof SUPPORTED_CURRENCIES)[number] }))}
-                  >
-                    {SUPPORTED_CURRENCIES.map((c) => (
-                      <option key={c} value={c}>
-                        {c}
-                      </option>
-                    ))}
-                  </select>
-                  <input
-                    required
-                    type="number"
-                    step="0.01"
-                    placeholder={t("foreignAmount")}
-                    className="input w-32"
-                    value={foreignPaymentForm.foreignAmount}
-                    onChange={(e) => setForeignPaymentForm((f) => ({ ...f, foreignAmount: e.target.value }))}
-                  />
-                  <input
-                    required
-                    type="number"
-                    step="0.000001"
-                    placeholder={t("exchangeRateUsed")}
-                    className="input w-32"
-                    value={foreignPaymentForm.exchangeRate}
-                    onChange={(e) => setForeignPaymentForm((f) => ({ ...f, exchangeRate: e.target.value }))}
-                  />
+                <div className="flex flex-wrap items-start gap-2">
+                  <Field label={tc("currency")} size="sm">
+                    <select
+                      className="input w-auto"
+                      value={foreignPaymentForm.currency}
+                      onChange={(e) => setForeignPaymentForm((f) => ({ ...f, currency: e.target.value as (typeof SUPPORTED_CURRENCIES)[number] }))}
+                    >
+                      {SUPPORTED_CURRENCIES.map((c) => (
+                        <option key={c} value={c}>
+                          {c}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                  <Field label={t("foreignAmount")} size="sm" error={paymentValidation.errors["foreignPayment.foreignAmount"]}>
+                    <input
+                      required
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      className="input w-32"
+                      value={foreignPaymentForm.foreignAmount}
+                      onChange={(e) => {
+                        setForeignPaymentForm((f) => ({ ...f, foreignAmount: e.target.value }));
+                        paymentValidation.clearError("foreignPayment.foreignAmount");
+                      }}
+                    />
+                  </Field>
+                  <Field label={t("exchangeRateUsed")} size="sm" error={paymentValidation.errors["foreignPayment.exchangeRate"]}>
+                    <input
+                      required
+                      type="number"
+                      step="0.000001"
+                      min="0"
+                      className="input w-32"
+                      value={foreignPaymentForm.exchangeRate}
+                      onChange={(e) => {
+                        setForeignPaymentForm((f) => ({ ...f, exchangeRate: e.target.value }));
+                        paymentValidation.clearError("foreignPayment.exchangeRate");
+                      }}
+                    />
+                  </Field>
                 </div>
               )}
             </form>

@@ -3,15 +3,17 @@
 import { useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { DndContext, KeyboardSensor, PointerSensor, useDraggable, useDroppable, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
-import { TASK_DEPENDENCY_TYPES, type TaskDependencyType } from "@cantero/shared";
+import { TASK_DEPENDENCY_TYPES, createTaskSchema, type TaskDependencyType } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
 import { CommentsThread } from "@/components/comments-thread";
 import { formatDate, formatDateWithOptions } from "@/lib/format-date";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { Badge } from "@/components/ui/badge";
-import { FormError } from "@/components/ui/field";
 import { statusTone, TONE_FILL_CLASSES } from "@/lib/status-tone";
+import { Field, FormError } from "@/components/ui/field";
+import { Button } from "@/components/ui/button";
+import { useFormValidation } from "@/lib/form-validation";
 
 type TaskStatus = "planned" | "in_progress" | "done";
 const STATUSES: TaskStatus[] = ["planned", "in_progress", "done"];
@@ -54,6 +56,8 @@ export function SchedulingPanel({ projectId }: { projectId: string }) {
   const [taskForm, setTaskForm] = useState({ name: "", startDate: "", dueDate: "", isOutdoorWork: false });
   const [milestoneForm, setMilestoneForm] = useState({ name: "", dueDate: "" });
   const [busy, setBusy] = useState(false);
+  const [taskError, setTaskError] = useState<string | null>(null);
+  const taskValidation = useFormValidation(createTaskSchema);
   const [depEditorTaskId, setDepEditorTaskId] = useState<string | null>(null);
   const [depForm, setDepForm] = useState({ predecessorId: "", type: "finish_to_start" as TaskDependencyType, lagDays: "0" });
   const [depError, setDepError] = useState<string | null>(null);
@@ -69,20 +73,22 @@ export function SchedulingPanel({ projectId }: { projectId: string }) {
 
   async function createTask(e: React.FormEvent) {
     e.preventDefault();
+    const body = taskValidation.validate({
+      projectId,
+      name: taskForm.name.trim(),
+      startDate: taskForm.startDate ? new Date(taskForm.startDate).toISOString() : undefined,
+      dueDate: taskForm.dueDate ? new Date(taskForm.dueDate).toISOString() : undefined,
+      isOutdoorWork: taskForm.isOutdoorWork,
+    });
+    if (!body) return;
     setBusy(true);
+    setTaskError(null);
     try {
-      await apiFetch("/tasks", {
-        method: "POST",
-        body: JSON.stringify({
-          projectId,
-          name: taskForm.name,
-          startDate: taskForm.startDate ? new Date(taskForm.startDate).toISOString() : undefined,
-          dueDate: taskForm.dueDate ? new Date(taskForm.dueDate).toISOString() : undefined,
-          isOutdoorWork: taskForm.isOutdoorWork,
-        }),
-      });
+      await apiFetch("/tasks", { method: "POST", body: JSON.stringify(body) });
       setTaskForm({ name: "", startDate: "", dueDate: "", isOutdoorWork: false });
       load();
+    } catch (err) {
+      setTaskError(err instanceof Error ? err.message : tc("error"));
     } finally {
       setBusy(false);
     }
@@ -273,33 +279,25 @@ export function SchedulingPanel({ projectId }: { projectId: string }) {
       </div>
       </DndContext>
 
-      <form onSubmit={createTask} className="mt-4 flex flex-wrap items-end gap-2">
-        <input
-          required
-          placeholder={t("taskName")}
-          className="input w-auto"
-          value={taskForm.name}
-          onChange={(e) => setTaskForm((f) => ({ ...f, name: e.target.value }))}
-        />
-        <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-          {t("startDate")}
+      <form ref={taskValidation.formRef} onSubmit={createTask} noValidate className="mt-4 flex flex-wrap items-start gap-2">
+        <Field label={t("taskName")} size="sm" error={taskValidation.errors.name}>
           <input
-            type="date"
-            className="input mt-1"
-            value={taskForm.startDate}
-            onChange={(e) => setTaskForm((f) => ({ ...f, startDate: e.target.value }))}
+            required
+            className="input w-auto"
+            value={taskForm.name}
+            onChange={(e) => {
+              setTaskForm((f) => ({ ...f, name: e.target.value }));
+              taskValidation.clearError("name");
+            }}
           />
-        </label>
-        <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-          {t("dueDate")}
-          <input
-            type="date"
-            className="input mt-1"
-            value={taskForm.dueDate}
-            onChange={(e) => setTaskForm((f) => ({ ...f, dueDate: e.target.value }))}
-          />
-        </label>
-        <label className="flex items-center gap-1.5 text-xs text-fg-subtle">
+        </Field>
+        <Field label={t("startDate")} size="sm" error={taskValidation.errors.startDate}>
+          <input type="date" className="input" value={taskForm.startDate} onChange={(e) => setTaskForm((f) => ({ ...f, startDate: e.target.value }))} />
+        </Field>
+        <Field label={t("dueDate")} size="sm" error={taskValidation.errors.dueDate}>
+          <input type="date" className="input" value={taskForm.dueDate} onChange={(e) => setTaskForm((f) => ({ ...f, dueDate: e.target.value }))} />
+        </Field>
+        <label className="flex items-center gap-1.5 self-end pb-3 text-xs text-fg-subtle">
           <input
             type="checkbox"
             checked={taskForm.isOutdoorWork}
@@ -307,9 +305,10 @@ export function SchedulingPanel({ projectId }: { projectId: string }) {
           />
           {t("outdoorWork")}
         </label>
-        <button type="submit" disabled={busy} className="btn-primary">
+        <Button type="submit" loading={busy} className="self-end">
           {t("newTask")}
-        </button>
+        </Button>
+        <FormError className="basis-full">{taskError}</FormError>
       </form>
 
       <h2 className="mb-3 mt-10 text-sm font-semibold text-fg-muted">{t("gantt")}</h2>

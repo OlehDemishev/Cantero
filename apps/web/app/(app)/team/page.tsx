@@ -12,6 +12,10 @@ import { useMe } from "@/lib/use-me";
 import { useCan } from "@/lib/permissions";
 import { formatCurrency } from "@/lib/format-currency";
 import { PageHeader } from "@/components/ui/page-header";
+import { createWorkerSchema } from "@cantero/shared";
+import { Field, FormError } from "@/components/ui/field";
+import { Button } from "@/components/ui/button";
+import { optionalNumber, optionalText, useFormValidation } from "@/lib/form-validation";
 
 interface Worker {
   id: string;
@@ -50,6 +54,8 @@ export default function TeamPage() {
   const [showInactive, setShowInactive] = useState(false);
   const [form, setForm] = useState({ name: "", role: "", hourlyCost: "" });
   const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const { errors, validate, clearError, formRef } = useFormValidation(createWorkerSchema);
   const [showCreateForm, setShowCreateForm] = useState(false);
 
   function load() {
@@ -59,21 +65,24 @@ export default function TeamPage() {
 
   const visibleWorkers = workers?.filter((w) => showInactive || w.active) ?? null;
 
+  function updateField(field: keyof typeof form, value: string) {
+    setForm((f) => ({ ...f, [field]: value }));
+    clearError(field);
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    const body = validate({ name: form.name.trim(), role: optionalText(form.role), hourlyCost: optionalNumber(form.hourlyCost) });
+    if (!body) return;
     setSubmitting(true);
+    setSubmitError(null);
     try {
-      await apiFetch("/workers", {
-        method: "POST",
-        body: JSON.stringify({
-          name: form.name,
-          role: form.role || undefined,
-          hourlyCost: form.hourlyCost ? Number(form.hourlyCost) : undefined,
-        }),
-      });
+      await apiFetch("/workers", { method: "POST", body: JSON.stringify(body) });
       setForm({ name: "", role: "", hourlyCost: "" });
       setShowCreateForm(false);
       load();
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : tc("error"));
     } finally {
       setSubmitting(false);
     }
@@ -103,34 +112,20 @@ export default function TeamPage() {
               <CloseIcon className="size-4" />
             </button>
           </div>
-          <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-            <input
-              required
-              autoFocus
-              placeholder={tc("name")}
-              className="input"
-              value={form.name}
-              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-            />
-            <input
-              placeholder={t("role")}
-              className="input"
-              value={form.role}
-              onChange={(e) => setForm((f) => ({ ...f, role: e.target.value }))}
-            />
-            <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-              {t("hourlyCost")} ({me?.company.currency})
-              <input
-                type="number"
-                step="0.01"
-                className="input mt-1"
-                value={form.hourlyCost}
-                onChange={(e) => setForm((f) => ({ ...f, hourlyCost: e.target.value }))}
-              />
-            </label>
-            <button type="submit" disabled={submitting} className="btn-primary">
+          <form ref={formRef} onSubmit={handleSubmit} noValidate className="flex flex-col gap-3">
+            <Field label={tc("name")} error={errors.name}>
+              <input required autoFocus className="input" value={form.name} onChange={(e) => updateField("name", e.target.value)} />
+            </Field>
+            <Field label={t("role")} error={errors.role}>
+              <input className="input" value={form.role} onChange={(e) => updateField("role", e.target.value)} />
+            </Field>
+            <Field label={`${t("hourlyCost")} (${me?.company.currency ?? ""})`} error={errors.hourlyCost}>
+              <input type="number" step="0.01" min="0" className="input" value={form.hourlyCost} onChange={(e) => updateField("hourlyCost", e.target.value)} />
+            </Field>
+            <FormError>{submitError}</FormError>
+            <Button type="submit" loading={submitting}>
               {tc("create")}
-            </button>
+            </Button>
           </form>
         </div>
       )}
