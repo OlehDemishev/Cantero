@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { apiFetch, notifyApiError } from "@/lib/api-client";
 import { formatDate } from "@/lib/format-date";
 import { useConfirm } from "@/components/ui/confirm-dialog";
+import { Alert } from "@/components/ui/alert";
 
 const NEW_SUBCONTRACTOR = "__new__";
 
@@ -109,7 +110,7 @@ export function SubcontractorAssignmentsPanel({ projectId }: { projectId: string
     <div className="mt-10">
       <h2 className="mb-1 text-sm font-semibold text-fg-muted">{t("assignmentsTitle")}</h2>
       <p className="mb-3 text-xs text-fg-subtle">{t("assignmentsHint")}</p>
-      {error && <p className="mb-3 rounded-md bg-red-50 dark:bg-red-500/15 px-3 py-2 text-sm text-red-700 dark:text-red-400">{error}</p>}
+      {error && <Alert tone="danger" className="mb-3">{error}</Alert>}
 
       {!assignmentsBySubcontractor ? (
         <p className="text-sm text-fg-subtle">{tc("loading")}</p>

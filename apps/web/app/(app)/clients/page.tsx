@@ -15,6 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useMe } from "@/lib/use-me";
 import { formatDate } from "@/lib/format-date";
 import { formatCurrency } from "@/lib/format-currency";
+import { FormError } from "@/components/ui/field";
 
 type ClientStage = "lead" | "contacted" | "qualified" | "won" | "lost";
 const STAGES: ClientStage[] = ["lead", "contacted", "qualified", "won", "lost"];
@@ -393,7 +394,7 @@ export default function ClientsPage() {
                                 {tc("cancel")}
                               </button>
                             </div>
-                            {convertError && <p className="text-xs text-danger-fg">{convertError}</p>}
+                            {convertError && <FormError>{convertError}</FormError>}
                           </form>
                         ) : (
                           <div className="mt-2 flex flex-wrap gap-1">

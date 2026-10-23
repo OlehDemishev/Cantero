@@ -11,6 +11,7 @@ import { useConfirm } from "@/components/ui/confirm-dialog";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useApi } from "@/lib/use-api";
+import { Alert } from "@/components/ui/alert";
 
 type ResourceType = "worker" | "equipment";
 
@@ -378,11 +379,11 @@ export default function ResourcePlanningPage() {
                       ))}
                     </ul>
                     {leveledMoves && leveledMoves.resourceKey === resourceKey && (
-                      <div className="mt-2 rounded-md bg-success-50 dark:bg-success-500/15 px-2.5 py-1.5 text-xs text-success-fg">
+                      <Alert tone="success" size="sm" className="mt-2">
                         {leveledMoves.moves.length === 0
                           ? t("levelNoChanges")
                           : t("leveledMoves", { count: leveledMoves.moves.length })}
-                      </div>
+                      </Alert>
                     )}
                   </div>
                 );

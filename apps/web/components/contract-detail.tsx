@@ -13,6 +13,7 @@ import { goBack } from "@/lib/back-navigation";
 import { formatDateTime } from "@/lib/format-date";
 import { Badge } from "@/components/ui/badge";
 import { statusTone } from "@/lib/status-tone";
+import { FormError } from "@/components/ui/field";
 
 interface Contract {
   id: string;
@@ -192,7 +193,7 @@ export function ContractDetail({ contractId }: { contractId: string }) {
             {contract.docusignEnvelopeId && contract.status === "sent" && (
               <p className="text-xs text-fg-subtle">{t("docusignAutoPollHint")}</p>
             )}
-            {docusignError && <p className="text-xs text-danger-fg">{docusignError}</p>}
+            {docusignError && <FormError>{docusignError}</FormError>}
             {contract.status !== "void" && (
               <button onClick={voidContract} disabled={busy} className="btn-secondary">
                 {t("voidContract")}

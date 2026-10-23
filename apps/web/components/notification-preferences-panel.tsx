@@ -7,6 +7,7 @@ import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import { isPushSupported, getExistingSubscription, enablePush, disablePush } from "@/lib/push";
 import { resetStateInEffect } from "@/lib/effect-reset";
+import { Alert } from "@/components/ui/alert";
 
 /** Three small, independent account-notification cards (push, email digest, muted types) — kept
  * in one file since they share the "account" tab and the same `me` data, not because they're one
@@ -101,7 +102,7 @@ export function NotificationPreferencesPanel() {
         <section className="card mt-6">
           <h2 className="mb-1 text-sm font-semibold text-fg-muted">{t("pushNotifications")}</h2>
           <p className="mb-4 text-xs text-fg-subtle">{t("pushNotificationsHint")}</p>
-          {pushError && <p className="mb-3 rounded-md bg-red-50 dark:bg-red-500/15 px-3 py-2 text-sm text-red-700 dark:text-red-400">{pushError}</p>}
+          {pushError && <Alert tone="danger" className="mb-3">{pushError}</Alert>}
           <div className="flex items-center gap-3">
             <button
               onClick={togglePush}

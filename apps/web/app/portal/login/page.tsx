@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { portalApiFetch } from "@/lib/portal-api-client";
+import { Alert } from "@/components/ui/alert";
 
 type PortalBrandingResponse = { found: true; name: string; brandColor: string | null; hasLogo: boolean } | { found: false };
 
@@ -62,9 +63,9 @@ export default function PortalLoginPage() {
           <p className="mt-1 text-sm text-fg-subtle">{t("signInHint")}</p>
 
           {sent ? (
-            <p className="mt-4 rounded-lg border border-success-200 bg-success-50 dark:bg-success-500/15 px-4 py-3 text-sm text-success-fg">
+            <Alert tone="success" className="mt-4">
               {t("linkSentHint")}
-            </p>
+            </Alert>
           ) : (
             <form onSubmit={requestLink} className="mt-4 flex flex-col gap-3">
               <input

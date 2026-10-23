@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
 import { useConfirm } from "@/components/ui/confirm-dialog";
+import { FormError } from "@/components/ui/field";
 
 interface WarehouseLocation {
   id: string;
@@ -136,7 +137,7 @@ export function WarehouseLocations({ warehouseId }: { warehouseId: string }) {
           {t("addLocation")}
         </button>
       </form>
-      {error && <p className="mt-2 text-xs text-danger-fg">{error}</p>}
+      {error && <FormError className="mt-2">{error}</FormError>}
 
       {locations && locations.length > 0 && (
         <ul className="mt-4">

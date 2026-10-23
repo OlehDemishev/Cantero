@@ -10,6 +10,7 @@ import { formatDateTime } from "@/lib/format-date";
 import { ChangeOrderProfitabilityPanel } from "@/components/change-order-profitability-panel";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { formatCurrency } from "@/lib/format-currency";
+import { Alert } from "@/components/ui/alert";
 
 interface RateCatalogItem {
   id: string;
@@ -211,12 +212,12 @@ export function EstimateChangeOrdersPanel({
                 {co.description && <p className="mt-1 text-xs text-fg-subtle">{co.description}</p>}
 
                 {co.status === "pending_approval" && me?.company.changeOrderRequiredApprovalCount && (
-                  <div className="mt-2 rounded-lg border border-warning-200 bg-warning-50 dark:bg-warning-500/15 px-3 py-2">
+                  <Alert tone="warning" className="mt-2">
                     <p className="text-xs text-warning-fg">
                       {t("approvalProgress", { count: co.approvals.length, required: me.company.changeOrderRequiredApprovalCount })}
                     </p>
                     <p className="mt-0.5 text-xs text-warning-fg">{co.approvals.map((a) => a.actorName).join(", ")}</p>
-                  </div>
+                  </Alert>
                 )}
 
                 {co.lines.length > 0 && (

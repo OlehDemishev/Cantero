@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch, notifyApiError } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
+import { FormError } from "@/components/ui/field";
 
 interface GpsPing {
   id: string;
@@ -96,7 +97,7 @@ export function EquipmentGpsPanel({ equipmentId }: { equipmentId: string }) {
           {t(tracking ? "gpsStop" : "gpsStart")}
         </button>
       </div>
-      {error && <p className="mt-2 text-xs text-danger-fg">{error}</p>}
+      {error && <FormError className="mt-2">{error}</FormError>}
 
       <div className="mt-4">
         {!points ? (

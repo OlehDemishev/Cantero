@@ -77,10 +77,10 @@ export function Field({ label, hint, error, id, size = "md", hideLabel = false, 
  * The error a form shows after a failed submit (the server said no), under the fields or next to
  * the submit button. Renders nothing without a message; announced to screen readers when it appears.
  */
-export function FormError({ id, className = "", children }: { id?: string; className?: string; children?: ReactNode }) {
+export function FormError({ id, size = "xs", className = "", children }: { id?: string; size?: "xs" | "sm"; className?: string; children?: ReactNode }) {
   if (!children) return null;
   return (
-    <p id={id} role="alert" className={`text-xs text-danger-fg ${className}`}>
+    <p id={id} role="alert" className={`${size === "sm" ? "text-sm" : "text-xs"} text-danger-fg ${className}`}>
       {children}
     </p>
   );

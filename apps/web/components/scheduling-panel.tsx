@@ -10,6 +10,7 @@ import { CommentsThread } from "@/components/comments-thread";
 import { formatDate, formatDateWithOptions } from "@/lib/format-date";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { Badge } from "@/components/ui/badge";
+import { FormError } from "@/components/ui/field";
 
 type TaskStatus = "planned" | "in_progress" | "done";
 const STATUSES: TaskStatus[] = ["planned", "in_progress", "done"];
@@ -251,7 +252,7 @@ export function SchedulingPanel({ projectId }: { projectId: string }) {
                           onChange={(e) => setDepForm((f) => ({ ...f, lagDays: e.target.value }))}
                         />
                       </div>
-                      {depError && <p className="text-xs text-danger-fg">{depError}</p>}
+                      {depError && <FormError>{depError}</FormError>}
                       <button onClick={() => addDependency(task.id)} className="btn-primary px-2 py-1 text-xs">
                         {tc("save")}
                       </button>

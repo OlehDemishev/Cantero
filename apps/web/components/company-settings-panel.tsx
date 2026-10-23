@@ -6,6 +6,7 @@ import { LOCALE_NAMES, SUPPORTED_LOCALES, SUPPORTED_CURRENCIES } from "@cantero/
 import { apiFetch, apiUpload, notifyApiError } from "@/lib/api-client";
 import { HelpTooltip } from "@/components/help-tooltip";
 import { CompanyHolidaysPanel } from "@/components/company-holidays-panel";
+import { Alert } from "@/components/ui/alert";
 
 interface Company {
   name: string;
@@ -370,7 +371,7 @@ export function CompanySettingsPanel({ isManager }: { isManager: boolean }) {
     <section className="card">
       <h2 className="mb-4 text-sm font-semibold text-fg-muted">{t("company")}</h2>
       {!isManager && <p className="mb-3 text-xs text-fg-subtle">{t("companySettingsManagerOnlyHint")}</p>}
-      {error && <p className="mb-3 rounded-md bg-red-50 dark:bg-red-500/15 px-3 py-2 text-sm text-red-700 dark:text-red-400">{error}</p>}
+      {error && <Alert tone="danger" className="mb-3">{error}</Alert>}
       <form onSubmit={saveCompany} className="flex flex-col gap-3">
         <label className="flex flex-col gap-1 text-xs text-fg-subtle">
           {t("companyName")}
@@ -1010,7 +1011,7 @@ export function CompanySettingsPanel({ isManager }: { isManager: boolean }) {
       <div className="mt-6 border-t border-gray-100 dark:border-gray-700 pt-4">
         <h3 className="mb-1 text-sm font-semibold text-fg-muted">{t("branding")}</h3>
         <p className="mb-3 text-xs text-fg-subtle">{t("brandingHint")}</p>
-        {logoError && <p className="mb-3 rounded-md bg-red-50 dark:bg-red-500/15 px-3 py-2 text-sm text-red-700 dark:text-red-400">{logoError}</p>}
+        {logoError && <Alert tone="danger" className="mb-3">{logoError}</Alert>}
         <div className="flex flex-col gap-3">
           <label className="flex flex-col gap-1 text-xs text-fg-subtle">
             {t("brandColor")}

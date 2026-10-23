@@ -7,6 +7,7 @@ import { useConfirm } from "@/components/ui/confirm-dialog";
 import { formatNumber } from "@/lib/format-currency";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
+import { FormError } from "@/components/ui/field";
 
 interface Project {
   geofenceLat: number | null;
@@ -97,7 +98,7 @@ export function GeofencePanel({ projectId }: { projectId: string }) {
         </p>
       )}
 
-      {error && <p className="mb-2 text-xs text-danger-fg">{error}</p>}
+      {error && <FormError className="mb-2">{error}</FormError>}
 
       <form onSubmit={save} className="flex flex-wrap items-end gap-2">
         <label className="flex flex-col gap-1 text-xs text-fg-subtle">

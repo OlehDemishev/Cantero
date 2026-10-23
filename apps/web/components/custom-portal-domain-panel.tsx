@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch, ApiError, notifyApiError } from "@/lib/api-client";
 import { Badge } from "@/components/ui/badge";
+import { FormError } from "@/components/ui/field";
 
 interface Company {
   customPortalDomain: string | null;
@@ -79,7 +80,7 @@ export function CustomPortalDomainPanel({ canManage }: { canManage: boolean }) {
             {tc("save")}
           </button>
         </div>
-        {error && <p className="text-xs text-danger-fg">{error}</p>}
+        {error && <FormError>{error}</FormError>}
       </form>
 
       {company?.customPortalDomain && (

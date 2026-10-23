@@ -14,6 +14,7 @@ import { useCan } from "@/lib/permissions";
 import { useReportAccess } from "@/lib/report-access";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
+import { FormError } from "@/components/ui/field";
 
 interface CustomReportOption {
   id: string;
@@ -168,7 +169,7 @@ export function DashboardWidgetsPanel() {
           </button>
         </form>
       )}
-      {error && <p className="mb-3 text-xs text-danger-fg">{error}</p>}
+      {error && <FormError className="mb-3">{error}</FormError>}
 
       {!widgets ? (
         widgetsError ? <ErrorState error={widgetsError} onRetry={reloadWidgets} compact /> : <Skeleton variant="block" height="h-24" />

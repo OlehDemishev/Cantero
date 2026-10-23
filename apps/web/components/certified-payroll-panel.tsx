@@ -9,6 +9,7 @@ import { formatCurrency, formatNumber } from "@/lib/format-currency";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { FormError } from "@/components/ui/field";
 
 interface Project {
   isPublicWork: boolean;
@@ -193,7 +194,7 @@ export function CertifiedPayrollPanel({ projectId }: { projectId: string }) {
         </button>
       </form>
 
-      {error && <p className="mb-2 text-xs text-danger-fg">{error}</p>}
+      {error && <FormError className="mb-2">{error}</FormError>}
 
       {project.isPublicWork && (
         <>

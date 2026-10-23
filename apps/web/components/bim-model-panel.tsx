@@ -6,6 +6,7 @@ import { apiFetch } from "@/lib/api-client";
 import { AutodeskViewer } from "@/components/autodesk-viewer";
 import { resetStateInEffect } from "@/lib/effect-reset";
 import { useConfirm } from "@/components/ui/confirm-dialog";
+import { FormError } from "@/components/ui/field";
 
 interface BrowserEntry {
   kind: "folder" | "file";
@@ -85,7 +86,7 @@ export function BimModelPanel({
           </div>
         )}
       </div>
-      {error && <p className="mb-2 text-xs text-danger-fg">{error}</p>}
+      {error && <FormError className="mb-2">{error}</FormError>}
 
       {picking && (
         <ModelPicker
@@ -168,7 +169,7 @@ function ModelPicker({
     return (
       <div className="flex flex-col gap-2">
         <p className="text-xs text-fg-subtle">{t("linkHint")}</p>
-        {error && <p className="text-xs text-danger-fg">{error}</p>}
+        {error && <FormError>{error}</FormError>}
         <div className="flex flex-wrap items-end gap-2">
           <label className="flex min-w-[18rem] flex-1 flex-col gap-1 text-sm">
             <span className="font-medium text-fg-muted">{t("accProjectId")}</span>
@@ -212,7 +213,7 @@ function ModelPicker({
         </div>
       </div>
 
-      {error && <p className="text-xs text-danger-fg">{error}</p>}
+      {error && <FormError>{error}</FormError>}
       {!error && entries === null && <p className="text-xs text-fg-subtle">{t("loadingFolder")}</p>}
       {entries && entries.length === 0 && <p className="text-xs text-fg-subtle">{t("emptyFolder")}</p>}
       {entries && entries.length > 0 && (

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch, notifyApiError } from "@/lib/api-client";
 import { formatCurrency } from "@/lib/format-currency";
+import { Alert } from "@/components/ui/alert";
 
 interface Plan {
   id: string;
@@ -84,7 +85,7 @@ export function BillingPlanPanel({ isManager }: { isManager: boolean }) {
   return (
     <section id="billing" className="card">
       <h2 className="mb-4 text-sm font-semibold text-fg-muted">{t("plan")}</h2>
-      {error && <p className="mb-3 rounded-md bg-red-50 dark:bg-red-500/15 px-3 py-2 text-sm text-red-700 dark:text-red-400">{error}</p>}
+      {error && <Alert tone="danger" className="mb-3">{error}</Alert>}
       <div className="flex flex-col gap-2">
         {plans.map((plan) => {
           const isCurrent = subscription?.plan.code === plan.code;

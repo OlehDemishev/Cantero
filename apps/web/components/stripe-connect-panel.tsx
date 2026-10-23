@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { Alert } from "@/components/ui/alert";
 
 interface StripeConnectStatus {
   connected: boolean;
@@ -41,7 +42,7 @@ export function StripeConnectPanel() {
     <section id="online-payments" className="card mt-6">
       <h2 className="mb-2 text-sm font-semibold text-fg-muted">{t("onlinePayments")}</h2>
       <p className="mb-3 text-xs text-fg-subtle">{t("onlinePaymentsHint")}</p>
-      {error && <p className="mb-3 rounded-md bg-red-50 dark:bg-red-500/15 px-3 py-2 text-sm text-red-700 dark:text-red-400">{error}</p>}
+      {error && <Alert tone="danger" className="mb-3">{error}</Alert>}
       {status && (
         <div className="flex flex-wrap items-center justify-between gap-2">
           <span className="text-sm text-fg-muted">

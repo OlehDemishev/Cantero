@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { apiFetch, downloadBlob } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
 import { Badge } from "@/components/ui/badge";
+import { FormError } from "@/components/ui/field";
 
 interface CloseoutReadiness {
   asBuiltCount: number;
@@ -100,7 +101,7 @@ export function ProjectCloseoutPanel({ projectId }: { projectId: string }) {
           {busy ? t("preparing") : t("download")}
         </button>
       </div>
-      {error && <p className="mt-2 text-xs text-danger-fg">{t("error")}</p>}
+      {error && <FormError className="mt-2">{t("error")}</FormError>}
 
       <div className="card mt-3 flex items-center justify-between gap-4">
         <p className="text-sm text-fg-subtle">{t("reviewDescription")}</p>
@@ -108,7 +109,7 @@ export function ProjectCloseoutPanel({ projectId }: { projectId: string }) {
           {reviewSent ? t("reviewSent") : t("requestReview")}
         </button>
       </div>
-      {reviewError && <p className="mt-2 text-xs text-danger-fg">{reviewError}</p>}
+      {reviewError && <FormError className="mt-2">{reviewError}</FormError>}
 
       <div className="card mt-3 flex items-center justify-between gap-4">
         <p className="text-sm text-fg-subtle">{t("npsDescription")}</p>
@@ -116,7 +117,7 @@ export function ProjectCloseoutPanel({ projectId }: { projectId: string }) {
           {npsSent ? t("npsSent") : t("sendNps")}
         </button>
       </div>
-      {npsError && <p className="mt-2 text-xs text-danger-fg">{npsError}</p>}
+      {npsError && <FormError className="mt-2">{npsError}</FormError>}
     </div>
   );
 }

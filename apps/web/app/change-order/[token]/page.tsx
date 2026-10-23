@@ -8,6 +8,8 @@ import { useCompanyLocale } from "@/components/public-locale";
 import { SignaturePad } from "@/components/signature-pad";
 import { formatDateTime } from "@/lib/format-date";
 import { formatCurrency } from "@/lib/format-currency";
+import { Alert } from "@/components/ui/alert";
+import { FormError } from "@/components/ui/field";
 
 interface PublicLine {
   id: string;
@@ -191,7 +193,7 @@ export default function PublicChangeOrderPage({ params }: { params: Promise<{ to
                 <span className="font-medium text-fg-muted">{t("signHere")}</span>
                 <SignaturePad onChange={setSignatureDataUrl} clearLabel={t("clearSignature")} />
               </div>
-              {signatureError && <p className="mt-2 text-xs text-danger-fg">{signatureError}</p>}
+              {signatureError && <FormError className="mt-2">{signatureError}</FormError>}
 
               <div className="mt-3 flex gap-2">
                 <button onClick={() => decide("approved")} disabled={busy} className="btn-primary flex-1">
@@ -203,18 +205,12 @@ export default function PublicChangeOrderPage({ params }: { params: Promise<{ to
               </div>
             </div>
           ) : (
-            <div
-              className={`mt-6 rounded-lg border-t px-4 py-3 text-sm ${
-                changeOrder.clientDecision === "approved"
-                  ? "border-success-200 bg-success-50 dark:bg-success-500/15 text-success-fg"
-                  : "border-error-200 bg-error-50 dark:bg-error-500/15 text-danger-fg"
-              }`}
-            >
+            <Alert tone={changeOrder.clientDecision === "approved" ? "success" : "danger"} className="mt-6" role="status">
               {changeOrder.clientDecision === "approved" ? t("clientDecisionThanksApproved") : t("clientDecisionThanksRejected")}
               {changeOrder.decisionAt && (
                 <span className="block text-xs opacity-75">{formatDateTime(new Date(changeOrder.decisionAt))}</span>
               )}
-            </div>
+            </Alert>
           )}
         </div>
       </div>

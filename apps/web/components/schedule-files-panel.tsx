@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch, apiUpload, downloadBlob } from "@/lib/api-client";
+import { FormError } from "@/components/ui/field";
 
 interface ImportSummary {
   format: "mspdi" | "xer";
@@ -64,7 +65,7 @@ export function ScheduleFilesPanel({ projectId }: { projectId: string }) {
           }}
         />
       </label>
-      {error && <p className="mb-2 text-xs text-danger-fg">{error}</p>}
+      {error && <FormError className="mb-2">{error}</FormError>}
       {result && (
         <p className="mb-3 text-xs text-gray-600 dark:text-gray-300">
           {t("importResult", {

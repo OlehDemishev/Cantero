@@ -7,6 +7,8 @@ import { PublicLinkError } from "@/components/public-link-error";
 import { useCompanyLocale } from "@/components/public-locale";
 import { SignaturePad } from "@/components/signature-pad";
 import { formatDate } from "@/lib/format-date";
+import { Alert } from "@/components/ui/alert";
+import { FormError } from "@/components/ui/field";
 
 type SignatureRequestStatus = "draft" | "sent" | "completed" | "voided";
 interface PublicSignatureRequest {
@@ -107,9 +109,9 @@ export default function PublicSignPage({ params }: { params: Promise<{ token: st
           </ul>
 
           {request.signedAt ? (
-            <div className="mt-6 rounded-lg border-t border-success-200 bg-success-50 dark:bg-success-500/15 px-4 py-3 text-sm text-success-fg">
+            <Alert tone="success" className="mt-6">
               {t("signedThanks")}
-            </div>
+            </Alert>
           ) : request.status !== "sent" ? (
             <div className="mt-6 rounded-lg border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{t("notAwaitingSignature")}</div>
           ) : !request.isYourTurn ? (
@@ -120,7 +122,7 @@ export default function PublicSignPage({ params }: { params: Promise<{ token: st
                 <span className="font-medium text-fg-muted">{t("signHere")}</span>
                 <SignaturePad onChange={setSignatureDataUrl} clearLabel={t("clearSignature")} />
               </div>
-              {signatureError && <p className="mt-2 text-xs text-danger-fg">{signatureError}</p>}
+              {signatureError && <FormError className="mt-2">{signatureError}</FormError>}
               <button onClick={sign} disabled={busy} className="btn-primary mt-3 w-full">
                 {t("submitSignature")}
               </button>

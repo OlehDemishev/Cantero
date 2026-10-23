@@ -11,6 +11,7 @@ import { PhotoAttachments } from "@/components/photo-attachments";
 import { VoiceInputButton } from "@/components/voice-input-button";
 import { formatDate } from "@/lib/format-date";
 import { Badge } from "@/components/ui/badge";
+import { FormError } from "@/components/ui/field";
 
 interface DailyLog {
   id: string;
@@ -237,7 +238,7 @@ export function DailyLogsPanel({ projectId }: { projectId: string }) {
               onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
             />
           </label>
-          {error && <p className="text-xs text-danger-fg">{error}</p>}
+          {error && <FormError>{error}</FormError>}
           <div className="flex gap-2">
             <button type="submit" disabled={busy} className="btn-primary">
               {tc("save")}

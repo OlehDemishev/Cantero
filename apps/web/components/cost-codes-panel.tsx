@@ -7,6 +7,7 @@ import { useApi } from "@/lib/use-api";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useConfirm } from "@/components/ui/confirm-dialog";
+import { FormError } from "@/components/ui/field";
 
 export interface CostCode {
   id: string;
@@ -115,7 +116,7 @@ export function CostCodesPanel() {
           {tc("create")}
         </button>
       </form>
-      {error && <p className="mt-2 text-xs text-danger-fg">{error}</p>}
+      {error && <FormError className="mt-2">{error}</FormError>}
     </section>
   );
 }

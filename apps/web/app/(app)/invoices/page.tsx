@@ -18,6 +18,8 @@ import { useConfirm } from "@/components/ui/confirm-dialog";
 import { formatCurrency } from "@/lib/format-currency";
 import { formatDate } from "@/lib/format-date";
 import { Badge } from "@/components/ui/badge";
+import { Alert } from "@/components/ui/alert";
+import { FormError } from "@/components/ui/field";
 
 interface Invoice {
   id: string;
@@ -308,7 +310,7 @@ export default function InvoicesPage() {
         </div>
       </div>
       <p className="mt-1 text-xs text-fg-subtle">{t("datevTestImportNotice")}</p>
-      {datevError && <p className="mt-1 text-xs text-danger-fg">{datevError}</p>}
+      {datevError && <FormError className="mt-1">{datevError}</FormError>}
       {datevWarningCount !== null && datevWarningCount > 0 && (
         <p className="mt-1 text-xs text-warning-fg">{t("datevWarningCount", { count: datevWarningCount })}</p>
       )}
@@ -391,9 +393,9 @@ export default function InvoicesPage() {
           {t("recurringHint")}
         </p>
         {recurringError && (
-          <p className="mb-3 rounded-md bg-red-50 dark:bg-red-500/15 px-3 py-2 text-sm text-red-700 dark:text-red-400">
+          <Alert tone="danger" className="mb-3">
             {recurringError}
-          </p>
+          </Alert>
         )}
 
         {!recurring || recurring.length === 0 ? (

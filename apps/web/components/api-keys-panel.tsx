@@ -7,6 +7,7 @@ import { apiFetch } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
 import { formatDate } from "@/lib/format-date";
 import { useConfirm } from "@/components/ui/confirm-dialog";
+import { Alert } from "@/components/ui/alert";
 
 interface ApiKey {
   id: string;
@@ -78,7 +79,7 @@ export function ApiKeysPanel() {
       <p className="mb-4 text-xs text-fg-subtle">{t("apiKeysHint")}</p>
 
       {createdKey && (
-        <div className="mb-4 rounded-md border border-warning-200 bg-warning-50 dark:bg-warning-500/15 px-3 py-2">
+        <Alert tone="warning" className="mb-4">
           <p className="text-xs text-warning-fg">{t("apiKeyShownOnce")}</p>
           <div className="mt-2 flex items-center gap-2">
             <code className="flex-1 truncate rounded bg-white dark:bg-gray-800 px-2 py-1 text-xs">{createdKey}</code>
@@ -86,7 +87,7 @@ export function ApiKeysPanel() {
               {keyCopied ? tc("saved") : t("copyKey")}
             </button>
           </div>
-        </div>
+        </Alert>
       )}
 
       {!apiKeys || apiKeys.length === 0 ? (

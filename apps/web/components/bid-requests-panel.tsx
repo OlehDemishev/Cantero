@@ -11,6 +11,7 @@ import { useConfirm } from "@/components/ui/confirm-dialog";
 import { formatCurrency } from "@/lib/format-currency";
 import { Badge } from "@/components/ui/badge";
 import { statusTone } from "@/lib/status-tone";
+import { FormError } from "@/components/ui/field";
 
 interface Subcontractor {
   id: string;
@@ -360,7 +361,7 @@ export function BidRequestsPanel({ projectId }: { projectId: string }) {
               {t("addLine")}
             </button>
           </div>
-          {error && <p className="text-xs text-danger-fg">{error}</p>}
+          {error && <FormError>{error}</FormError>}
           <div className="flex gap-2">
             <button type="submit" disabled={busy || form.subcontractorIds.size === 0} className="btn-primary">
               {t("sendBidRequest")}
@@ -397,7 +398,7 @@ export function BidRequestsPanel({ projectId }: { projectId: string }) {
                 {d && (
                   <div className="mt-3 flex flex-col gap-3 border-t border-gray-100 dark:border-gray-700 pt-3 text-sm">
                     {d.description && <p className="text-gray-600 dark:text-gray-300">{d.description}</p>}
-                    {error && <p className="text-xs text-danger-fg">{error}</p>}
+                    {error && <FormError>{error}</FormError>}
 
                     <div>
                       <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-fg-subtle">{t("scoringCriteria")}</p>
@@ -519,7 +520,7 @@ export function BidRequestsPanel({ projectId }: { projectId: string }) {
                       </tbody>
                     </table>
                     </div>
-                    {gaebError && <p className="text-xs text-danger-fg">{gaebError}</p>}
+                    {gaebError && <FormError>{gaebError}</FormError>}
                     <div className="flex items-center gap-2">
                       {r.bids.length > 1 && (
                         <button onClick={() => toggleLeveling(r.id)} className="btn-secondary w-fit px-3 py-1 text-xs">

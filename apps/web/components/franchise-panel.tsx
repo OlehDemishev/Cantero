@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
 import { formatCurrency } from "@/lib/format-currency";
+import { FormError } from "@/components/ui/field";
 
 interface FranchiseBranch {
   companyId: string;
@@ -70,7 +71,7 @@ export function FranchisePanel() {
       <h2 className="mb-1 text-sm font-semibold text-fg-muted">{t("franchise")}</h2>
       <p className="mb-4 text-xs text-fg-subtle">{t("franchiseHint")}</p>
 
-      {franchiseError && <p className="mb-3 text-xs text-red-600">{franchiseError}</p>}
+      {franchiseError && <FormError className="mb-3">{franchiseError}</FormError>}
 
       {franchiseOverview && franchiseOverview.branches.length > 0 ? (
         <>

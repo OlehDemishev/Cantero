@@ -9,6 +9,8 @@ import { SignaturePad } from "@/components/signature-pad";
 import { formatDateTime } from "@/lib/format-date";
 import { formatCurrency } from "@/lib/format-currency";
 import { Badge } from "@/components/ui/badge";
+import { Alert } from "@/components/ui/alert";
+import { FormError } from "@/components/ui/field";
 
 interface PublicLine {
   id: string;
@@ -210,7 +212,7 @@ export default function PublicEstimatePage({ params }: { params: Promise<{ token
                 <span className="font-medium text-fg-muted">{t("signHere")}</span>
                 <SignaturePad onChange={setSignatureDataUrl} clearLabel={t("clearSignature")} />
               </div>
-              {signatureError && <p className="mt-2 text-xs text-danger-fg">{signatureError}</p>}
+              {signatureError && <FormError className="mt-2">{signatureError}</FormError>}
 
               {counterMode ? (
                 <div className="mt-3 rounded-lg bg-gray-50 dark:bg-gray-700 p-3">
@@ -253,15 +255,7 @@ export default function PublicEstimatePage({ params }: { params: Promise<{ token
               )}
             </div>
           ) : (
-            <div
-              className={`mt-6 rounded-lg border-t px-4 py-3 text-sm ${
-                estimate.clientDecision === "approved"
-                  ? "border-success-200 bg-success-50 dark:bg-success-500/15 text-success-fg"
-                  : estimate.clientDecision === "countered"
-                    ? "border-brand-200 bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-400"
-                    : "border-error-200 bg-error-50 dark:bg-error-500/15 text-danger-fg"
-              }`}
-            >
+            <Alert tone={estimate.clientDecision === "approved" ? "success" : estimate.clientDecision === "countered" ? "brand" : "danger"} className="mt-6" role="status">
               {estimate.clientDecision === "approved"
                 ? t("clientDecisionThanksApproved")
                 : estimate.clientDecision === "countered"
@@ -270,7 +264,7 @@ export default function PublicEstimatePage({ params }: { params: Promise<{ token
               {estimate.decisionAt && (
                 <span className="block text-xs opacity-75">{formatDateTime(new Date(estimate.decisionAt))}</span>
               )}
-            </div>
+            </Alert>
           )}
         </div>
       </div>

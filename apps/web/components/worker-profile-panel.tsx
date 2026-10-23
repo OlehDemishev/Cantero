@@ -7,6 +7,7 @@ import { apiFetch, notifyApiError } from "@/lib/api-client";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
+import { FormError } from "@/components/ui/field";
 
 interface WageClassification {
   id: string;
@@ -255,7 +256,7 @@ export function WorkerProfilePanel({ workerId, currency, onChanged }: { workerId
           </button>
         </form>
       )}
-      {pinError && <p className="mt-1 text-xs text-danger-fg">{pinError}</p>}
+      {pinError && <FormError className="mt-1">{pinError}</FormError>}
     </>
   );
 }

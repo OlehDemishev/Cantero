@@ -8,6 +8,7 @@ import { apiFetch, apiUpload } from "@/lib/api-client";
 import { loadPdf, renderPage } from "@/lib/pdf";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { Badge } from "@/components/ui/badge";
+import { FormError } from "@/components/ui/field";
 
 interface SetPage {
   page: number;
@@ -200,7 +201,7 @@ export function DrawingSetImport({ projectId, onImported }: { projectId: string;
           </button>
           <span className="text-xs text-fg-subtle">{t("uploadHint")}</span>
           {result && <p className="basis-full text-xs text-success-600">{t("imported", result)}</p>}
-          {error && <p className="basis-full text-xs text-danger-fg">{error}</p>}
+          {error && <FormError className="basis-full">{error}</FormError>}
         </div>
         {openSets.length > 0 && (
           <ul className="mt-3 flex flex-col gap-1.5" aria-label={t("openSets")}>
@@ -265,7 +266,7 @@ export function DrawingSetImport({ projectId, onImported }: { projectId: string;
           </button>
         </div>
       </div>
-      {error && <p className="mb-2 text-xs text-danger-fg">{error}</p>}
+      {error && <FormError className="mb-2">{error}</FormError>}
       {set.error === "import-failed" && <p className="mb-2 text-xs text-danger-fg">{t("error_import_failed")}</p>}
 
       {preview !== null && <PagePreview setId={set.id} page={preview} onClose={() => setPreview(null)} />}

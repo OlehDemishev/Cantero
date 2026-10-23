@@ -10,6 +10,7 @@ import { formatCurrency } from "@/lib/format-currency";
 import { useCompanyLocale } from "@/components/public-locale";
 import { Badge } from "@/components/ui/badge";
 import { statusTone } from "@/lib/status-tone";
+import { Alert } from "@/components/ui/alert";
 
 interface Me {
   name: string;
@@ -117,7 +118,7 @@ export default function SupplierPortalDashboardPage() {
             {t("logout")}
           </button>
         </div>
-        {error && <p className="mb-4 rounded-md bg-red-50 dark:bg-red-500/15 px-3 py-2 text-sm text-red-700 dark:text-red-400">{error}</p>}
+        {error && <Alert tone="danger" className="mb-4">{error}</Alert>}
 
         <section className="card">
           <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("purchaseOrders")}</h2>

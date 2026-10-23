@@ -12,6 +12,7 @@ import { apiFetch, notifyApiError } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
 import { formatDate, formatDateTime } from "@/lib/format-date";
 import { Badge } from "@/components/ui/badge";
+import { Alert } from "@/components/ui/alert";
 
 interface MaterialCatalogItem {
   id: string;
@@ -224,12 +225,18 @@ export default function RateCatalogPage() {
       </div>
 
       {pendingNotice && (
-        <div className="mt-3 flex items-center justify-between rounded-md bg-warning-50 dark:bg-warning-500/15 px-3 py-2 text-xs text-warning-fg">
-          <span>{pendingNotice}</span>
-          <button onClick={() => setPendingNotice(null)} className="text-warning-fg hover:underline">
-            {tc("close")}
-          </button>
-        </div>
+        <Alert
+          tone="warning"
+          size="sm"
+          className="mt-3"
+          action={
+            <button onClick={() => setPendingNotice(null)} className="hover:underline">
+              {tc("close")}
+            </button>
+          }
+        >
+          {pendingNotice}
+        </Alert>
       )}
 
       {pendingChanges.length > 0 && (

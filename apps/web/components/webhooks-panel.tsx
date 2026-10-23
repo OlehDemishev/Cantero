@@ -8,6 +8,7 @@ import { useApi } from "@/lib/use-api";
 import { formatDateTime } from "@/lib/format-date";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { Badge } from "@/components/ui/badge";
+import { Alert } from "@/components/ui/alert";
 
 interface WebhookEndpoint {
   id: string;
@@ -110,10 +111,10 @@ export function WebhooksPanel() {
     <section id="webhooks" className="card lg:col-span-2">
       <h2 className="mb-1 text-sm font-semibold text-fg-muted">{t("webhooks")}</h2>
       <p className="mb-4 text-xs text-fg-subtle">{t("webhooksHint")}</p>
-      {error && <p className="mb-3 rounded-md bg-red-50 dark:bg-red-500/15 px-3 py-2 text-sm text-red-700 dark:text-red-400">{error}</p>}
+      {error && <Alert tone="danger" className="mb-3">{error}</Alert>}
 
       {createdWebhookSecret && (
-        <div className="mb-4 rounded-md border border-warning-200 bg-warning-50 dark:bg-warning-500/15 px-3 py-2">
+        <Alert tone="warning" className="mb-4">
           <p className="text-xs text-warning-fg">{t("webhookSecretShownOnce")}</p>
           <div className="mt-2 flex items-center gap-2">
             <code className="flex-1 truncate rounded bg-white dark:bg-gray-800 px-2 py-1 text-xs">{createdWebhookSecret}</code>
@@ -121,7 +122,7 @@ export function WebhooksPanel() {
               {webhookSecretCopied ? tc("saved") : t("copySecret")}
             </button>
           </div>
-        </div>
+        </Alert>
       )}
 
       {!webhooks || webhooks.length === 0 ? (

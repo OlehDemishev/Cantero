@@ -6,6 +6,7 @@ import { apiFetch, ApiError } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
 import { formatDate } from "@/lib/format-date";
 import { useConfirm } from "@/components/ui/confirm-dialog";
+import { FormError } from "@/components/ui/field";
 
 interface CompanyHoliday {
   id: string;
@@ -108,7 +109,7 @@ export function CompanyHolidaysPanel({ canManage }: { canManage: boolean }) {
           </button>
         </div>
       )}
-      {error && <p className="mt-1 text-xs text-danger-fg">{error}</p>}
+      {error && <FormError className="mt-1">{error}</FormError>}
     </div>
   );
 }

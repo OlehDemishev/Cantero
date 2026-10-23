@@ -10,6 +10,7 @@ import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useMe } from "@/lib/use-me";
 import { Badge } from "@/components/ui/badge";
+import { FormError } from "@/components/ui/field";
 
 interface Subcontractor {
   id: string;
@@ -110,7 +111,7 @@ export default function SubcontractorsPage() {
       </div>
       <p className="mt-1 text-sm text-fg-subtle">{t("complianceSubtitle")}</p>
       <p className="mt-1 text-xs text-fg-subtle">{t("datevTestImportNotice")}</p>
-      {datevError && <p className="mt-1 text-xs text-danger-fg">{datevError}</p>}
+      {datevError && <FormError className="mt-1">{datevError}</FormError>}
       {datevWarningCount !== null && datevWarningCount > 0 && (
         <p className="mt-1 text-xs text-warning-fg">{t("datevWarningCount", { count: datevWarningCount })}</p>
       )}

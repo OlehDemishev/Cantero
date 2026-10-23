@@ -7,6 +7,8 @@ import { PublicLinkError } from "@/components/public-link-error";
 import { useCompanyLocale } from "@/components/public-locale";
 import { SignaturePad } from "@/components/signature-pad";
 import { formatDateTime } from "@/lib/format-date";
+import { Alert } from "@/components/ui/alert";
+import { FormError } from "@/components/ui/field";
 
 type ContractStatus = "draft" | "sent" | "signed" | "void";
 interface PublicContract {
@@ -94,16 +96,16 @@ export default function PublicContractPage({ params }: { params: Promise<{ token
                 <span className="font-medium text-fg-muted">{t("signHere")}</span>
                 <SignaturePad onChange={setSignatureDataUrl} clearLabel={t("clearSignature")} />
               </div>
-              {signatureError && <p className="mt-2 text-xs text-danger-fg">{signatureError}</p>}
+              {signatureError && <FormError className="mt-2">{signatureError}</FormError>}
               <button onClick={sign} disabled={busy} className="btn-primary mt-3 w-full">
                 {t("clientSign")}
               </button>
             </div>
           ) : contract.status === "signed" ? (
-            <div className="mt-6 rounded-lg border-t border-success-200 bg-success-50 dark:bg-success-500/15 px-4 py-3 text-sm text-success-fg">
+            <Alert tone="success" className="mt-6">
               {t("signedThanks")}
               {contract.signedAt && <span className="block text-xs opacity-75">{formatDateTime(new Date(contract.signedAt))}</span>}
-            </div>
+            </Alert>
           ) : (
             <div className="mt-6 rounded-lg border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{t("notAwaitingSignature")}</div>
           )}

@@ -13,6 +13,7 @@ import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useApi } from "@/lib/use-api";
 import { Badge } from "@/components/ui/badge";
+import { FormError } from "@/components/ui/field";
 
 interface Warehouse {
   id: string;
@@ -769,7 +770,7 @@ export function WarehouseDetail({
         </button>
       </form>
       {barcodeError && (
-        <p className="mt-1 text-xs text-danger-fg">{barcodeError}</p>
+        <FormError className="mt-1">{barcodeError}</FormError>
       )}
       {barcodeResult && (
         <div className="mt-2 rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-3 text-sm">

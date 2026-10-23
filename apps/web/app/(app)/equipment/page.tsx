@@ -12,6 +12,7 @@ import { useMe } from "@/lib/use-me";
 import { formatCurrency } from "@/lib/format-currency";
 import { Badge } from "@/components/ui/badge";
 import { statusTone } from "@/lib/status-tone";
+import { Alert } from "@/components/ui/alert";
 
 interface AssignmentSummary {
   project: { id: string; name: string } | null;
@@ -89,7 +90,7 @@ export default function EquipmentPage() {
   return (
     <>
       <h1 className="text-2xl font-semibold">{t("title")}</h1>
-      {error && <p className="mt-4 rounded-md bg-red-50 dark:bg-red-500/15 px-3 py-2 text-sm text-red-700 dark:text-red-400">{error}</p>}
+      {error && <Alert tone="danger" className="mt-4">{error}</Alert>}
 
       <div className="mt-6">
         {!items ? (

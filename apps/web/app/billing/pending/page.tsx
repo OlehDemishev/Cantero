@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { apiFetch, ApiError } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
+import { Alert } from "@/components/ui/alert";
 
 export default function BillingPendingPage() {
   const t = useTranslations("billing");
@@ -38,7 +39,7 @@ export default function BillingPendingPage() {
     <Centered>
       <h1 className="text-2xl font-semibold">{t("title")}</h1>
       <p className="mt-2 max-w-sm text-sm text-gray-600 dark:text-gray-300">{t("subtitle")}</p>
-      {error && <p className="mt-4 rounded-md bg-red-50 dark:bg-red-500/15 px-3 py-2 text-sm text-red-700 dark:text-red-400">{error}</p>}
+      {error && <Alert tone="danger" className="mt-4">{error}</Alert>}
       <button onClick={startCheckout} disabled={starting} className="btn-primary mt-6">
         {starting ? tc("loading") : t("checkoutButton")}
       </button>

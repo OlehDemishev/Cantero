@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { apiFetch, ApiError, setToken } from "@/lib/api-client";
 import { beginSsoNonce } from "@/lib/sso-nonce";
 import { useRedirectIfSignedIn } from "@/lib/use-redirect-if-signed-in";
+import { Alert } from "@/components/ui/alert";
 
 type LoginResult = { accessToken: string; companyId: string } | { requires2fa: true; challengeToken: string };
 
@@ -101,7 +102,7 @@ export default function LoginPage() {
         <div className="card">
           <h1 className="text-xl font-semibold text-fg">{t("loginTitle")}</h1>
 
-          {error && <p className="mt-4 rounded-lg bg-error-50 dark:bg-error-500/15 px-3 py-2 text-sm text-danger-fg">{error}</p>}
+          {error && <Alert tone="danger" className="mt-4">{error}</Alert>}
 
           {challengeToken ? (
             <form onSubmit={handleVerify2fa} className="mt-6 flex flex-col gap-4">

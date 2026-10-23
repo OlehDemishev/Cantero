@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { DEFAULT_CURRENCY_BY_LOCALE, PLAN_IDS, SUPPORTED_CURRENCIES, SUPPORTED_LOCALES, UNIT_SYSTEMS, type Locale } from "@cantero/shared";
 import { apiFetch, ApiError, setToken } from "@/lib/api-client";
 import { useRedirectIfSignedIn } from "@/lib/use-redirect-if-signed-in";
+import { Alert } from "@/components/ui/alert";
 
 export default function SignupPage() {
   const t = useTranslations("auth");
@@ -74,7 +75,7 @@ export default function SignupPage() {
           <h1 className="text-xl font-semibold text-fg">{t("signupTitle")}</h1>
           <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">{t("signupSubtitle")}</p>
 
-          {error && <p className="mt-4 rounded-lg bg-error-50 dark:bg-error-500/15 px-3 py-2 text-sm text-danger-fg">{error}</p>}
+          {error && <Alert tone="danger" className="mt-4">{error}</Alert>}
 
           <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
         <Field label={t("companyName")}>

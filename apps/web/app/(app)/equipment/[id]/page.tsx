@@ -19,6 +19,7 @@ import { formatDate } from "@/lib/format-date";
 import { formatCurrency } from "@/lib/format-currency";
 import { Badge } from "@/components/ui/badge";
 import { statusTone } from "@/lib/status-tone";
+import { Alert } from "@/components/ui/alert";
 
 function getCurrentPositionSafe(): Promise<{ lat: number; lng: number } | null> {
   return new Promise((resolve) => {
@@ -342,7 +343,7 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
           {t(`status_${equipment.status}`)}
         </Badge>
       </div>
-      {error && <p className="mt-4 rounded-md bg-red-50 dark:bg-red-500/15 px-3 py-2 text-sm text-red-700 dark:text-red-400">{error}</p>}
+      {error && <Alert tone="danger" className="mt-4">{error}</Alert>}
 
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
         <section className="card">

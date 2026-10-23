@@ -7,6 +7,7 @@ import { useApi } from "@/lib/use-api";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useConfirm } from "@/components/ui/confirm-dialog";
+import { FormError } from "@/components/ui/field";
 
 interface OffboardingTemplateItem {
   id: string;
@@ -76,7 +77,7 @@ export function OffboardingTemplatePanel() {
           {t("addOffboardingTask")}
         </button>
       </form>
-      {error && <p className="mt-1.5 text-xs text-danger-fg">{error}</p>}
+      {error && <FormError className="mt-1.5">{error}</FormError>}
 
       <ul className="mt-4 flex max-w-md flex-col gap-1.5">
         {items === null ? (

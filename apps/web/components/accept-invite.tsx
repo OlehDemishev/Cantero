@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch, ApiError, setToken } from "@/lib/api-client";
+import { Alert } from "@/components/ui/alert";
 
 interface InviteInfo {
   email: string;
@@ -67,7 +68,7 @@ export function AcceptInvite({ token }: { token: string }) {
       <h1 className="text-2xl font-semibold">{t("acceptInviteTitle", { company: invite.company.name })}</h1>
       <p className="mt-1 text-sm text-fg-subtle">{t("acceptInviteSubtitle", { role: t(invite.role) })}</p>
 
-      {error && <p className="mt-4 rounded-md bg-red-50 dark:bg-red-500/15 px-3 py-2 text-sm text-red-700 dark:text-red-400">{error}</p>}
+      {error && <Alert tone="danger" className="mt-4">{error}</Alert>}
 
       <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
         <label className="flex flex-col gap-1 text-sm">

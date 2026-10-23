@@ -7,6 +7,7 @@ import { useConfirm } from "@/components/ui/confirm-dialog";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useApi } from "@/lib/use-api";
+import { FormError } from "@/components/ui/field";
 
 interface MaterialCatalogItem {
   id: string;
@@ -166,7 +167,7 @@ export function StockKits() {
           {tc("create")}
         </button>
       </form>
-      {error && <p className="mt-2 text-xs text-danger-fg">{error}</p>}
+      {error && <FormError className="mt-2">{error}</FormError>}
 
       <div className="mt-8">
         {!kits ? (

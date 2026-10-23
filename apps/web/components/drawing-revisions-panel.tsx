@@ -8,6 +8,7 @@ import { formatDate } from "@/lib/format-date";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { FormError } from "@/components/ui/field";
 
 interface DrawingSheetVersion {
   id: string;
@@ -85,7 +86,7 @@ export function DrawingRevisionsPanel({ sheetId, onSuperseded }: { sheetId: stri
           {t("uploadRevision")}
         </button>
       </form>
-      {error && <p className="mt-2 text-xs text-danger-fg">{error}</p>}
+      {error && <FormError className="mt-2">{error}</FormError>}
     </div>
   );
 }

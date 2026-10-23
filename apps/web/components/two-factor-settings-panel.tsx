@@ -5,6 +5,8 @@ import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import { resetStateInEffect } from "@/lib/effect-reset";
+import { Alert } from "@/components/ui/alert";
+import { FormError } from "@/components/ui/field";
 
 export function TwoFactorSettingsPanel() {
   const t = useTranslations("twoFactor");
@@ -80,18 +82,18 @@ export function TwoFactorSettingsPanel() {
       <h2 className="mb-1 text-sm font-semibold text-fg-muted">{t("title")}</h2>
       <p className="mb-4 text-xs text-fg-subtle">{t("hint")}</p>
 
-      {error && <p className="mb-3 text-xs text-danger-fg">{error}</p>}
+      {error && <FormError className="mb-3">{error}</FormError>}
 
       {backupCodes && (
-        <div className="mb-4 rounded border border-amber-200 bg-amber-50 p-3">
-          <p className="mb-2 text-xs font-semibold text-amber-800 dark:text-amber-400">{t("backupCodesTitle")}</p>
-          <p className="mb-2 text-xs text-amber-700">{t("backupCodesHint")}</p>
-          <div className="grid grid-cols-2 gap-1 font-mono text-xs text-amber-900">
+        <Alert tone="warning" className="mb-4">
+          <p className="mb-2 text-xs font-semibold">{t("backupCodesTitle")}</p>
+          <p className="mb-2 text-xs">{t("backupCodesHint")}</p>
+          <div className="grid grid-cols-2 gap-1 font-mono text-xs text-fg">
             {backupCodes.map((c) => (
               <span key={c}>{c}</span>
             ))}
           </div>
-        </div>
+        </Alert>
       )}
 
       {!isEnabled && !setupData && (

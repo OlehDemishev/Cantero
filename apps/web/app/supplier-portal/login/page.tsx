@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { supplierPortalApiFetch } from "@/lib/supplier-portal-api-client";
+import { Alert } from "@/components/ui/alert";
 
 export default function SupplierPortalLoginPage() {
   const t = useTranslations("supplierPortal");
@@ -39,9 +40,9 @@ export default function SupplierPortalLoginPage() {
           <p className="mt-1 text-sm text-fg-subtle">{t("signInHint")}</p>
 
           {sent ? (
-            <p className="mt-4 rounded-lg border border-success-200 bg-success-50 dark:bg-success-500/15 px-4 py-3 text-sm text-success-fg">
+            <Alert tone="success" className="mt-4">
               {t("linkSentHint")}
-            </p>
+            </Alert>
           ) : (
             <form onSubmit={requestLink} className="mt-4 flex flex-col gap-3">
               <input

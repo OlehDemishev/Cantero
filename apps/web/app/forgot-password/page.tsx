@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch, ApiError } from "@/lib/api-client";
+import { Alert } from "@/components/ui/alert";
 
 export default function ForgotPasswordPage() {
   const t = useTranslations("auth");
@@ -45,7 +46,7 @@ export default function ForgotPasswordPage() {
           ) : (
             <>
               <p className="mt-2 text-sm text-fg-subtle">{t("forgotPasswordHint")}</p>
-              {error && <p className="mt-4 rounded-lg bg-error-50 dark:bg-error-500/15 px-3 py-2 text-sm text-danger-fg">{error}</p>}
+              {error && <Alert tone="danger" className="mt-4">{error}</Alert>}
               <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
                 <label className="flex flex-col gap-1.5 text-sm">
                   <span className="font-medium text-fg-muted">{tc("email")}</span>

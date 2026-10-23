@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { FormError } from "@/components/ui/field";
 
 interface SyncSummary {
   synced: number;
@@ -42,7 +43,7 @@ export function AutodeskSyncPanel({ projectId, initialAutodeskProjectId }: { pro
     <section className="card">
       <h2 className="mb-1 text-sm font-semibold text-fg-muted">{t("title")}</h2>
       <p className="mb-3 text-xs text-fg-subtle">{t("hint")}</p>
-      {error && <p className="mb-2 text-xs text-danger-fg">{error}</p>}
+      {error && <FormError className="mb-2">{error}</FormError>}
       {result && (
         <p className="mb-2 text-xs text-gray-600 dark:text-gray-300">
           {t("syncResult", { synced: result.synced, failed: result.failed })}

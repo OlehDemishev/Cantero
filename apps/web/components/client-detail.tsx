@@ -18,6 +18,7 @@ import { goBack } from "@/lib/back-navigation";
 import { useCan } from "@/lib/permissions";
 import { formatCurrency } from "@/lib/format-currency";
 import { Badge } from "@/components/ui/badge";
+import { FormError } from "@/components/ui/field";
 
 type ClientStage = "lead" | "contacted" | "qualified" | "won" | "lost";
 const STAGES: ClientStage[] = ["lead", "contacted", "qualified", "won", "lost"];
@@ -173,7 +174,7 @@ export function ClientDetail({ clientId }: { clientId: string }) {
               {tc("cancel")}
             </button>
           </div>
-          {convertError && <p className="text-xs text-danger-fg">{convertError}</p>}
+          {convertError && <FormError>{convertError}</FormError>}
         </form>
       ) : (
         <div className="mt-4 flex flex-wrap gap-1">

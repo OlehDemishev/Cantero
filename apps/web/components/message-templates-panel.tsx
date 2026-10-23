@@ -6,6 +6,7 @@ import { apiFetch, ApiError } from "@/lib/api-client";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
+import { FormError } from "@/components/ui/field";
 
 interface TemplateEntry {
   key: string;
@@ -98,7 +99,7 @@ export function MessageTemplatesPanel() {
                 </span>
               )}
             </div>
-            {errorKey?.key === entry.key && <p className="mt-1 text-xs text-danger-fg">{errorKey.message}</p>}
+            {errorKey?.key === entry.key && <FormError className="mt-1">{errorKey.message}</FormError>}
           </div>
         ))}
       </div>

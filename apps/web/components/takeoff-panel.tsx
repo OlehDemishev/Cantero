@@ -12,6 +12,7 @@ import { useConfirm } from "@/components/ui/confirm-dialog";
 import { formatNumber } from "@/lib/format-currency";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
+import { FormError } from "@/components/ui/field";
 
 interface TakeoffPoint {
   x: number;
@@ -266,7 +267,7 @@ export function TakeoffPanel({ projectId }: { projectId: string }) {
           </button>
         </form>
       </div>
-      {error && <p className="mb-2 text-xs text-danger-fg">{error}</p>}
+      {error && <FormError className="mb-2">{error}</FormError>}
 
       {detail && (
         <div className="card">

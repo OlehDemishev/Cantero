@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { ApiError, apiFetch, clearToken, getToken } from "@/lib/api-client";
+import { Alert } from "@/components/ui/alert";
+import { FormError } from "@/components/ui/field";
 
 interface KioskWorker {
   id: string;
@@ -153,9 +155,9 @@ export default function KioskPage() {
             </div>
 
             {done ? (
-              <p className="rounded-lg border border-success-200 bg-success-50 dark:bg-success-500/15 px-4 py-3 text-center text-sm text-success-fg">
+              <Alert tone="success" className="text-center">
                 {t("entrySaved")}
-              </p>
+              </Alert>
             ) : !kioskToken ? (
               <>
                 <label className="flex flex-col gap-1.5 text-sm">
@@ -170,7 +172,7 @@ export default function KioskPage() {
                     onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))}
                   />
                 </label>
-                {pinError && <p className="mt-2 text-xs text-danger-fg">{pinError}</p>}
+                {pinError && <FormError className="mt-2">{pinError}</FormError>}
                 <button onClick={submitPin} disabled={busy || pin.length < 4} className="btn-primary mt-4 w-full">
                   {t("submitPin")}
                 </button>

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { FormError } from "@/components/ui/field";
 
 interface Summary {
   pushed: number;
@@ -71,7 +72,7 @@ export function IntacctProjectPanel({ projectId }: { projectId: string }) {
     <section className="card">
       <h2 className="mb-1 text-sm font-semibold text-fg-muted">{t("projectTitle")}</h2>
       <p className="mb-3 text-xs text-fg-subtle">{t("projectHint")}</p>
-      {error && <p className="mb-2 whitespace-pre-line text-xs text-danger-fg">{error}</p>}
+      {error && <FormError className="mb-2 whitespace-pre-line">{error}</FormError>}
       {message && <p className="mb-2 text-xs text-gray-600 dark:text-gray-300">{message}</p>}
 
       {project.intacctContractId ? (

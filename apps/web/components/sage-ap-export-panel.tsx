@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch, downloadBlob } from "@/lib/api-client";
+import { FormError } from "@/components/ui/field";
 
 /** AP invoice export for Sage 300 CRE's "Import Invoices" — see sage-300-cre.ts for what the file
  * contains and what it leaves blank. The API refuses with a per-bill list when a supplier still
@@ -47,7 +48,7 @@ export function SageApExportPanel() {
           {t("export")}
         </button>
       </div>
-      {error && <p className="mt-2 whitespace-pre-line text-xs text-danger-fg">{error}</p>}
+      {error && <FormError className="mt-2 whitespace-pre-line">{error}</FormError>}
     </div>
   );
 }

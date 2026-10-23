@@ -11,6 +11,7 @@ import type { CostCode } from "@/components/cost-codes-panel";
 import { formatDate } from "@/lib/format-date";
 import { formatCurrency } from "@/lib/format-currency";
 import { PanelErrorState } from "@/components/ui/error-state";
+import { FormError } from "@/components/ui/field";
 
 interface CostHistoryMonth {
   month: string;
@@ -255,7 +256,7 @@ export function JobCostingPanel({ projectId }: { projectId: string }) {
                   onChange={(e) => setTransferForm((f) => ({ ...f, reason: e.target.value }))}
                 />
               </div>
-              {transferError && <p className="text-xs text-danger-fg">{transferError}</p>}
+              {transferError && <FormError>{transferError}</FormError>}
               <div className="flex gap-2">
                 <button type="submit" disabled={busy} className="btn-primary px-3 py-1 text-xs">
                   {tc("save")}

@@ -5,6 +5,8 @@ import { useTranslations } from "next-intl";
 import { apiFetch, API_URL } from "@/lib/api-client";
 import { PublicLinkError } from "@/components/public-link-error";
 import { useCompanyLocale } from "@/components/public-locale";
+import { Alert } from "@/components/ui/alert";
+import { FormError } from "@/components/ui/field";
 
 interface ShowcasePhoto {
   id: string;
@@ -101,9 +103,9 @@ export function LeadForm({ token }: { token: string }) {
           <p className="mt-1 text-sm text-fg-subtle">{t("formHint")}</p>
 
           {submitted ? (
-            <p className="mt-4 rounded-lg border border-success-200 bg-success-50 dark:bg-success-500/15 px-4 py-3 text-sm text-success-fg">
+            <Alert tone="success" className="mt-4">
               {t("thankYou")}
-            </p>
+            </Alert>
           ) : (
             <form onSubmit={submit} className="mt-4 flex flex-col gap-3">
               <input
@@ -142,7 +144,7 @@ export function LeadForm({ token }: { token: string }) {
                 value={form.honeypot}
                 onChange={(e) => setForm((f) => ({ ...f, honeypot: e.target.value }))}
               />
-              {error && <p className="text-xs text-danger-fg">{error}</p>}
+              {error && <FormError>{error}</FormError>}
               <button type="submit" disabled={busy} className="btn-primary">
                 {t("submit")}
               </button>

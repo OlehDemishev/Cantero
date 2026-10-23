@@ -6,6 +6,8 @@ import { apiFetch, downloadBlob } from "@/lib/api-client";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Alert } from "@/components/ui/alert";
+import { FormError } from "@/components/ui/field";
 
 interface SsoConfig {
   ssoDomain: string | null;
@@ -106,7 +108,7 @@ export function SsoSettingsPanel({ canManage }: { canManage: boolean }) {
         <p className="mb-3 text-sm text-success-fg">{t("activeSummary", { domain: config.ssoDomain! })}</p>
       )}
       {isConfigured && !config.ssoDomainVerified && (
-        <div className="mb-4 rounded-md border border-warning-200 dark:border-warning-500/30 bg-warning-50 dark:bg-warning-500/10 p-3">
+        <Alert tone="warning" className="mb-4">
           <p className="text-sm text-warning-fg">{t("pendingSummary", { domain: config.ssoDomain! })}</p>
           {config.verificationRecord && (
             <>
@@ -127,7 +129,7 @@ export function SsoSettingsPanel({ canManage }: { canManage: boolean }) {
               {verifyFailed && <span className="text-xs text-warning-fg">{t("verifyFailedHint")}</span>}
             </div>
           )}
-        </div>
+        </Alert>
       )}
 
       <button onClick={downloadMetadata} className="btn-secondary mb-4 px-3 py-1 text-xs">
@@ -177,7 +179,7 @@ export function SsoSettingsPanel({ canManage }: { canManage: boolean }) {
               onChange={(e) => setForm((f) => ({ ...f, cert: e.target.value }))}
             />
           </label>
-          {error && <p className="text-xs text-danger-fg">{error}</p>}
+          {error && <FormError>{error}</FormError>}
           <div className="flex gap-2">
             <button type="submit" disabled={busy} className="btn-primary self-start">
               {tc("save")}

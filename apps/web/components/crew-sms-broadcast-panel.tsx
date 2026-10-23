@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch, ApiError } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
+import { FormError } from "@/components/ui/field";
 
 interface Broadcast {
   id: string;
@@ -59,7 +60,7 @@ export function CrewSmsBroadcastPanel({ projectId }: { projectId: string }) {
             </button>
           </div>
         </form>
-        {error && <p className="mt-2 text-xs text-danger-fg">{error}</p>}
+        {error && <FormError className="mt-2">{error}</FormError>}
 
         {log && log.length > 0 && (
           <ul className="mt-4 flex flex-col gap-2 border-t border-gray-100 dark:border-gray-700 pt-3">

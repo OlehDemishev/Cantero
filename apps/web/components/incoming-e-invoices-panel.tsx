@@ -13,6 +13,8 @@ import { useConfirm } from "@/components/ui/confirm-dialog";
 import { formatCurrency } from "@/lib/format-currency";
 import { Badge } from "@/components/ui/badge";
 import { statusTone } from "@/lib/status-tone";
+import { Alert } from "@/components/ui/alert";
+import { FormError } from "@/components/ui/field";
 
 interface Supplier {
   id: string;
@@ -145,7 +147,7 @@ export function IncomingEInvoicesPanel() {
             }}
           />
         </label>
-        {uploadError && <p className="mt-2 text-xs text-danger-fg">{uploadError}</p>}
+        {uploadError && <FormError className="mt-2">{uploadError}</FormError>}
       </div>
 
       {!invoices ? (
@@ -209,14 +211,14 @@ export function IncomingEInvoicesPanel() {
                     </ul>
 
                     {inv.validationErrors.length > 0 && (
-                      <div className="mt-3 rounded-lg bg-amber-50 dark:bg-amber-500/10 p-2 text-xs text-amber-800 dark:text-amber-400">
+                      <Alert tone="warning" size="sm" className="mt-3">
                         <p className="font-medium">{t("validationHeading")}</p>
                         <ul className="mt-1 list-disc pl-4">
                           {inv.validationErrors.map((e, i) => (
                             <li key={i}>{e}</li>
                           ))}
                         </ul>
-                      </div>
+                      </Alert>
                     )}
 
                     {inv.status === "rejected" && inv.rejectedReason && (

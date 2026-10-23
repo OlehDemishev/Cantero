@@ -14,6 +14,8 @@ import { formatDate } from "@/lib/format-date";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { Badge } from "@/components/ui/badge";
 import { statusTone } from "@/lib/status-tone";
+import { Alert } from "@/components/ui/alert";
+import { FormError } from "@/components/ui/field";
 
 const PAYMENT_METHODS = ["bank_transfer", "card", "cash", "other"] as const;
 
@@ -493,14 +495,18 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
           )}
 
           {invoice.lateFeeAccrued > 0 && (
-            <div className="mt-3 flex items-center justify-between rounded-lg border border-warning-200 bg-warning-50 dark:bg-warning-500/15 px-3 py-2">
-              <span className="text-xs text-warning-fg">
-                {t("lateFeeAccrued", { amount: money(invoice.lateFeeAccrued) })}
-              </span>
-              <button onClick={chargeLateFee} disabled={busy} className="btn-secondary px-2 py-1 text-xs">
-                {t("chargeLateFee")}
-              </button>
-            </div>
+            <Alert
+              tone="warning"
+              size="sm"
+              className="mt-3"
+              action={
+                <button onClick={chargeLateFee} disabled={busy} className="btn-secondary px-2 py-1 text-xs">
+                  {t("chargeLateFee")}
+                </button>
+              }
+            >
+              {t("lateFeeAccrued", { amount: money(invoice.lateFeeAccrued) })}
+            </Alert>
           )}
 
           <form onSubmit={saveDueDate} className="mt-4 flex items-end gap-2 border-t border-gray-100 dark:border-gray-700 pt-4">
@@ -535,25 +541,25 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
             <button onClick={downloadEInvoice} className="btn-secondary">
               {t("downloadEInvoice")}
             </button>
-            {eInvoiceError && <p className="text-xs text-danger-fg">{eInvoiceError}</p>}
+            {eInvoiceError && <FormError>{eInvoiceError}</FormError>}
             <button onClick={downloadZugferd} className="btn-secondary">
               {t("downloadZugferd")}
             </button>
-            {zugferdError && <p className="text-xs text-danger-fg">{zugferdError}</p>}
+            {zugferdError && <FormError>{zugferdError}</FormError>}
             <button onClick={downloadPeppol} className="btn-secondary">
               {t("downloadPeppol")}
             </button>
             <button onClick={sendPeppol} className="btn-secondary">
               {t("sendPeppolNetwork")}
             </button>
-            {peppolError && <p className="text-xs text-danger-fg">{peppolError}</p>}
+            {peppolError && <FormError>{peppolError}</FormError>}
             {peppolSendMessage && <p className="text-xs text-success-fg">{peppolSendMessage}</p>}
             {(invoice.status === "sent" || invoice.status === "paid") && (
               <button onClick={voidInvoice} disabled={busy} className="btn-secondary text-danger-fg">
                 {t("voidInvoice")}
               </button>
             )}
-            {voidError && <p className="text-xs text-danger-fg">{voidError}</p>}
+            {voidError && <FormError>{voidError}</FormError>}
             {emailSentTo !== undefined && (
               <p className="text-xs text-fg-subtle">
                 {emailSentTo ? tc("emailedTo", { email: emailSentTo }) : tc("noClientEmail")}

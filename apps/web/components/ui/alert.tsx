@@ -18,7 +18,7 @@ export interface AlertProps {
   action?: ReactNode;
   /** "sm" for a notice inside a card or a table row. */
   size?: "sm" | "md";
-  /** Defaults to "alert" for danger/warning (announced at once) and "status" for the rest. */
+  /** Defaults to "alert" for danger (announced at once) and "status" for the rest. */
   role?: "alert" | "status" | "note";
   className?: string;
   children?: ReactNode;
@@ -32,7 +32,7 @@ export function Alert({ tone = "danger", title, action, size = "md", role, class
   const sizeClasses = size === "sm" ? "gap-2 px-2.5 py-1.5 text-xs" : "gap-3 px-3 py-2 text-sm";
   return (
     <div
-      role={role ?? (tone === "danger" || tone === "warning" ? "alert" : "status")}
+      role={role ?? (tone === "danger" ? "alert" : "status")}
       className={`flex items-start justify-between rounded-lg border ${sizeClasses} ${TONE_CLASSES[tone]} ${className}`}
     >
       <div className="min-w-0 flex-1">

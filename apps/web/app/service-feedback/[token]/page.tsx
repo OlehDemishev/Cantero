@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { apiFetch, ApiError } from "@/lib/api-client";
 import { PublicLinkError, PublicNotice } from "@/components/public-link-error";
 import { useCompanyLocale } from "@/components/public-locale";
+import { Alert } from "@/components/ui/alert";
 
 /** GET of the same token: whose form it is, in which language, and whether it is still open. */
 interface FormLink {
@@ -80,7 +81,7 @@ export default function ServiceFeedbackPage({ params }: { params: Promise<{ toke
             <p className="mt-4 text-sm text-gray-600 dark:text-gray-300">{t("thanks")}</p>
           ) : (
             <>
-              {error && <p className="mt-4 rounded-lg bg-error-50 dark:bg-error-500/15 px-3 py-2 text-sm text-danger-fg">{error}</p>}
+              {error && <Alert tone="danger" className="mt-4">{error}</Alert>}
               <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
                 <div className="flex justify-center gap-1">
                   {[1, 2, 3, 4, 5].map((n) => (

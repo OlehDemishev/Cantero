@@ -9,6 +9,8 @@ import { SignaturePad } from "@/components/signature-pad";
 import { formatDateTime } from "@/lib/format-date";
 import { formatCurrency } from "@/lib/format-currency";
 import { PublicLinkError } from "@/components/public-link-error";
+import { Alert } from "@/components/ui/alert";
+import { FormError } from "@/components/ui/field";
 
 interface PortalLine {
   id: string;
@@ -211,7 +213,7 @@ export default function PortalChangeOrderPage({ params }: { params: Promise<{ id
                 <span className="font-medium text-fg-muted">{te("signHere")}</span>
                 <SignaturePad onChange={setSignatureDataUrl} clearLabel={te("clearSignature")} />
               </div>
-              {signatureError && <p className="mt-2 text-xs text-danger-fg">{signatureError}</p>}
+              {signatureError && <FormError className="mt-2">{signatureError}</FormError>}
 
               <div className="mt-3 flex gap-2">
                 <button onClick={() => decide("approved")} disabled={busy} className="btn-primary flex-1">
@@ -223,13 +225,7 @@ export default function PortalChangeOrderPage({ params }: { params: Promise<{ id
               </div>
             </div>
           ) : (
-            <div
-              className={`mt-6 rounded-lg border-t px-4 py-3 text-sm ${
-                co.clientDecision === "approved"
-                  ? "border-success-200 bg-success-50 dark:bg-success-500/15 text-success-fg"
-                  : "border-error-200 bg-error-50 dark:bg-error-500/15 text-danger-fg"
-              }`}
-            >
+            <Alert tone={co.clientDecision === "approved" ? "success" : "danger"} className="mt-6" role="status">
               {co.clientDecision === "approved" ? te("clientDecisionThanksApproved") : te("clientDecisionThanksRejected")}
               {co.decisionAt && <span className="block text-xs opacity-75">{formatDateTime(new Date(co.decisionAt))}</span>}
               {co.signerName && (
@@ -238,7 +234,7 @@ export default function PortalChangeOrderPage({ params }: { params: Promise<{ id
                   <span className="text-xs opacity-75">{te("signedBy", { name: co.signerName })}</span>
                 </div>
               )}
-            </div>
+            </Alert>
           )}
 
           <button onClick={downloadPdf} className="btn-secondary mt-4">

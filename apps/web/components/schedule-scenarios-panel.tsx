@@ -8,6 +8,7 @@ import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate } from "@/lib/format-date";
 import { useConfirm } from "@/components/ui/confirm-dialog";
+import { Alert } from "@/components/ui/alert";
 
 interface Task {
   id: string;
@@ -181,23 +182,13 @@ export function ScheduleScenariosPanel({ projectId }: { projectId: string }) {
                     </div>
 
                     {compareResult && (
-                      <div
-                        className={`rounded-md px-2.5 py-1.5 text-xs ${
-                          compareResult.finishDeltaDays === null
-                            ? "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
-                            : compareResult.finishDeltaDays > 0
-                              ? "bg-error-50 dark:bg-error-500/15 text-danger-fg"
-                              : compareResult.finishDeltaDays < 0
-                                ? "bg-success-50 dark:bg-success-500/15 text-success-fg"
-                                : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
-                        }`}
-                      >
+                      <Alert tone={compareResult.finishDeltaDays === null ? "neutral" : compareResult.finishDeltaDays > 0 ? "danger" : compareResult.finishDeltaDays < 0 ? "success" : "neutral"} size="sm" role="status">
                         {compareResult.finishDeltaDays === null
                           ? t("noComparableTasks")
                           : compareResult.finishDeltaDays === 0
                             ? t("noFinishChange")
                             : t("finishDelta", { days: Math.abs(compareResult.finishDeltaDays), direction: compareResult.finishDeltaDays > 0 ? t("later") : t("earlier") })}
-                      </div>
+                      </Alert>
                     )}
                   </div>
                 )}

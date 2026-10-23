@@ -8,6 +8,7 @@ import { useApi } from "@/lib/use-api";
 import { formatCurrency } from "@/lib/format-currency";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
+import { FormError } from "@/components/ui/field";
 
 interface ProgressDraw {
   id: string;
@@ -124,7 +125,7 @@ export function ProgressBillingPanel({ estimateId, currency }: { estimateId: str
         </div>
       )}
 
-      {error && <p className="mb-2 text-xs text-danger-fg">{error}</p>}
+      {error && <FormError className="mb-2">{error}</FormError>}
 
       {summary.percentBilled < 100 && (
         <form onSubmit={generateDraw} className="flex items-end gap-2">

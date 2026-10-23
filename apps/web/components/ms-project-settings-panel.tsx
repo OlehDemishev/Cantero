@@ -9,6 +9,7 @@ import { useConfirm } from "@/components/ui/confirm-dialog";
 import { useApi } from "@/lib/use-api";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
+import { FormError } from "@/components/ui/field";
 
 interface Status {
   connected: boolean;
@@ -68,7 +69,7 @@ export function MsProjectSettingsPanel({ canManage }: { canManage: boolean }) {
       <h2 className="mb-1 text-sm font-semibold text-fg-muted">{t("settingsTitle")}</h2>
       <p className="mb-4 text-xs text-fg-subtle">{t("settingsHint")}</p>
 
-      {error && <p className="mb-3 text-xs text-danger-fg">{error}</p>}
+      {error && <FormError className="mb-3">{error}</FormError>}
 
       {status.connected ? (
         <div className="flex flex-col gap-3">

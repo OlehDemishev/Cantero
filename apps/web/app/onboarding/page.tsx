@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { apiFetch, ApiError } from "@/lib/api-client";
 import { MEMBERSHIP_ROLES_MANAGEABLE } from "@cantero/shared";
+import { Alert } from "@/components/ui/alert";
+import { FormError } from "@/components/ui/field";
 
 type StepKey = "profile" | "catalog" | "invite" | "project" | "done";
 const STEPS: StepKey[] = ["profile", "catalog", "invite", "project", "done"];
@@ -173,7 +175,7 @@ export default function OnboardingPage() {
           </button>
         )}
       </div>
-      {finishError && <p className="mb-4 text-sm text-danger-fg">{finishError}</p>}
+      {finishError && <FormError size="sm" className="mb-4">{finishError}</FormError>}
 
       <div className="card">
         {step === "profile" && (
@@ -211,12 +213,12 @@ export default function OnboardingPage() {
             <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">{t("catalogHint")}</p>
 
             {catalogState === "done" && catalogResult && (
-              <p className="mt-4 rounded-md bg-green-50 px-3 py-2 text-sm text-green-700">
+              <Alert tone="success" className="mt-4">
                 {t("catalogLoaded", { materials: catalogResult.materialsCreated, items: catalogResult.rateItemsCreated })}
-              </p>
+              </Alert>
             )}
             {catalogState === "error" && (
-              <p className="mt-4 rounded-md bg-red-50 dark:bg-red-500/15 px-3 py-2 text-sm text-red-700 dark:text-red-400">{t("catalogError")}</p>
+              <Alert tone="danger" className="mt-4">{t("catalogError")}</Alert>
             )}
 
             <div className="mt-6 flex justify-between">
@@ -248,7 +250,7 @@ export default function OnboardingPage() {
                 ))}
               </ul>
             )}
-            {inviteError && <p className="mt-3 rounded-md bg-red-50 dark:bg-red-500/15 px-3 py-2 text-sm text-red-700 dark:text-red-400">{inviteError}</p>}
+            {inviteError && <Alert tone="danger" className="mt-3">{inviteError}</Alert>}
 
             <form onSubmit={sendInvite} className="mt-4 flex flex-wrap items-end gap-2">
               <input
@@ -291,7 +293,7 @@ export default function OnboardingPage() {
             <h1 className="text-xl font-semibold text-fg">{t("projectTitle")}</h1>
             <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">{t("projectHint")}</p>
 
-            {projectError && <p className="mt-4 rounded-md bg-red-50 dark:bg-red-500/15 px-3 py-2 text-sm text-red-700 dark:text-red-400">{projectError}</p>}
+            {projectError && <Alert tone="danger" className="mt-4">{projectError}</Alert>}
 
             <form onSubmit={createFirstProject} className="mt-4 space-y-3">
               <div>

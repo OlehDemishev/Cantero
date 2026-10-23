@@ -22,6 +22,7 @@ import { useConfirm } from "@/components/ui/confirm-dialog";
 import { formatCurrency } from "@/lib/format-currency";
 import { Badge } from "@/components/ui/badge";
 import { statusTone } from "@/lib/status-tone";
+import { Alert } from "@/components/ui/alert";
 
 interface RateCatalogItem {
   id: string;
@@ -385,14 +386,14 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
         </div>
       </div>
       {estimate.status === "pending_approval" && me?.company.requiredApprovalCount && (
-        <div className="mt-2 rounded-lg border border-warning-200 bg-warning-50 dark:bg-warning-500/15 px-4 py-3">
+        <Alert tone="warning" className="mt-2">
           <p className="text-sm text-warning-fg">
             {t("approvalProgress", { count: estimate.approvals.length, required: me.company.requiredApprovalCount })}
           </p>
           <p className="mt-1 text-xs text-warning-fg">
             {estimate.approvals.map((a) => a.actorName).join(", ")}
           </p>
-        </div>
+        </Alert>
       )}
       {estimate.clientDecision === "rejected" && estimate.clientDecisionNote && (
         <p className="mt-2 text-sm text-danger-fg">
@@ -400,7 +401,7 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
         </p>
       )}
       {estimate.clientDecision === "countered" && (
-        <div className="mt-2 rounded-lg border border-brand-200 bg-brand-50 dark:bg-brand-500/15 px-4 py-3">
+        <Alert tone="brand" className="mt-2">
           <p className="text-sm font-medium text-brand-700 dark:text-brand-400">
             {t("counterOfferReceived", { amount: formatCurrency(estimate.counterOfferAmount, estimate.currency) })}
           </p>
@@ -408,7 +409,7 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
           <button onClick={createRevisedVariant} disabled={busy} className="btn-secondary mt-2 px-3 py-1 text-xs">
             {t("createRevisedVariant")}
           </button>
-        </div>
+        </Alert>
       )}
       {estimate.clientDecision === "approved" && estimate.signerName && (
         <div className="mt-2 flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
@@ -423,12 +424,17 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
       )}
 
       {estimate.status === "draft" && estimate.isStale && (
-        <div className="mt-4 flex items-center justify-between rounded-lg border border-warning-200 bg-warning-50 dark:bg-warning-500/15 px-4 py-3">
-          <p className="text-sm text-warning-fg">{t("pricesChanged")}</p>
-          <button onClick={recalculate} disabled={busy} className="btn-secondary shrink-0">
-            {t("recalculate")}
-          </button>
-        </div>
+        <Alert
+          tone="warning"
+          className="mt-4"
+          action={
+            <button onClick={recalculate} disabled={busy} className="btn-secondary">
+              {t("recalculate")}
+            </button>
+          }
+        >
+          {t("pricesChanged")}
+        </Alert>
       )}
 
       <div className="mt-6 grid grid-cols-1 gap-8 lg:grid-cols-3">
