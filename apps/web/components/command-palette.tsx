@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { useHotkey } from "@/lib/use-hotkey";
 import { SearchIcon } from "@/components/nav-icons";
 import { resetStateInEffect } from "@/lib/effect-reset";
+import { Dialog } from "@/components/ui/dialog";
 
 const DEBOUNCE_MS = 200;
 
@@ -31,6 +32,7 @@ interface PaletteItem {
 export function CommandPalette({ navItems }: { navItems: readonly NavAction[] }) {
   const t = useTranslations("commandPalette");
   const tn = useTranslations("nav");
+  const td = useTranslations("dialog");
   const router = useRouter();
 
   const [open, setOpen] = useState(false);
@@ -39,6 +41,7 @@ export function CommandPalette({ navItems }: { navItems: readonly NavAction[] })
   const [activeIndex, setActiveIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const listboxId = useId();
 
   useHotkey("mod+k", () => setOpen((v) => !v));
 
@@ -49,8 +52,6 @@ export function CommandPalette({ navItems }: { navItems: readonly NavAction[] })
       setResults(null);
       setActiveIndex(0);
     });
-    const id = setTimeout(() => inputRef.current?.focus(), 0);
-    return () => clearTimeout(id);
   }, [open]);
 
   useEffect(() => {
@@ -66,6 +67,11 @@ export function CommandPalette({ navItems }: { navItems: readonly NavAction[] })
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
   }, [query]);
+
+  // Keep the highlighted option visible while arrowing through a long list.
+  useEffect(() => {
+    if (open) document.getElementById(`${listboxId}-${activeIndex}`)?.scrollIntoView({ block: "nearest" });
+  }, [open, activeIndex, listboxId]);
 
   function go(href: string) {
     setOpen(false);
@@ -90,62 +96,68 @@ export function CommandPalette({ navItems }: { navItems: readonly NavAction[] })
     } else if (e.key === "Enter") {
       e.preventDefault();
       items[activeIndex]?.go();
-    } else if (e.key === "Escape") {
-      setOpen(false);
     }
+    // Escape is handled by the dialog.
   }
 
-  if (!open) return null;
+  const activeItem = items[activeIndex];
+  const optionId = (index: number) => `${listboxId}-${index}`;
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-start justify-center bg-gray-900/50 pt-24"
-      onClick={() => setOpen(false)}
+    <Dialog
+      open={open}
+      onClose={() => setOpen(false)}
+      title={td("commandPalette")}
+      hideTitle
+      placement="top"
+      initialFocusRef={inputRef}
+      panelClassName="max-w-lg overflow-hidden"
     >
-      <div
-        className="w-full max-w-lg rounded-xl border border-gray-200 bg-white shadow-theme-lg dark:border-gray-800 dark:bg-gray-900"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center gap-2 border-b border-gray-100 px-4 py-3 dark:border-gray-800">
-          <SearchIcon width={16} height={16} className="shrink-0 text-fg-subtle" />
-          <input
-            ref={inputRef}
-            className="w-full bg-transparent text-sm text-fg outline-none placeholder:text-gray-400"
-            placeholder={t("placeholder")}
-            value={query}
-            onChange={(e) => {
-              setQuery(e.target.value);
-              setActiveIndex(0);
-            }}
-            onKeyDown={handleKeyDown}
-          />
-          <kbd className="shrink-0 rounded border border-gray-200 px-1.5 py-0.5 text-[10px] text-fg-subtle dark:border-gray-700">
-            Esc
-          </kbd>
-        </div>
-        <div className="max-h-96 overflow-y-auto p-2">
-          {items.length === 0 ? (
-            <p className="px-2 py-6 text-center text-sm text-fg-subtle">{t("noResults")}</p>
-          ) : (
-            <ul className="flex flex-col gap-0.5">
-              {items.map((item, i) => (
-                <li key={item.id}>
-                  <button
-                    onClick={item.go}
-                    onMouseEnter={() => setActiveIndex(i)}
-                    className={`flex w-full flex-col items-start rounded-lg px-3 py-2 text-left ${
-                      i === activeIndex ? "bg-gray-100 dark:bg-white/5" : ""
-                    }`}
-                  >
-                    <span className="text-sm font-medium text-fg">{item.label}</span>
-                    {item.sublabel && <span className="text-xs text-fg-subtle">{item.sublabel}</span>}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
+      <div className="flex items-center gap-2 border-b border-border px-4 py-3 focus-within:ring-2 focus-within:ring-inset focus-within:ring-focus/50">
+        <SearchIcon width={16} height={16} className="shrink-0 text-fg-subtle" aria-hidden="true" />
+        <input
+          ref={inputRef}
+          role="combobox"
+          aria-expanded={items.length > 0}
+          aria-controls={listboxId}
+          aria-activedescendant={activeItem ? optionId(activeIndex) : undefined}
+          aria-autocomplete="list"
+          aria-label={t("placeholder")}
+          className="w-full bg-transparent text-sm text-fg outline-none placeholder:text-fg-subtle"
+          placeholder={t("placeholder")}
+          value={query}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setActiveIndex(0);
+          }}
+          onKeyDown={handleKeyDown}
+        />
+        <kbd className="shrink-0 rounded border border-border px-1.5 py-0.5 text-[10px] text-fg-subtle">Esc</kbd>
       </div>
-    </div>
+      <div className="max-h-96 overflow-y-auto p-2">
+        {items.length === 0 ? (
+          <p className="px-2 py-6 text-center text-sm text-fg-subtle">{t("noResults")}</p>
+        ) : (
+          <ul id={listboxId} role="listbox" aria-label={td("commandPaletteResults")} className="flex flex-col gap-0.5">
+            {items.map((item, i) => (
+              <li
+                key={item.id}
+                id={optionId(i)}
+                role="option"
+                aria-selected={i === activeIndex}
+                onClick={item.go}
+                onMouseEnter={() => setActiveIndex(i)}
+                className={`flex w-full cursor-pointer flex-col items-start rounded-lg px-3 py-2 text-left ${
+                  i === activeIndex ? "bg-surface-hover ring-2 ring-inset ring-focus/60" : ""
+                }`}
+              >
+                <span className="text-sm font-medium text-fg">{item.label}</span>
+                {item.sublabel && <span className="text-xs text-fg-subtle">{item.sublabel}</span>}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </Dialog>
   );
 }

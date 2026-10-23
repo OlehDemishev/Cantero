@@ -7,6 +7,7 @@ import { SidebarProvider } from "@/context/SidebarContext";
 import { PwaRegister } from "@/components/pwa-register";
 import { SentryInit } from "@/components/sentry-init";
 import { ToastProvider } from "@/components/ui/toast-provider";
+import { ConfirmProvider } from "@/components/ui/confirm-dialog";
 import { THEME_INIT_SCRIPT } from "@/lib/theme-script";
 import { PageTitle } from "@/components/page-title";
 import "./globals.css";
@@ -44,10 +45,12 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           <ThemeProvider>
             <SidebarProvider>
               <ToastProvider>
-                <PageTitle />
-                {children}
-                <PwaRegister />
-                <SentryInit />
+                <ConfirmProvider>
+                  <PageTitle />
+                  {children}
+                  <PwaRegister />
+                  <SentryInit />
+                </ConfirmProvider>
               </ToastProvider>
             </SidebarProvider>
           </ThemeProvider>

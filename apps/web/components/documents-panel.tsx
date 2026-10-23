@@ -5,6 +5,8 @@ import { useTranslations } from "next-intl";
 import { DOCUMENT_CATEGORIES, type DocumentCategory } from "@cantero/shared";
 import { apiFetch, apiUpload, downloadBlob } from "@/lib/api-client";
 import { formatDateTime } from "@/lib/format-date";
+import { Dialog } from "@/components/ui/dialog";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface Document {
   id: string;
@@ -28,6 +30,7 @@ export function DocumentsPanel({
   insuranceClaimId?: string;
 }) {
   const t = useTranslations("documents");
+  const confirm = useConfirm();
   const tc = useTranslations("common");
   const [documents, setDocuments] = useState<Document[] | null>(null);
   const [busy, setBusy] = useState(false);
@@ -105,7 +108,7 @@ export function DocumentsPanel({
   }
 
   async function remove(doc: Document) {
-    if (!window.confirm(t("confirmDelete"))) return;
+    if (!(await confirm({ message: t("confirmDelete"), tone: "danger", verb: "delete" }))) return;
     setBusy(true);
     try {
       await apiFetch(`/documents/${doc.id}`, { method: "DELETE" });
@@ -320,40 +323,42 @@ export function DocumentsPanel({
       </div>
       <input ref={replaceInputRef} type="file" onChange={handleReplaceChange} className="hidden" />
 
-      {comparing && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={closeCompare}>
-          <div className="max-h-full max-w-4xl overflow-auto rounded-lg bg-white dark:bg-gray-800 p-4" onClick={(e) => e.stopPropagation()}>
-            <div className="mb-3 flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-fg-muted">{t("compareVersions")}</h3>
-              <button onClick={closeCompare} className="text-xs text-fg-subtle hover:text-fg-muted">
-                {tc("close")}
-              </button>
-            </div>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              {[comparing.a, comparing.b].map((v) => (
-                <div key={v.id}>
-                  <div className="mb-2 text-xs font-medium text-gray-600 dark:text-gray-300">
-                    {t("version", { n: v.version })} — {formatDateTime(new Date(v.createdAt))}
-                  </div>
-                  {comparePreviews[v.id] ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={comparePreviews[v.id]} alt="" className="max-h-[60vh] w-full rounded border border-gray-200 dark:border-gray-700 object-contain" />
-                  ) : (
-                    <div className="rounded border border-gray-200 dark:border-gray-700 p-6 text-center text-xs text-fg-subtle">
-                      {t("noPreview")}
-                      <div className="mt-2">
-                        <button onClick={() => download(v)} className="btn-secondary px-2 py-1 text-xs">
-                          {tc("download")}
-                        </button>
-                      </div>
-                    </div>
-                  )}
+      <Dialog
+        open={!!comparing}
+        onClose={closeCompare}
+        title={t("compareVersions")}
+        showCloseButton
+        panelClassName="max-w-4xl p-4"
+      >
+        {comparing && (
+          <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {[comparing.a, comparing.b].map((v) => (
+              <div key={v.id}>
+                <div className="mb-2 text-xs font-medium text-fg-muted">
+                  {t("version", { n: v.version })} — {formatDateTime(new Date(v.createdAt))}
                 </div>
-              ))}
-            </div>
+                {comparePreviews[v.id] ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={comparePreviews[v.id]}
+                    alt={t("version", { n: v.version })}
+                    className="max-h-[60vh] w-full rounded border border-border object-contain"
+                  />
+                ) : (
+                  <div className="rounded border border-border p-6 text-center text-xs text-fg-subtle">
+                    {t("noPreview")}
+                    <div className="mt-2">
+                      <button onClick={() => download(v)} className="btn-secondary px-2 py-1 text-xs">
+                        {tc("download")}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
-        </div>
-      )}
+        )}
+      </Dialog>
     </div>
   );
 }

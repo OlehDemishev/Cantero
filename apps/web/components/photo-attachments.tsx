@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch, apiUpload } from "@/lib/api-client";
+import { Dialog } from "@/components/ui/dialog";
 
 type AttachmentParam = "punchListItemId" | "dailyLogId" | "incidentReportId" | "warrantyClaimId" | "deficiencyId" | "rfiId";
 
@@ -177,6 +178,7 @@ export function PhotoAttachments({
       {viewingDoc && previews[viewingDoc.id] && (
         <PhotoMarkupModal
           imageUrl={previews[viewingDoc.id]}
+          name={viewingDoc.name}
           busy={busy}
           onClose={() => setViewingId(null)}
           onSave={(blob) => saveMarkup(viewingDoc.id, blob)}
@@ -188,11 +190,13 @@ export function PhotoAttachments({
 
 function PhotoMarkupModal({
   imageUrl,
+  name,
   busy,
   onClose,
   onSave,
 }: {
   imageUrl: string;
+  name: string;
   busy: boolean;
   onClose: () => void;
   onSave: (blob: Blob) => void;
@@ -273,11 +277,11 @@ function PhotoMarkupModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
-      <div className="max-h-full max-w-3xl overflow-auto rounded-lg bg-white dark:bg-gray-800 p-3" onClick={(e) => e.stopPropagation()}>
+    <Dialog open onClose={onClose} title={name} hideTitle dismissible={!busy} panelClassName="max-h-full max-w-3xl overflow-auto p-3">
+      <div>
         <div className="relative inline-block">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img ref={imgRef} src={imageUrl} alt="" className="max-h-[70vh] max-w-full" onLoad={setupCanvas} />
+          <img ref={imgRef} src={imageUrl} alt={name} className="max-h-[70vh] max-w-full" onLoad={setupCanvas} />
           <canvas
             ref={canvasRef}
             className={`absolute inset-0 h-full w-full ${annotating ? "cursor-crosshair" : "pointer-events-none"}`}
@@ -324,6 +328,6 @@ function PhotoMarkupModal({
           )}
         </div>
       </div>
-    </div>
+    </Dialog>
   );
 }
