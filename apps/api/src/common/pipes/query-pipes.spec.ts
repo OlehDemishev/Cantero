@@ -1,5 +1,6 @@
 import { BadRequestException } from "@nestjs/common";
 import { DateQueryPipe, IdListQueryPipe, OptionalIntPipe } from "./query-pipes";
+import { globalValidationPipe } from "./global-validation.pipe";
 
 const meta = (data: string) => ({ type: "query" as const, data });
 
@@ -8,6 +9,16 @@ describe("query pipes", () => {
     await expect(OptionalIntPipe.transform(undefined as unknown as string, meta("days"))).resolves.toBeUndefined();
     await expect(OptionalIntPipe.transform("30", meta("days"))).resolves.toBe(30);
     await expect(OptionalIntPipe.transform("abc", meta("days"))).rejects.toThrow(BadRequestException);
+  });
+
+  it("OptionalIntPipe behind the global pipe: an absent number stays absent, garbage is still a 400", async () => {
+    const global = globalValidationPipe();
+    const months = { ...meta("months"), metatype: Number };
+    const chain = async (raw: string | undefined) => OptionalIntPipe.transform(await global.transform(raw, months), months);
+
+    await expect(chain(undefined)).resolves.toBeUndefined();
+    await expect(chain("6")).resolves.toBe(6);
+    await expect(chain("abc")).rejects.toThrow(BadRequestException);
   });
 
   it("DateQueryPipe: passes a real date through unchanged and rejects anything else", () => {

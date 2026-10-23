@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { DASHBOARD_WIDGET_TYPES, type DashboardWidgetType, type Permission, type ReportKey } from "@cantero/shared";
+import { visibleDashboardWidgetTypes, type DashboardWidgetType } from "@cantero/shared";
 import { apiFetch, downloadBlob, ApiError } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
 import { useMe } from "@/lib/use-me";
@@ -11,7 +11,6 @@ import { useConfirm } from "@/components/ui/confirm-dialog";
 import { formatCurrency } from "@/lib/format-currency";
 import { useReportFieldLabel } from "@/lib/report-field-label";
 import { useCan } from "@/lib/permissions";
-import { useReportAccess } from "@/lib/report-access";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FormError } from "@/components/ui/field";
@@ -28,20 +27,6 @@ interface Widget {
   data: unknown;
 }
 
-/** What a member needs to add each widget: the report it shows, or a permission of its own. */
-const WIDGET_ACCESS: Record<DashboardWidgetType, { report: ReportKey; permission?: never } | { report?: never; permission: Permission }> = {
-  revenue_trend: { report: "revenue-trend" },
-  cash_flow_forecast: { report: "cash-flow-forecast" },
-  project_margins: { report: "project-margins" },
-  portfolio_summary: { report: "portfolio" },
-  invoice_aging: { report: "invoice-aging" },
-  warehouse_turnover: { report: "warehouse-turnover" },
-  labor_cost: { permission: "people.rates" },
-  custom_report: { permission: "reports.custom" },
-  backlog: { report: "backlog" },
-  compliance_calendar: { report: "compliance-calendar" },
-};
-
 export function DashboardWidgetsPanel() {
   const t = useTranslations("dashboard");
   const confirm = useConfirm();
@@ -51,7 +36,6 @@ export function DashboardWidgetsPanel() {
   const currency = me?.company.currency ?? "";
 
   const can = useCan();
-  const canView = useReportAccess();
   const {
     data: widgets = null,
     error: widgetsError,
@@ -60,11 +44,8 @@ export function DashboardWidgetsPanel() {
   } = useApi<Widget[]>("/dashboard-widgets");
   const canCustomReports = can("reports.custom");
   const { data: customReports = [] } = useApi<CustomReportOption[]>(canCustomReports ? "/custom-reports" : null);
-  // Only the widgets whose report this member may open are offered (the same tables the report pages use).
-  const widgetTypes = DASHBOARD_WIDGET_TYPES.filter((ty) => {
-    const needs = WIDGET_ACCESS[ty];
-    return needs.report ? canView(needs.report) : can(needs.permission);
-  });
+  // Only the widgets whose report this member may open are offered — the same map the API enforces.
+  const widgetTypes = me ? visibleDashboardWidgetTypes(me.user.permissions) : [];
   const [pickedType, setNewType] = useState<DashboardWidgetType | null>(null);
   const newType: DashboardWidgetType | undefined = pickedType && widgetTypes.includes(pickedType) ? pickedType : widgetTypes[0];
   const [newCustomReportId, setNewCustomReportId] = useState("");

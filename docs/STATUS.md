@@ -49,3 +49,17 @@ the API crashes on boot with the placeholder VAPID keys from `.env.example` (L2)
 write (S3), project guard checks only the first projectId (S4).
 
 Left: everything in the report. Section 8 lists the order, one session per item, starting with L1+L2.
+## 2026-10-23 — dashboard widget permissions; optional numeric query params
+
+Dashboard widgets now ask for the same capability as the endpoint they mirror:
+`DASHBOARD_WIDGET_PERMISSIONS` + `canViewDashboardWidget` / `visibleDashboardWidgetTypes` in
+`packages/shared/src/dashboard.ts` (a spec checks each entry against the endpoint's @Requires).
+`DashboardService` takes the AuthUser: create is a 403 for a type the member lacks (custom_report
+also needs a report of the member's company, 400/404 otherwise); list/reorder/exportPdf leave out
+widgets the member can no longer see; project-scoped reports get the viewer like their endpoints.
+`AppValidationPipe` (main.ts) keeps an absent numeric query param undefined — Nest 10 turned it
+into NaN, so every optional `OptionalIntPipe` param (e.g. `GET /job-costing/history` without
+`months`, default 12) answered 400.
+
+Left: the web's add-widget menu (`apps/web/components/dashboard-widgets-panel.tsx`) still offers
+every type; it should use `visibleDashboardWidgetTypes(user.permissions)`.

@@ -20,7 +20,7 @@ export class DashboardController {
 
   @Get()
   list(@CurrentUser() user: AuthUser) {
-    return this.service.list(user.companyId, user.userId, user.role);
+    return this.service.list(user);
   }
 
   @Post()
@@ -28,7 +28,7 @@ export class DashboardController {
     @CurrentUser() user: AuthUser,
     @Body(new ZodValidationPipe(createDashboardWidgetSchema)) body: CreateDashboardWidgetInput,
   ) {
-    return this.service.create(user.companyId, user.userId, body);
+    return this.service.create(user, body);
   }
 
   @Post("reorder")
@@ -36,18 +36,18 @@ export class DashboardController {
     @CurrentUser() user: AuthUser,
     @Body(new ZodValidationPipe(reorderDashboardWidgetsSchema)) body: ReorderDashboardWidgetsInput,
   ) {
-    return this.service.reorder(user.companyId, user.userId, user.role, body.orderedIds);
+    return this.service.reorder(user, body.orderedIds);
   }
 
   @Get("export.pdf")
   @Header("Content-Type", "application/pdf")
   async exportPdf(@CurrentUser() user: AuthUser) {
-    const buffer = await this.service.exportPdf(user.companyId, user.userId, user.role);
+    const buffer = await this.service.exportPdf(user);
     return new StreamableFile(buffer, { disposition: `attachment; filename="dashboard.pdf"` });
   }
 
   @Delete(":id")
   delete(@CurrentUser() user: AuthUser, @Param("id") id: string) {
-    return this.service.delete(user.companyId, user.userId, id);
+    return this.service.delete(user, id);
   }
 }
