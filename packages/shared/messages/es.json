@@ -4606,5 +4606,26 @@
     "back": "Ir al panel",
     "quoted": "«{name}»",
     "or": " o "
+  },
+  "pageTitle": {
+    "signIn": "Iniciar sesión",
+    "signUp": "Registrarse",
+    "forgotPassword": "Contraseña olvidada",
+    "resetPassword": "Restablecer contraseña",
+    "acceptInvite": "Aceptar invitación",
+    "billing": "Suscripción",
+    "onboarding": "Primeros pasos",
+    "clientPortal": "Portal del cliente",
+    "subcontractorPortal": "Portal de subcontratistas",
+    "supplierPortal": "Portal de proveedores",
+    "subcontractorProfile": "Perfil del subcontratista",
+    "changeOrder": "Orden de cambio",
+    "certificateOfInsurance": "Certificado de seguro",
+    "contract": "Contrato",
+    "estimate": "Presupuesto",
+    "quoteRequest": "Solicitar presupuesto",
+    "signDocument": "Firmar documento",
+    "survey": "Encuesta",
+    "feedback": "Opinión"
   }
 }

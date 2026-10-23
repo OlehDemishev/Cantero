@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { apiFetch, downloadBlob } from "@/lib/api-client";
 import { goBack } from "@/lib/back-navigation";
 import { formatDateTime } from "@/lib/format-date";
@@ -118,14 +117,14 @@ export function ContractDetail({ contractId }: { contractId: string }) {
 
   if (!contract) {
     return (
-      <AuthenticatedShell>
+      <>
         <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
-      </AuthenticatedShell>
+      </>
     );
   }
 
   return (
-    <AuthenticatedShell>
+    <>
       <button onClick={() => goBack(router, "/contracts")} className="text-sm text-gray-500 dark:text-gray-400 hover:underline">
         ← {tc("back")}
       </button>
@@ -216,6 +215,6 @@ export function ContractDetail({ contractId }: { contractId: string }) {
           </div>
         </div>
       </div>
-    </AuthenticatedShell>
+    </>
   );
 }

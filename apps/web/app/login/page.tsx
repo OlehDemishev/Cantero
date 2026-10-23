@@ -3,12 +3,14 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch, ApiError, setToken } from "@/lib/api-client";
+import { useRedirectIfSignedIn } from "@/lib/use-redirect-if-signed-in";
 
 type LoginResult = { accessToken: string; companyId: string } | { requires2fa: true; challengeToken: string };
 
 export default function LoginPage() {
   const t = useTranslations("auth");
   const tc = useTranslations("common");
+  useRedirectIfSignedIn();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");

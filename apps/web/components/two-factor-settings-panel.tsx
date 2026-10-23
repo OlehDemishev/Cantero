@@ -8,7 +8,7 @@ import { resetStateInEffect } from "@/lib/effect-reset";
 
 export function TwoFactorSettingsPanel() {
   const t = useTranslations("twoFactor");
-  const { data: me } = useMe();
+  const { data: me, reload: reloadMe } = useMe();
 
   const [setupData, setSetupData] = useState<{ secret: string; otpauthUrl: string } | null>(null);
   const [enableCode, setEnableCode] = useState("");
@@ -48,6 +48,7 @@ export function TwoFactorSettingsPanel() {
       setSetupData(null);
       setEnableCode("");
       setEnabled(true);
+      reloadMe();
     } catch (err) {
       setError(err instanceof Error ? err.message : t("invalidCode"));
     } finally {
@@ -64,6 +65,7 @@ export function TwoFactorSettingsPanel() {
       setDisablePassword("");
       setEnabled(false);
       setBackupCodes(null);
+      reloadMe();
     } catch (err) {
       setError(err instanceof Error ? err.message : "");
     } finally {

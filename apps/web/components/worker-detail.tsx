@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import { goBack } from "@/lib/back-navigation";
@@ -51,16 +50,16 @@ export function WorkerDetail({ workerId }: { workerId: string }) {
 
   if (!summary) {
     return (
-      <AuthenticatedShell>
+      <>
         <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
-      </AuthenticatedShell>
+      </>
     );
   }
 
   const currency = me?.company.currency ?? "";
 
   return (
-    <AuthenticatedShell>
+    <>
       <button onClick={() => goBack(router, "/team")} className="text-sm text-gray-500 dark:text-gray-400 hover:underline">
         ← {t("title")}
       </button>
@@ -166,6 +165,6 @@ export function WorkerDetail({ workerId }: { workerId: string }) {
           )}
         </div>
       </div>
-    </AuthenticatedShell>
+    </>
   );
 }

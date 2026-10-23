@@ -4606,5 +4606,26 @@
     "back": "На головну",
     "quoted": "«{name}»",
     "or": " або "
+  },
+  "pageTitle": {
+    "signIn": "Вхід",
+    "signUp": "Реєстрація",
+    "forgotPassword": "Забули пароль",
+    "resetPassword": "Скидання пароля",
+    "acceptInvite": "Прийняття запрошення",
+    "billing": "Підписка",
+    "onboarding": "Початок роботи",
+    "clientPortal": "Кабінет клієнта",
+    "subcontractorPortal": "Кабінет субпідрядника",
+    "supplierPortal": "Кабінет постачальника",
+    "subcontractorProfile": "Профіль субпідрядника",
+    "changeOrder": "Запит на зміну",
+    "certificateOfInsurance": "Страховий сертифікат",
+    "contract": "Договір",
+    "estimate": "Кошторис",
+    "quoteRequest": "Запит пропозиції",
+    "signDocument": "Підписання документа",
+    "survey": "Опитування",
+    "feedback": "Відгук"
   }
 }

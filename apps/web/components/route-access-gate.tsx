@@ -6,12 +6,12 @@ import { useTranslations } from "next-intl";
 import type { Permission } from "@cantero/shared";
 import { useMe } from "@/lib/use-me";
 import { permissionsFor } from "@/lib/route-access";
-import { AuthenticatedShell } from "@/components/authenticated-shell";
 
 /**
- * Stands in front of every page (root layout). A page that needs a permission the member lacks is not
- * mounted at all — none of its requests go out — and the "no access" screen shows in its place, inside
- * the usual menu. Pages open to everyone, and public ones, pass straight through.
+ * Stands in front of a page that needs a permission (lib/route-access.ts): one the member lacks is
+ * not mounted at all — none of its requests go out — and the "no access" screen shows in its place.
+ * Used by the signed-in layout (app/(app)/layout.tsx, inside the menu) and by /onboarding's.
+ * Pages open to everyone pass straight through.
  */
 export function RouteAccessGate({ children }: { children: React.ReactNode }) {
   const needs = permissionsFor(usePathname());
@@ -21,16 +21,13 @@ export function RouteAccessGate({ children }: { children: React.ReactNode }) {
 
 function RestrictedPage({ needs, children }: { needs: readonly Permission[]; children: React.ReactNode }) {
   const { data, loading } = useMe();
-  // Signed out or offline without a cached profile: let the page's own shell deal with it (sign-in
-  // redirect, offline notice) rather than guessing here.
-  if (!data && !loading) return <>{children}</>;
-  if (!data) return <AuthenticatedShell>{null}</AuthenticatedShell>;
+  // Still asking who this is: show nothing rather than a page that may not be theirs to see.
+  if (loading) return null;
+  // Signed out or offline without a cached profile: let the page's own handling deal with it (the
+  // signed-in layout redirects to sign-in before getting here) rather than guessing.
+  if (!data) return <>{children}</>;
   if (needs.some((p) => data.user.permissions?.includes(p))) return <>{children}</>;
-  return (
-    <AuthenticatedShell>
-      <NoAccess needs={needs} />
-    </AuthenticatedShell>
-  );
+  return <NoAccess needs={needs} />;
 }
 
 function NoAccess({ needs }: { needs: readonly Permission[] }) {

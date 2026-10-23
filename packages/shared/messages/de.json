@@ -4606,5 +4606,26 @@
     "back": "Zum Dashboard",
     "quoted": "„{name}“",
     "or": " oder "
+  },
+  "pageTitle": {
+    "signIn": "Anmelden",
+    "signUp": "Registrieren",
+    "forgotPassword": "Passwort vergessen",
+    "resetPassword": "Passwort zurücksetzen",
+    "acceptInvite": "Einladung annehmen",
+    "billing": "Abonnement",
+    "onboarding": "Erste Schritte",
+    "clientPortal": "Kundenportal",
+    "subcontractorPortal": "Nachunternehmerportal",
+    "supplierPortal": "Lieferantenportal",
+    "subcontractorProfile": "Nachunternehmerprofil",
+    "changeOrder": "Nachtrag",
+    "certificateOfInsurance": "Versicherungsnachweis",
+    "contract": "Vertrag",
+    "estimate": "Kostenvoranschlag",
+    "quoteRequest": "Angebot anfragen",
+    "signDocument": "Dokument unterschreiben",
+    "survey": "Umfrage",
+    "feedback": "Feedback"
   }
 }

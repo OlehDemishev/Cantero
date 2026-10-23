@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { useMe } from "@/lib/use-me";
 import { NAV_GROUPS } from "@/components/authenticated-shell";
 
 interface Company {
@@ -18,6 +19,7 @@ export function NavItemsSettingsPanel({ canManage }: { canManage: boolean }) {
   const t = useTranslations("navSettings");
   const tn = useTranslations("nav");
   const tc = useTranslations("common");
+  const { reload: reloadMe } = useMe();
 
   const [hidden, setHidden] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState(false);
@@ -43,6 +45,8 @@ export function NavItemsSettingsPanel({ canManage }: { canManage: boolean }) {
     try {
       await apiFetch("/company", { method: "PATCH", body: JSON.stringify({ hiddenNavItems: [...hidden] }) });
       setSaved(true);
+      // The menu reads hiddenNavItems from /me — refresh it so the change shows without a reload.
+      reloadMe();
     } finally {
       setBusy(false);
     }
