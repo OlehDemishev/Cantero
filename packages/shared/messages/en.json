@@ -4797,5 +4797,17 @@
     "warrantyMonths": "Warranty (months)",
     "worker": "Worker",
     "workerName": "Worker"
+  },
+  "loadState": {
+    "loading": "Loading…",
+    "notFoundTitle": "Not found",
+    "notFoundBody": "This item doesn't exist or is no longer available.",
+    "back": "Go back",
+    "forbiddenTitle": "No access",
+    "forbiddenBody": "Your role doesn't have access to this. Ask the owner or an admin if you need it.",
+    "offlineTitle": "Can't reach the server",
+    "offlineBody": "You may be offline. Check your connection and try again.",
+    "errorTitle": "Couldn't load this",
+    "retry": "Try again"
   }
 }

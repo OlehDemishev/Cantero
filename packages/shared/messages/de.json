@@ -4797,5 +4797,17 @@
     "warrantyMonths": "Gewährleistung (Monate)",
     "worker": "Mitarbeiter",
     "workerName": "Mitarbeiter"
+  },
+  "loadState": {
+    "loading": "Wird geladen…",
+    "notFoundTitle": "Nicht gefunden",
+    "notFoundBody": "Dieser Eintrag existiert nicht oder ist nicht mehr verfügbar.",
+    "back": "Zurück",
+    "forbiddenTitle": "Kein Zugriff",
+    "forbiddenBody": "Ihre Rolle hat keinen Zugriff darauf. Wenden Sie sich bei Bedarf an den Inhaber oder einen Admin.",
+    "offlineTitle": "Server nicht erreichbar",
+    "offlineBody": "Möglicherweise sind Sie offline. Prüfen Sie Ihre Verbindung und versuchen Sie es erneut.",
+    "errorTitle": "Konnte nicht geladen werden",
+    "retry": "Erneut versuchen"
   }
 }

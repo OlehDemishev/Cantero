@@ -93,6 +93,19 @@ export class ApiError extends Error {
     super(message);
     this.name = "ApiError";
   }
+  /** Already shown to the user (apiFetch toasts failed writes itself) — see notifyApiError. */
+  notified = false;
+}
+
+/**
+ * For the `.catch()` of a request whose failure has no inline place to show: tells the user in a
+ * toast, unless apiFetch already did (a failed write) — so nothing is shown twice and no rejection
+ * goes unhandled. An aborted request (the component moved on) is not a failure.
+ */
+export function notifyApiError(err: unknown): void {
+  if (err instanceof ApiError && err.notified) return;
+  if (err instanceof DOMException && err.name === "AbortError") return;
+  notifyError?.(err instanceof Error && err.message ? err.message : genericMessage("server"));
 }
 
 export type ApiErrorKey = "network" | "server" | "forbidden" | "unauthorized" | "tooManyRequests" | "notFound" | "badRequest";
@@ -205,7 +218,10 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}): Prom
     // treat a 404 as a normal "not found yet" outcome (e.g. no company logo uploaded) via their
     // own .catch(), and toasting those would turn an expected empty state into a false alarm.
     const method = (options.method ?? "GET").toUpperCase();
-    if (method !== "GET") notifyError?.(error.message);
+    if (method !== "GET" && notifyError) {
+      notifyError(error.message);
+      error.notified = true;
+    }
     throw error;
   }
 
@@ -238,7 +254,10 @@ export async function apiUpload<T>(path: string, file: File, idempotencyKey?: st
   const res = await sendApiRequest(`${API_URL}${path}`, { method: "POST", headers, body: formData });
   if (!res.ok) {
     const error = await readApiError(res);
-    notifyError?.(error.message);
+    if (notifyError) {
+      notifyError(error.message);
+      error.notified = true;
+    }
     throw error;
   }
   return res.json() as Promise<T>;

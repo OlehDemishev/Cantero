@@ -4797,5 +4797,17 @@
     "warrantyMonths": "Garantía (meses)",
     "worker": "Trabajador",
     "workerName": "Trabajador"
+  },
+  "loadState": {
+    "loading": "Cargando…",
+    "notFoundTitle": "No encontrado",
+    "notFoundBody": "Este elemento no existe o ya no está disponible.",
+    "back": "Volver",
+    "forbiddenTitle": "Sin acceso",
+    "forbiddenBody": "Tu rol no tiene acceso a esto. Pídeselo al propietario o a un administrador si lo necesitas.",
+    "offlineTitle": "No se puede conectar con el servidor",
+    "offlineBody": "Puede que no tengas conexión. Compruébala e inténtalo de nuevo.",
+    "errorTitle": "No se pudo cargar",
+    "retry": "Reintentar"
   }
 }
