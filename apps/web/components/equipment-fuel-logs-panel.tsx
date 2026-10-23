@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
+import { useCan } from "@/lib/permissions";
 import { formatDate } from "@/lib/format-date";
 import { formatCurrency } from "@/lib/format-currency";
 
@@ -34,7 +35,8 @@ interface Tco {
 export function EquipmentFuelLogsPanel({ equipmentId, currency }: { equipmentId: string; currency: string }) {
   const t = useTranslations("equipment");
   const { data: fuelLogs = null, reload: reloadFuelLogs } = useApi<FuelLog[]>(`/equipment/${equipmentId}/fuel-logs`);
-  const { data: suppliers = [] } = useApi<Supplier[]>("/materials/suppliers");
+  const canSeeSuppliers = useCan()("purchasing.view");
+  const { data: suppliers = [] } = useApi<Supplier[]>(canSeeSuppliers ? "/materials/suppliers" : null);
   const { data: costPerHour = null, reload: reloadCostPerHour } = useApi<CostPerHour>(`/equipment/${equipmentId}/cost-per-hour`);
   const { data: tco = null, reload: reloadTco } = useApi<Tco>(`/equipment/${equipmentId}/tco`);
   const [fuelForm, setFuelForm] = useState({ quantity: "", cost: "", supplierId: "", meterHours: "" });

@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { useApi } from "@/lib/use-api";
+import { useCan } from "@/lib/permissions";
 
 interface RateItemAccuracy {
   rateCatalogItemId: string;
@@ -37,9 +38,11 @@ function DeviationBadge({ percent }: { percent: number | null }) {
  * recorded actuals (TimeEntry, StockMovement) — purely historical, no external AI involved. */
 export function EstimateAccuracyPanel() {
   const t = useTranslations("estimateAccuracy");
-  const { data: rows = null } = useApi<RateItemAccuracy[]>("/estimate-accuracy/rate-items");
+  // Estimated against actual cost: a costing figure (costing.view).
+  const canSee = useCan()("costing.view");
+  const { data: rows = null } = useApi<RateItemAccuracy[]>(canSee ? "/estimate-accuracy/rate-items" : null);
 
-  if (rows && rows.length === 0) return null;
+  if (!canSee || (rows && rows.length === 0)) return null;
 
   return (
     <div className="mt-8">

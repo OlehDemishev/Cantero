@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import type { LongLeadItemStatus } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
+import { useCan } from "@/lib/permissions";
 
 interface Supplier {
   id: string;
@@ -42,7 +43,8 @@ export function LongLeadItemsPanel({ projectId }: { projectId: string }) {
   const tc = useTranslations("common");
 
   const { data: items = null, reload: reloadItems } = useApi<LongLeadItem[]>(`/long-lead-items?projectId=${projectId}`);
-  const { data: suppliers = [] } = useApi<Supplier[]>("/materials/suppliers");
+  const canSeeSuppliers = useCan()("purchasing.view");
+  const { data: suppliers = [] } = useApi<Supplier[]>(canSeeSuppliers ? "/materials/suppliers" : null);
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [busy, setBusy] = useState(false);

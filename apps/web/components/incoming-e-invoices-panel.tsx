@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch, apiUpload, downloadBlob } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
+import { useCan } from "@/lib/permissions";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useMe } from "@/lib/use-me";
@@ -63,7 +64,8 @@ export function IncomingEInvoicesPanel() {
   const { data: me } = useMe();
 
   const { data: invoices = null, reload: reloadInvoices, error: invoicesError } = useApi<IncomingEInvoice[]>("/finance/incoming-invoices");
-  const { data: suppliers = [] } = useApi<Supplier[]>("/materials/suppliers");
+  const canSeeSuppliers = useCan()("purchasing.view");
+  const { data: suppliers = [] } = useApi<Supplier[]>(canSeeSuppliers ? "/materials/suppliers" : null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);

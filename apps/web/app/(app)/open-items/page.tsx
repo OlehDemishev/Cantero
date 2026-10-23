@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { TabNav, type TabNavItem } from "@/components/ui/tab-nav";
 import { useApi } from "@/lib/use-api";
+import { useCan } from "@/lib/permissions";
 import { buildItemDeepLink } from "@/lib/use-deep-linked-row";
 import { formatDate } from "@/lib/format-date";
 
@@ -40,14 +41,17 @@ export default function OpenItemsPage() {
   const tPunch = useTranslations("punchList");
   const router = useRouter();
   const searchParams = useSearchParams();
+  // Pending submittals are a site-management list (site.manage); without it the tab isn't offered.
+  const seesSubmittals = useCan()("site.manage");
+  const tabKeys = TAB_KEYS.filter((key) => key !== "submittals" || seesSubmittals);
   const activeTab = ((): TabKey => {
     const fromParam = searchParams.get("tab");
-    return fromParam && (TAB_KEYS as readonly string[]).includes(fromParam) ? (fromParam as TabKey) : "rfis";
+    return fromParam && (tabKeys as readonly string[]).includes(fromParam) ? (fromParam as TabKey) : "rfis";
   })();
 
   const { data: rfisAll = null } = useApi<RfiRow[]>("/rfis/company-open");
   const { data: punchListAll = null } = useApi<PunchListRow[]>("/punch-list/company-open");
-  const { data: submittalsAll = null } = useApi<SubmittalRow[]>("/submittals/company-pending");
+  const { data: submittalsAll = null } = useApi<SubmittalRow[]>(seesSubmittals ? "/submittals/company-pending" : null);
 
   // Portfolio links here with ?projectId= so its per-project RFI/punch-list/submittal counts
   // aren't just a dead-end number — clicking one drills into the matching open items.
@@ -65,7 +69,7 @@ export default function OpenItemsPage() {
     punchList: punchList?.length ?? null,
     submittals: submittals?.length ?? null,
   };
-  const TABS: TabNavItem[] = TAB_KEYS.map((key) => ({
+  const TABS: TabNavItem[] = tabKeys.map((key) => ({
     key,
     label: `${t(`tab_${key}`)}${counts[key] !== null ? ` (${counts[key]})` : ""}`,
   }));

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
+import { useCan } from "@/lib/permissions";
 import { formatDate } from "@/lib/format-date";
 import { formatCurrency } from "@/lib/format-currency";
 
@@ -23,7 +24,8 @@ interface MaintenanceRecord {
 export function EquipmentMaintenanceRecordsPanel({ equipmentId, currency }: { equipmentId: string; currency: string }) {
   const t = useTranslations("equipment");
   const { data: maintenanceRecords = null, reload: reloadMaintenanceRecords } = useApi<MaintenanceRecord[]>(`/equipment/${equipmentId}/maintenance-records`);
-  const { data: suppliers = [] } = useApi<Supplier[]>("/materials/suppliers");
+  const canSeeSuppliers = useCan()("purchasing.view");
+  const { data: suppliers = [] } = useApi<Supplier[]>(canSeeSuppliers ? "/materials/suppliers" : null);
   const [maintenanceForm, setMaintenanceForm] = useState({ description: "", cost: "", supplierId: "", meterHours: "" });
   const [busy, setBusy] = useState(false);
 

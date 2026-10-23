@@ -4,6 +4,7 @@ import { Fragment, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
+import { useCan } from "@/lib/permissions";
 import { formatDate } from "@/lib/format-date";
 
 interface MaterialCatalogItem {
@@ -39,7 +40,8 @@ export function WarehouseReorderSettings() {
   const tc = useTranslations("common");
 
   const [materials, setMaterials] = useState<MaterialCatalogItem[] | null>(null);
-  const { data: suppliers = [] } = useApi<Supplier[]>("/materials/suppliers");
+  const canSeeSuppliers = useCan()("purchasing.view");
+  const { data: suppliers = [] } = useApi<Supplier[]>(canSeeSuppliers ? "/materials/suppliers" : null);
   const [drafts, setDrafts] = useState<Record<string, { reorderThreshold: string; reorderQuantity: string; preferredSupplierId: string }>>({});
   const [savingId, setSavingId] = useState<string | null>(null);
   const [savedId, setSavedId] = useState<string | null>(null);

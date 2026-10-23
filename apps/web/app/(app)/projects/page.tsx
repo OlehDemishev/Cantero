@@ -8,6 +8,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { CloseIcon, ProjectsIcon } from "@/components/nav-icons";
 import { apiFetch } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
+import { useCan } from "@/lib/permissions";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -33,7 +34,9 @@ export default function ProjectsPage() {
   const tc = useTranslations("common");
   const ti = useTranslations("import");
   const { data: projects = null, reload: reloadProjects, error: projectsError } = useApi<Project[]>("/projects");
-  const { data: clients = [] } = useApi<Client[]>("/clients");
+  // Clients to link a new project to — only listed for members who may see clients.
+  const seesClients = useCan()("clients.view");
+  const { data: clients = [] } = useApi<Client[]>(seesClients ? "/clients" : null);
   const [form, setForm] = useState({ name: "", address: "", clientId: "" });
   const [submitting, setSubmitting] = useState(false);
   const [filters, setFilters] = useState<ProjectFilters>(EMPTY_FILTERS);

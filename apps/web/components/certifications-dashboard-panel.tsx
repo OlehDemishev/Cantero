@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { useApi } from "@/lib/use-api";
+import { useCan } from "@/lib/permissions";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate } from "@/lib/format-date";
@@ -29,7 +30,13 @@ const badgeClass: Record<CertStatus, string> = {
 export function CertificationsDashboardPanel() {
   const t = useTranslations("team");
   const tc = useTranslations("common");
-  const { data: dashboard = null, error: dashboardError, reload: reloadDashboard } = useApi<CertDashboard>("/workers/certifications/dashboard");
+  // The company-wide certification overview is for site management (site.manage).
+  const canSee = useCan()("site.manage");
+  const { data: dashboard = null, error: dashboardError, reload: reloadDashboard } = useApi<CertDashboard>(
+    canSee ? "/workers/certifications/dashboard" : null,
+  );
+
+  if (!canSee) return null;
 
   return (
     <div className="mt-10">

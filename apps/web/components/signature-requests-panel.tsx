@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import type { SignatureRequestStatus } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
+import { useCan } from "@/lib/permissions";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate } from "@/lib/format-date";
@@ -43,7 +44,9 @@ export function SignatureRequestsPanel({ documents }: { documents: DocumentOptio
   const t = useTranslations("signatureRequests");
   const tc = useTranslations("common");
 
-  const { data: requests = null, reload: reloadRequests, error: requestsError } = useApi<SignatureRequest[]>("/signature-requests");
+  // Signature requests belong to contracts (contracts.view); the panel is left out without it.
+  const canSee = useCan()("contracts.view");
+  const { data: requests = null, reload: reloadRequests, error: requestsError } = useApi<SignatureRequest[]>(canSee ? "/signature-requests" : null);
   const [creating, setCreating] = useState(false);
   const [title, setTitle] = useState("");
   const [documentId, setDocumentId] = useState("");
@@ -101,6 +104,8 @@ export function SignatureRequestsPanel({ documents }: { documents: DocumentOptio
       setBusy(false);
     }
   }
+
+  if (!canSee) return null;
 
   return (
     <div className="mt-8">

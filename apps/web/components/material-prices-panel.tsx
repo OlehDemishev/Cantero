@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
+import { useCan } from "@/lib/permissions";
 import { useMe } from "@/lib/use-me";
 import { formatCurrency } from "@/lib/format-currency";
 
@@ -37,8 +38,9 @@ export function MaterialPricesPanel() {
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
 
+  const canSeePriceChanges = useCan()("purchasing.view");
   const { data: materials = null, reload: reloadMaterials } = useApi<MaterialCatalogItem[]>("/materials/catalog");
-  const { data: changes = null, reload: reloadChanges } = useApi<PriceChange[]>("/materials/catalog/price-changes");
+  const { data: changes = null, reload: reloadChanges } = useApi<PriceChange[]>(canSeePriceChanges ? "/materials/catalog/price-changes" : null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [priceDraft, setPriceDraft] = useState("");
   const [editingStandardCostId, setEditingStandardCostId] = useState<string | null>(null);
