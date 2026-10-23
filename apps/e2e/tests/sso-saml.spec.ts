@@ -18,7 +18,24 @@ const SSO_DOMAIN = "e2e-sso.test";
 let idp: TestIdp;
 let ownerToken: string;
 let companyId: string;
-let previousSso: { ssoDomain: string | null; ssoEntryPoint: string | null; ssoIssuer: string | null; ssoCert: string | null };
+let previousSso: {
+  ssoDomain: string | null;
+  ssoEntryPoint: string | null;
+  ssoIssuer: string | null;
+  ssoCert: string | null;
+  ssoDomainVerified?: boolean;
+};
+
+/** A test domain has no DNS to put the verification TXT record in, so mark it verified directly. */
+async function markDomainVerified(domain: string) {
+  const db = new Client({ connectionString: databaseUrl() });
+  await db.connect();
+  try {
+    await db.query(`UPDATE companies SET "ssoVerifiedDomain" = $1, "ssoDomainVerifiedAt" = now() WHERE id = $2`, [domain, companyId]);
+  } finally {
+    await db.end();
+  }
+}
 
 test.beforeAll(async () => {
   idp = createTestIdp();
@@ -26,6 +43,7 @@ test.beforeAll(async () => {
   companyId = (await api<{ company: { id: string } }>("GET", "/me", ownerToken)).company.id;
   previousSso = await api("GET", "/company/sso", ownerToken);
   await api("PATCH", "/company/sso", ownerToken, { domain: SSO_DOMAIN, entryPoint: idp.entryPoint, issuer: idp.issuer, cert: idp.certPem });
+  await markDomainVerified(SSO_DOMAIN);
 });
 
 test.afterAll(async () => {
@@ -36,6 +54,7 @@ test.afterAll(async () => {
       issuer: previousSso.ssoIssuer,
       cert: previousSso.ssoCert,
     });
+    if (previousSso.ssoDomainVerified) await markDomainVerified(previousSso.ssoDomain);
   } else {
     await api("DELETE", "/company/sso", ownerToken);
   }

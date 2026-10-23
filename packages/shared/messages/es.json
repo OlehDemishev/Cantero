@@ -2407,7 +2407,13 @@
     "issuer": "ID de entidad del IdP",
     "issuerPlaceholder": "p. ej. https://idp.example.com/saml/metadata",
     "cert": "Certificado de firma del IdP",
-    "disable": "Desactivar SSO"
+    "disable": "Desactivar SSO",
+    "pendingSummary": "Aún no está activo: verifica que {domain} es tuyo para activar el inicio de sesión con SSO.",
+    "dnsInstructions": "Añade este registro TXT al DNS de {domain} y luego verifica. Hasta que el dominio esté verificado, nadie se redirige a tu proveedor de identidad ni se añade automáticamente.",
+    "recordName": "Nombre",
+    "recordValue": "Valor",
+    "verifyNow": "Verificar dominio",
+    "verifyFailedHint": "Todavía no se encuentra el registro TXT. Los cambios de DNS pueden tardar en propagarse."
   },
   "closeout": {
     "title": "Paquete de cierre",

@@ -321,7 +321,14 @@ model Company {
   /// password login, and is just-in-time provisioned (as "worker") on first successful sign-in.
   /// ssoIssuer/ssoCert describe the IdP (its entity ID and signing certificate) — our own SP
   /// entity ID is derived per-company, not stored here.
-  ssoDomain                            String?                @unique
+  /// ssoDomain is only a claim until the company proves it controls the domain's DNS (a TXT record
+  /// at _cantero-sso.<domain> holding ssoDomainVerificationToken). ssoVerifiedDomain is set to the
+  /// same string once verified and is what login routing and provisioning use; its unique index
+  /// means only one company can hold a domain verified, while an unverified claim blocks nobody.
+  ssoDomain                            String?
+  ssoDomainVerificationToken           String?
+  ssoDomainVerifiedAt                  DateTime?
+  ssoVerifiedDomain                    String?                @unique
   ssoEntryPoint                        String?
   ssoIssuer                            String?
   ssoCert                              String?

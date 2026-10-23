@@ -7,6 +7,10 @@ import { SsoService } from "./sso.service";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService } from "../common/audit/audit.service";
 import { SessionsService } from "../common/sessions/sessions.service";
+import { promises as dnsPromises } from "node:dns";
+
+jest.mock("node:dns", () => ({ promises: { resolveTxt: jest.fn() } }));
+const dns = dnsPromises as unknown as { resolveTxt: jest.Mock };
 
 const validatePostResponseAsync = jest.fn();
 const getAuthorizeUrlAsync = jest.fn();
@@ -65,25 +69,143 @@ describe("SsoService", () => {
     service = module.get(SsoService);
   });
 
+  const CONFIG_INPUT = { domain: "Acme.com", entryPoint: "https://idp.example/sso", issuer: "idp-issuer", cert: "x".repeat(60) };
+
   describe("updateConfig()", () => {
-    it("surfaces a clear error when the domain is already claimed by another company", async () => {
+    it("refuses a domain another company has already verified", async () => {
+      prisma.company.findFirst.mockResolvedValue({ id: "company-b" });
+
+      await expect(service.updateConfig(COMPANY_A, ACTOR, CONFIG_INPUT)).rejects.toThrow(BadRequestException);
+      expect(prisma.company.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { ssoVerifiedDomain: "acme.com", id: { not: COMPANY_A } } }),
+      );
+      expect(prisma.company.update).not.toHaveBeenCalled();
+    });
+
+    it("starts a new domain unverified with a fresh verification token", async () => {
+      prisma.company.findFirst.mockResolvedValue(null);
+      prisma.company.findUniqueOrThrow.mockResolvedValue({ ssoDomain: "old.com", ssoVerifiedDomain: "old.com", ssoDomainVerificationToken: "old" });
+
+      await service.updateConfig(COMPANY_A, ACTOR, CONFIG_INPUT);
+
+      const data = prisma.company.update.mock.calls[0][0].data;
+      expect(data).toMatchObject({ ssoDomain: "acme.com", ssoVerifiedDomain: null, ssoDomainVerifiedAt: null });
+      expect(data.ssoDomainVerificationToken).toEqual(expect.any(String));
+      expect(data.ssoDomainVerificationToken).not.toBe("old");
+    });
+
+    it("keeps verification when only the IdP settings change", async () => {
+      prisma.company.findFirst.mockResolvedValue(null);
+      prisma.company.findUniqueOrThrow.mockResolvedValue({ ssoDomain: "acme.com", ssoVerifiedDomain: "acme.com", ssoDomainVerificationToken: "tok" });
+
+      await service.updateConfig(COMPANY_A, ACTOR, CONFIG_INPUT);
+
+      const data = prisma.company.update.mock.calls[0][0].data;
+      expect(data).not.toHaveProperty("ssoVerifiedDomain");
+      expect(data).not.toHaveProperty("ssoDomainVerificationToken");
+    });
+
+    it("maps a unique-constraint race to a clear error", async () => {
+      prisma.company.findFirst.mockResolvedValue(null);
       prisma.company.update.mockRejectedValue({ code: "P2002" });
 
-      await expect(
-        service.updateConfig(COMPANY_A, ACTOR, { domain: "acme.com", entryPoint: "https://idp.example/sso", issuer: "idp-issuer", cert: "x".repeat(60) }),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.updateConfig(COMPANY_A, ACTOR, CONFIG_INPUT)).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe("getConfig()", () => {
+    it("shows the TXT record to publish while the domain is unverified", async () => {
+      prisma.company.findUniqueOrThrow.mockResolvedValue({ ssoDomain: "acme.com", ssoVerifiedDomain: null, ssoDomainVerificationToken: "tok" });
+
+      const config = await service.getConfig(COMPANY_A);
+
+      expect(config.ssoDomainVerified).toBe(false);
+      expect(config.verificationRecord).toEqual({ type: "TXT", name: "_cantero-sso.acme.com", value: "cantero-sso-verification=tok" });
+    });
+
+    it("hides the record once verified", async () => {
+      prisma.company.findUniqueOrThrow.mockResolvedValue({ ssoDomain: "acme.com", ssoVerifiedDomain: "acme.com", ssoDomainVerificationToken: "tok" });
+
+      const config = await service.getConfig(COMPANY_A);
+
+      expect(config.ssoDomainVerified).toBe(true);
+      expect(config.verificationRecord).toBeNull();
+    });
+  });
+
+  describe("verifyDomain()", () => {
+    const unverified = { ssoDomain: "acme.com", ssoVerifiedDomain: null, ssoDomainVerificationToken: "tok" };
+
+    beforeEach(() => dns.resolveTxt.mockReset());
+
+    it("marks the domain verified when the TXT record holds this company's token", async () => {
+      prisma.company.findUniqueOrThrow.mockResolvedValue(unverified);
+      prisma.company.findFirst.mockResolvedValue(null);
+      dns.resolveTxt.mockResolvedValue([["v=spf1 -all"], ["cantero-sso-", "verification=tok"]]);
+
+      const result = await service.verifyDomain(COMPANY_A, ACTOR);
+
+      expect(dns.resolveTxt).toHaveBeenCalledWith("_cantero-sso.acme.com");
+      expect(result.verified).toBe(true);
+      expect(prisma.company.update).toHaveBeenCalledWith({
+        where: { id: COMPANY_A },
+        data: { ssoVerifiedDomain: "acme.com", ssoDomainVerifiedAt: expect.any(Date) },
+      });
+    });
+
+    it("stays unverified when the record holds another token", async () => {
+      prisma.company.findUniqueOrThrow.mockResolvedValue(unverified);
+      dns.resolveTxt.mockResolvedValue([["cantero-sso-verification=someone-else"]]);
+
+      const result = await service.verifyDomain(COMPANY_A, ACTOR);
+
+      expect(result.verified).toBe(false);
+      expect(prisma.company.update).not.toHaveBeenCalled();
+    });
+
+    it("stays unverified when the lookup fails", async () => {
+      prisma.company.findUniqueOrThrow.mockResolvedValue(unverified);
+      dns.resolveTxt.mockRejectedValue(new Error("ENOTFOUND"));
+
+      const result = await service.verifyDomain(COMPANY_A, ACTOR);
+
+      expect(result.verified).toBe(false);
+      expect(prisma.company.update).not.toHaveBeenCalled();
+    });
+
+    it("refuses when another company verified the domain first", async () => {
+      prisma.company.findUniqueOrThrow.mockResolvedValue(unverified);
+      prisma.company.findFirst.mockResolvedValue({ id: "company-b" });
+      dns.resolveTxt.mockResolvedValue([["cantero-sso-verification=tok"]]);
+
+      await expect(service.verifyDomain(COMPANY_A, ACTOR)).rejects.toThrow(BadRequestException);
+      expect(prisma.company.update).not.toHaveBeenCalled();
+    });
+
+    it("needs a saved domain", async () => {
+      prisma.company.findUniqueOrThrow.mockResolvedValue({ ssoDomain: null, ssoDomainVerificationToken: null });
+
+      await expect(service.verifyDomain(COMPANY_A, ACTOR)).rejects.toThrow(BadRequestException);
     });
   });
 
   describe("disable()", () => {
-    it("clears all four fields", async () => {
+    it("clears the IdP settings and the domain's verification", async () => {
       prisma.company.update.mockResolvedValue({});
 
       await service.disable(COMPANY_A, ACTOR);
 
       expect(prisma.company.update).toHaveBeenCalledWith({
         where: { id: COMPANY_A },
-        data: { ssoDomain: null, ssoEntryPoint: null, ssoIssuer: null, ssoCert: null },
+        data: {
+          ssoDomain: null,
+          ssoEntryPoint: null,
+          ssoIssuer: null,
+          ssoCert: null,
+          ssoDomainVerificationToken: null,
+          ssoDomainVerifiedAt: null,
+          ssoVerifiedDomain: null,
+        },
       });
     });
   });
@@ -93,6 +215,13 @@ describe("SsoService", () => {
       prisma.company.findFirst.mockResolvedValue(null);
 
       await expect(service.startLogin("user@unknown.com", NONCE)).rejects.toThrow(NotFoundException);
+    });
+
+    it("routes only through a verified domain", async () => {
+      prisma.company.findFirst.mockResolvedValue(null);
+
+      await expect(service.startLogin("user@acme.com", NONCE)).rejects.toThrow(NotFoundException);
+      expect(prisma.company.findFirst).toHaveBeenCalledWith({ where: expect.objectContaining({ ssoVerifiedDomain: "acme.com" }) });
     });
 
     it("builds an IdP redirect URL for a domain with SSO configured", async () => {
@@ -119,12 +248,21 @@ describe("SsoService", () => {
       getAssertionXml: () =>
         `<saml:Assertion xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ID="${assertionId}" Version="2.0"><saml:Conditions NotBefore="2020-01-01T00:00:00Z" NotOnOrAfter="${notOnOrAfter}"/></saml:Assertion>`,
     });
-    const configuredCompany = { id: COMPANY_A, ssoDomain: "acme.com", ssoEntryPoint: "https://idp.example/sso", ssoIssuer: "idp-issuer", ssoCert: "cert" };
+    const configuredCompany = { id: COMPANY_A, ssoDomain: "acme.com", ssoVerifiedDomain: "acme.com", ssoEntryPoint: "https://idp.example/sso", ssoIssuer: "idp-issuer", ssoCert: "cert" };
 
     it("rejects when SSO isn't configured for the company", async () => {
       prisma.company.findUnique.mockResolvedValue({ id: COMPANY_A, ssoEntryPoint: null });
 
       await expect(service.handleAcs(COMPANY_A, "response", NONCE)).rejects.toThrow(NotFoundException);
+    });
+
+    it("neither signs in nor provisions while the domain is unverified", async () => {
+      prisma.company.findUnique.mockResolvedValue({ ...configuredCompany, ssoVerifiedDomain: null });
+      validatePostResponseAsync.mockResolvedValue({ profile: profileFor("newuser@acme.com") });
+
+      await expect(service.handleAcs(COMPANY_A, "response", NONCE)).rejects.toThrow(NotFoundException);
+      expect(validatePostResponseAsync).not.toHaveBeenCalled();
+      expect(prisma.user.create).not.toHaveBeenCalled();
     });
 
     it("rejects an assertion whose email domain doesn't match the company's configured SSO domain", async () => {

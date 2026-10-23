@@ -2407,7 +2407,13 @@
     "issuer": "IdP entity ID",
     "issuerPlaceholder": "e.g. https://idp.example.com/saml/metadata",
     "cert": "IdP signing certificate",
-    "disable": "Disable SSO"
+    "disable": "Disable SSO",
+    "pendingSummary": "Not active yet: verify that you own {domain} to turn on SSO sign-in.",
+    "dnsInstructions": "Add this TXT record to the DNS for {domain}, then verify. Until the domain is verified, nobody is routed to your identity provider or added automatically.",
+    "recordName": "Name",
+    "recordValue": "Value",
+    "verifyNow": "Verify domain",
+    "verifyFailedHint": "TXT record not found yet. DNS changes can take a while to spread."
   },
   "closeout": {
     "title": "Closeout package",

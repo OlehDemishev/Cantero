@@ -2407,7 +2407,13 @@
     "issuer": "IdP-Entity-ID",
     "issuerPlaceholder": "z. B. https://idp.example.com/saml/metadata",
     "cert": "IdP-Signaturzertifikat",
-    "disable": "SSO deaktivieren"
+    "disable": "SSO deaktivieren",
+    "pendingSummary": "Noch nicht aktiv: Bestätigen Sie, dass {domain} Ihnen gehört, um die SSO-Anmeldung einzuschalten.",
+    "dnsInstructions": "Legen Sie diesen TXT-Eintrag im DNS von {domain} an und verifizieren Sie dann. Bis die Domain verifiziert ist, wird niemand an Ihren Identitätsanbieter weitergeleitet oder automatisch hinzugefügt.",
+    "recordName": "Name",
+    "recordValue": "Wert",
+    "verifyNow": "Domain verifizieren",
+    "verifyFailedHint": "TXT-Eintrag noch nicht gefunden. DNS-Änderungen können etwas dauern."
   },
   "closeout": {
     "title": "Abschlusspaket",

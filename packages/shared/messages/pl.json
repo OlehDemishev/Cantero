@@ -2407,7 +2407,13 @@
     "issuer": "Identyfikator jednostki IdP",
     "issuerPlaceholder": "np. https://idp.example.com/saml/metadata",
     "cert": "Certyfikat podpisujący IdP",
-    "disable": "Wyłącz SSO"
+    "disable": "Wyłącz SSO",
+    "pendingSummary": "Jeszcze nieaktywne: potwierdź, że domena {domain} należy do Ciebie, aby włączyć logowanie SSO.",
+    "dnsInstructions": "Dodaj ten rekord TXT w DNS domeny {domain}, a następnie zweryfikuj. Dopóki domena nie zostanie zweryfikowana, nikt nie jest przekierowywany do Twojego dostawcy tożsamości ani dodawany automatycznie.",
+    "recordName": "Nazwa",
+    "recordValue": "Wartość",
+    "verifyNow": "Zweryfikuj domenę",
+    "verifyFailedHint": "Nie znaleziono jeszcze rekordu TXT. Zmiany w DNS mogą chwilę potrwać."
   },
   "closeout": {
     "title": "Pakiet zamknięcia projektu",

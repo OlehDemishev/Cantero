@@ -19,6 +19,7 @@ interface AccountingStatus {
 }
 interface SsoConfig {
   ssoDomain: string | null;
+  ssoDomainVerified: boolean;
 }
 
 type Status = "connected" | "not-connected" | "loading";
@@ -100,7 +101,7 @@ export default function IntegrationsPage() {
       titleKey: "sso",
       descriptionKey: "ssoDescription",
       href: "/settings?tab=team",
-      status: sso === null ? "loading" : sso.ssoDomain ? "connected" : "not-connected",
+      status: sso === null ? "loading" : sso.ssoDomain && sso.ssoDomainVerified ? "connected" : "not-connected",
     },
     {
       id: "lead-form",

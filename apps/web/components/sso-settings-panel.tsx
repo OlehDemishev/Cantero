@@ -9,6 +9,8 @@ interface SsoConfig {
   ssoEntryPoint: string | null;
   ssoIssuer: string | null;
   ssoCert: string | null;
+  ssoDomainVerified: boolean;
+  verificationRecord: { type: "TXT"; name: string; value: string } | null;
 }
 
 export function SsoSettingsPanel({ canManage }: { canManage: boolean }) {
@@ -19,6 +21,7 @@ export function SsoSettingsPanel({ canManage }: { canManage: boolean }) {
   const [form, setForm] = useState({ domain: "", entryPoint: "", issuer: "", cert: "" });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [verifyFailed, setVerifyFailed] = useState(false);
 
   function load() {
     apiFetch<SsoConfig>("/company/sso").then((c) => {
@@ -53,6 +56,21 @@ export function SsoSettingsPanel({ canManage }: { canManage: boolean }) {
     }
   }
 
+  async function verify() {
+    setBusy(true);
+    setError(null);
+    setVerifyFailed(false);
+    try {
+      const result = await apiFetch<SsoConfig & { verified: boolean }>("/company/sso/verify", { method: "POST" });
+      setConfig(result);
+      setVerifyFailed(!result.verified);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : tc("error"));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function disable() {
     setBusy(true);
     try {
@@ -76,8 +94,32 @@ export function SsoSettingsPanel({ canManage }: { canManage: boolean }) {
       <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
       <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">{t("hint")}</p>
 
-      {isConfigured && (
+      {isConfigured && config.ssoDomainVerified && (
         <p className="mb-3 text-sm text-success-700 dark:text-success-500">{t("activeSummary", { domain: config.ssoDomain! })}</p>
+      )}
+      {isConfigured && !config.ssoDomainVerified && (
+        <div className="mb-4 rounded-md border border-warning-200 dark:border-warning-500/30 bg-warning-50 dark:bg-warning-500/10 p-3">
+          <p className="text-sm text-warning-700 dark:text-warning-500">{t("pendingSummary", { domain: config.ssoDomain! })}</p>
+          {config.verificationRecord && (
+            <>
+              <p className="mt-2 text-xs text-gray-600 dark:text-gray-300">{t("dnsInstructions", { domain: config.ssoDomain! })}</p>
+              <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-xs">
+                <dt className="text-gray-500 dark:text-gray-400">{t("recordName")}</dt>
+                <dd className="break-all font-mono text-gray-800 dark:text-gray-100">{config.verificationRecord.name}</dd>
+                <dt className="text-gray-500 dark:text-gray-400">{t("recordValue")} (TXT)</dt>
+                <dd className="break-all font-mono text-gray-800 dark:text-gray-100">{config.verificationRecord.value}</dd>
+              </dl>
+            </>
+          )}
+          {canManage && (
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <button type="button" onClick={verify} disabled={busy} className="btn-secondary px-3 py-1 text-xs">
+                {t("verifyNow")}
+              </button>
+              {verifyFailed && <span className="text-xs text-warning-700 dark:text-warning-500">{t("verifyFailedHint")}</span>}
+            </div>
+          )}
+        </div>
       )}
 
       <button onClick={downloadMetadata} className="btn-secondary mb-4 px-3 py-1 text-xs">

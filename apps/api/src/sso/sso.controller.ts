@@ -38,6 +38,13 @@ export class SsoController {
     return this.service.updateConfig(user.companyId, { userId: user.userId, name: user.name }, body);
   }
 
+  /** Checks DNS for the TXT record from GET company/sso; SSO only goes live once this succeeds. */
+  @Roles("owner", "admin")
+  @Post("company/sso/verify")
+  verifyDomain(@CurrentUser() user: AuthUser) {
+    return this.service.verifyDomain(user.companyId, { userId: user.userId, name: user.name });
+  }
+
   @Roles("owner", "admin")
   @Delete("company/sso")
   disable(@CurrentUser() user: AuthUser) {
