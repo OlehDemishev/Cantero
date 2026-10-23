@@ -93,13 +93,13 @@ export function CalibrationPanel(props: Props) {
           <input required type="date" className="input" value={form.nextDueAt} onChange={(e) => setForm((f) => ({ ...f, nextDueAt: e.target.value }))} />
         </Field>
         <input
-          placeholder={t("certificateNumberPlaceholder")}
+          placeholder={t("certificateNumberPlaceholder")} aria-label={t("certificateNumberPlaceholder")}
           className="input w-32"
           value={form.certificateNumber}
           onChange={(e) => setForm((f) => ({ ...f, certificateNumber: e.target.value }))}
         />
         <input
-          placeholder={t("performedByPlaceholder")}
+          placeholder={t("performedByPlaceholder")} aria-label={t("performedByPlaceholder")}
           className="input w-32"
           value={form.performedBy}
           onChange={(e) => setForm((f) => ({ ...f, performedBy: e.target.value }))}

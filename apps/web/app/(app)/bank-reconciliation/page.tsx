@@ -60,6 +60,7 @@ export default function BankReconciliationPage() {
   const tc = useTranslations("common");
   const ti = useTranslations("import");
   const te = useTranslations("expenses");
+  const ta = useTranslations("a11y");
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
 
@@ -213,13 +214,13 @@ export default function BankReconciliationPage() {
           <p className="mb-3 text-xs text-fg-subtle">{t("categorizationRulesHint")}</p>
 
           <form onSubmit={createRule} className="flex flex-wrap items-end gap-2">
-            <input
+            <input aria-label={ta("matchPattern")}
               className="input flex-1"
               placeholder={t("rulePatternPlaceholder")}
               value={ruleForm.pattern}
               onChange={(e) => setRuleForm((f) => ({ ...f, pattern: e.target.value }))}
             />
-            <select
+            <select aria-label={t("category")}
               className="input w-auto"
               value={ruleForm.category}
               onChange={(e) => setRuleForm((f) => ({ ...f, category: e.target.value as ExpenseCategory }))}
@@ -293,7 +294,7 @@ export default function BankReconciliationPage() {
 
                 <div className="mt-1.5 flex items-center gap-2">
                   <span className="text-xs text-fg-subtle">{t("category")}</span>
-                  <select
+                  <select aria-label={t("category")}
                     className="input w-auto py-0.5 text-xs"
                     value={tx.category ?? ""}
                     onChange={(e) => setCategory(tx.id, e.target.value as ExpenseCategory | "")}
@@ -343,7 +344,7 @@ export default function BankReconciliationPage() {
                       </div>
                     )}
                     <div className="flex flex-wrap items-center gap-2">
-                    <select
+                    <select aria-label={ta("matchWith")}
                       className="input w-auto text-xs"
                       value={draft.target}
                       onChange={(e) => {
@@ -355,7 +356,7 @@ export default function BankReconciliationPage() {
                       <option value="invoice">{t("invoice")}</option>
                       <option value="expense">{t("expense")}</option>
                     </select>
-                    <select
+                    <select aria-label={ta("record")}
                       className="input w-auto text-xs"
                       value={draft.id}
                       onChange={(e) => setDraft(tx.id, { ...draft, id: e.target.value })}

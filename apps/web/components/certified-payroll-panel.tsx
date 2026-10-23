@@ -293,7 +293,7 @@ export function CertifiedPayrollPanel({ projectId }: { projectId: string }) {
                       <>
                         <input
                           className="input w-40 py-1 text-xs"
-                          placeholder={t("signerNamePlaceholder")}
+                          placeholder={t("signerNamePlaceholder")} aria-label={t("signerNamePlaceholder")}
                           value={signerName}
                           onChange={(e) => setSignerName(e.target.value)}
                         />

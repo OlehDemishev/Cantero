@@ -63,14 +63,14 @@ export function MarketingCampaignsPanel() {
       <form onSubmit={createCampaign} className="mb-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-end">
         <input
           required
-          placeholder={t("campaignNamePlaceholder")}
+          placeholder={t("campaignNamePlaceholder")} aria-label={t("campaignNamePlaceholder")}
           className="input"
           value={form.name}
           onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
         />
         <input
           required
-          placeholder={t("channelPlaceholder")}
+          placeholder={t("channelPlaceholder")} aria-label={t("channelPlaceholder")}
           className="input"
           value={form.channel}
           onChange={(e) => setForm((f) => ({ ...f, channel: e.target.value }))}

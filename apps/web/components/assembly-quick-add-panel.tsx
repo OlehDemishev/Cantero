@@ -13,6 +13,7 @@ interface Assembly {
 
 export function AssemblyQuickAddPanel({ estimateId, onAdded }: { estimateId: string; onAdded: () => void }) {
   const t = useTranslations("assemblies");
+  const ta = useTranslations("a11y");
 
   const [assemblies, setAssemblies] = useState<Assembly[]>([]);
   const [assemblyId, setAssemblyId] = useState("");
@@ -46,14 +47,14 @@ export function AssemblyQuickAddPanel({ estimateId, onAdded }: { estimateId: str
 
   return (
     <form onSubmit={handleSubmit} className="mt-3 flex items-end gap-2">
-      <select className="input" value={assemblyId} onChange={(e) => setAssemblyId(e.target.value)}>
+      <select aria-label={ta("assembly")} className="input" value={assemblyId} onChange={(e) => setAssemblyId(e.target.value)}>
         {assemblies.map((a) => (
           <option key={a.id} value={a.id}>
             {a.name} ({a.unit})
           </option>
         ))}
       </select>
-      <input
+      <input aria-label={ta("quantity")}
         type="number"
         step="0.01"
         min="0.01"

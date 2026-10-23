@@ -32,6 +32,7 @@ export function DashboardWidgetsPanel() {
   const confirm = useConfirm();
   const td = useTranslations("dialog");
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
 
@@ -128,7 +129,7 @@ export function DashboardWidgetsPanel() {
 
       {widgetTypes.length > 0 && (
         <form onSubmit={addWidget} className="mb-4 flex flex-wrap items-end gap-2">
-          <select className="input w-auto" value={newType} onChange={(e) => setNewType(e.target.value as DashboardWidgetType)}>
+          <select aria-label={ta("widgetType")} className="input w-auto" value={newType} onChange={(e) => setNewType(e.target.value as DashboardWidgetType)}>
             {widgetTypes.map((ty) => (
               <option key={ty} value={ty}>
                 {t(`widgetType_${ty}`)}
@@ -136,7 +137,7 @@ export function DashboardWidgetsPanel() {
             ))}
           </select>
           {newType === "custom_report" && (
-            <select className="input w-auto" value={newCustomReportId} onChange={(e) => setNewCustomReportId(e.target.value)}>
+            <select aria-label={ta("savedReport")} className="input w-auto" value={newCustomReportId} onChange={(e) => setNewCustomReportId(e.target.value)}>
               <option value="">{t("selectCustomReport")}</option>
               {customReports.map((r) => (
                 <option key={r.id} value={r.id}>

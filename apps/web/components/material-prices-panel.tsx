@@ -37,6 +37,7 @@ interface AffectedEstimate {
 export function MaterialPricesPanel() {
   const t = useTranslations("materialPrices");
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
 
@@ -179,7 +180,7 @@ export function MaterialPricesPanel() {
                 <td>
                   {editingId === m.id ? (
                     <form onSubmit={(e) => savePrice(m.id, e)} className="flex items-center gap-1">
-                      <input
+                      <input aria-label={ta("fieldOf", { field: t("price"), item: m.name })}
                         type="number"
                         min="0"
                         step="0.0001"
@@ -211,7 +212,7 @@ export function MaterialPricesPanel() {
                 <td>
                   {editingStandardCostId === m.id ? (
                     <form onSubmit={(e) => saveStandardCost(m.id, e)} className="flex items-center gap-1">
-                      <input
+                      <input aria-label={ta("fieldOf", { field: t("standardCost"), item: m.name })}
                         type="number"
                         min="0"
                         step="0.0001"

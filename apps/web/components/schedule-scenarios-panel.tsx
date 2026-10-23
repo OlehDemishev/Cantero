@@ -38,6 +38,7 @@ export function ScheduleScenariosPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("scheduleScenarios");
   const confirm = useConfirm();
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
 
   const { data: scenarios = null, reload: reloadScenarios, error: scenariosError } = useApi<Scenario[]>(`/projects/${projectId}/schedule-scenarios`);
   const { data: tasks = [] } = useApi<Task[]>(`/tasks?projectId=${projectId}`);
@@ -110,7 +111,7 @@ export function ScheduleScenariosPanel({ projectId }: { projectId: string }) {
 
       {adding && (
         <form onSubmit={create} className="card mb-3 flex flex-wrap items-end gap-2">
-          <input required placeholder={t("namePlaceholder")} className="input flex-1" value={name} onChange={(e) => setName(e.target.value)} />
+          <input required placeholder={t("namePlaceholder")} aria-label={t("namePlaceholder")} className="input flex-1" value={name} onChange={(e) => setName(e.target.value)} />
           <button type="submit" disabled={busy} className="btn-primary">
             {tc("save")}
           </button>
@@ -152,7 +153,7 @@ export function ScheduleScenariosPanel({ projectId }: { projectId: string }) {
                     )}
 
                     <div className="flex flex-wrap items-end gap-2">
-                      <select className="input" value={overrideForm.taskId} onChange={(e) => setOverrideForm((f) => ({ ...f, taskId: e.target.value }))}>
+                      <select aria-label={ta("task")} className="input" value={overrideForm.taskId} onChange={(e) => setOverrideForm((f) => ({ ...f, taskId: e.target.value }))}>
                         <option value="">{t("selectTask")}</option>
                         {tasks.map((task) => (
                           <option key={task.id} value={task.id}>

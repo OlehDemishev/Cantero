@@ -124,7 +124,7 @@ export function NotificationPreferencesPanel() {
         <h2 className="mb-1 text-sm font-semibold text-fg-muted">{t("emailDigest")}</h2>
         <p className="mb-4 text-xs text-fg-subtle">{t("emailDigestHint")}</p>
         <div className="flex items-center gap-3">
-          <select
+          <select aria-label={t("emailDigest")}
             className="input w-auto"
             value={digestFrequency}
             disabled={digestBusy}

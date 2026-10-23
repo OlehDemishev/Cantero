@@ -120,7 +120,7 @@ export function GlobalSearch() {
         </span>
         <input
           className="input w-full pl-9 text-sm"
-          placeholder={t("placeholder")}
+          placeholder={t("placeholder")} aria-label={t("placeholder")}
           value={query}
           onChange={(e) => handleChange(e.target.value)}
           onFocus={() => results && setOpen(true)}

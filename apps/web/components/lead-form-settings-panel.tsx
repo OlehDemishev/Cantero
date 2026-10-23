@@ -10,6 +10,7 @@ export function LeadFormSettingsPanel({ token, canManage, onChange }: { token: s
   const confirm = useConfirm();
   const td = useTranslations("dialog");
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
 
   const [busy, setBusy] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -52,7 +53,7 @@ export function LeadFormSettingsPanel({ token, canManage, onChange }: { token: s
       {url ? (
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-2">
-            <input readOnly className="input flex-1 text-xs" value={url} />
+            <input aria-label={ta("shareLink")} readOnly className="input flex-1 text-xs" value={url} />
             <button onClick={copyLink} className="btn-secondary shrink-0 px-3 py-1 text-xs">
               {copied ? tc("saved") : t("copyLink")}
             </button>

@@ -65,6 +65,7 @@ export function RfiPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("rfi");
   const tc = useTranslations("common");
   const tb = useTranslations("bulk");
+  const ta = useTranslations("a11y");
   const bulk = useBulkSelection();
 
   const deepLinkedId = useDeepLinkedRow("rfi");
@@ -355,7 +356,7 @@ export function RfiPanel({ projectId }: { projectId: string }) {
             return (
               <li key={item.id} ref={(el) => { rowRefs.current[item.id] = el; }} className={`card ${deepLinkedId === item.id ? "ring-2 ring-brand-300" : ""}`}>
                 <div className="flex w-full items-start gap-3">
-                  <input type="checkbox" className="mt-1" checked={bulk.selected.has(item.id)} onChange={() => bulk.toggle(item.id)} />
+                  <input aria-label={ta("selectItem", { name: item.subject })} type="checkbox" className="mt-1" checked={bulk.selected.has(item.id)} onChange={() => bulk.toggle(item.id)} />
                   <CopyLinkButton url={buildItemDeepLink(projectId, "quality", "rfi", item.id)} />
                   <button
                     onClick={() => {
@@ -439,7 +440,7 @@ export function RfiPanel({ projectId }: { projectId: string }) {
                             )}
                             <div className="mt-1 flex items-center gap-1.5">
                               <input
-                                placeholder={t("changeOrderIdPlaceholder")}
+                                placeholder={t("changeOrderIdPlaceholder")} aria-label={t("changeOrderIdPlaceholder")}
                                 className="input py-0.5 text-xs"
                                 value={changeOrderIdDrafts[item.id] ?? ""}
                                 onChange={(e) => setChangeOrderIdDrafts((f) => ({ ...f, [item.id]: e.target.value }))}
@@ -472,7 +473,7 @@ export function RfiPanel({ projectId }: { projectId: string }) {
                         <textarea
                           rows={2}
                           className="input"
-                          placeholder={t("answerPlaceholder")}
+                          placeholder={t("answerPlaceholder")} aria-label={t("answerPlaceholder")}
                           value={answerDraft}
                           onChange={(e) => setAnswerDraft(e.target.value)}
                         />

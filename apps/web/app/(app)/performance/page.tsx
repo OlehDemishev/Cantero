@@ -39,6 +39,7 @@ interface Review {
 export default function PerformancePage() {
   const t = useTranslations("performance");
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
 
   const { data: cycles = null, error: cyclesError, reload: reloadCycles } = useApi<Cycle[]>("/performance/cycles");
   const [pickedCycleId, setSelectedCycleId] = useState<string | null>(null);
@@ -170,7 +171,7 @@ export default function PerformancePage() {
               <input
                 required
                 autoFocus
-                placeholder={t("cycleNamePlaceholder")}
+                placeholder={t("cycleNamePlaceholder")} aria-label={t("cycleNamePlaceholder")}
                 className="input"
                 value={cycleForm.name}
                 onChange={(e) => setCycleForm((f) => ({ ...f, name: e.target.value }))}
@@ -214,14 +215,14 @@ export default function PerformancePage() {
               {selectedCycle?.status === "open" && (
                 <div className="card mb-4 flex flex-col gap-2">
                   <div className="flex flex-wrap gap-2">
-                    <select className="input" value={reviewWorkerId} onChange={(e) => setReviewWorkerId(e.target.value)}>
+                    <select aria-label={ta("worker")} className="input" value={reviewWorkerId} onChange={(e) => setReviewWorkerId(e.target.value)}>
                       {workers.map((w) => (
                         <option key={w.id} value={w.id}>
                           {w.name}
                         </option>
                       ))}
                     </select>
-                    <select
+                    <select aria-label={ta("rating")}
                       className="input"
                       value={reviewForm.rating}
                       onChange={(e) => setReviewForm((f) => ({ ...f, rating: e.target.value as PerformanceRating }))}
@@ -235,14 +236,14 @@ export default function PerformancePage() {
                     </select>
                   </div>
                   <textarea
-                    placeholder={t("strengthsPlaceholder")}
+                    placeholder={t("strengthsPlaceholder")} aria-label={t("strengthsPlaceholder")}
                     className="input"
                     rows={2}
                     value={reviewForm.strengths}
                     onChange={(e) => setReviewForm((f) => ({ ...f, strengths: e.target.value }))}
                   />
                   <textarea
-                    placeholder={t("improvementAreasPlaceholder")}
+                    placeholder={t("improvementAreasPlaceholder")} aria-label={t("improvementAreasPlaceholder")}
                     className="input"
                     rows={2}
                     value={reviewForm.improvementAreas}

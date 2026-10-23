@@ -57,6 +57,7 @@ interface IncomingEInvoice {
 
 export function IncomingEInvoicesPanel() {
   const t = useTranslations("incomingEInvoices");
+  const ta = useTranslations("a11y");
   const confirm = useConfirm();
   const { data: me } = useMe();
 
@@ -232,7 +233,7 @@ export function IncomingEInvoicesPanel() {
 
                       {inv.status !== "converted" && inv.status !== "rejected" && (
                         <>
-                          <select
+                          <select aria-label={ta("supplier")}
                             className="input py-1 text-xs"
                             value={matchDraft[inv.id] ?? inv.supplierId ?? ""}
                             onChange={(e) => setMatchDraft((d) => ({ ...d, [inv.id]: e.target.value }))}

@@ -17,6 +17,7 @@ export function WarehouseSustainabilitySettings() {
   const t = useTranslations("warehouses");
   const tc = useTranslations("common");
   const ts = useTranslations("sustainability");
+  const ta = useTranslations("a11y");
 
   const [materials, setMaterials] = useState<MaterialCatalogItem[] | null>(null);
   const [drafts, setDrafts] = useState<Record<string, { carbonFootprintKgCo2e: string; greenCertified: boolean; greenCertificationBody: string }>>({});
@@ -91,7 +92,7 @@ export function WarehouseSustainabilitySettings() {
                   {m.name} ({m.code})
                 </td>
                 <td>
-                  <input
+                  <input aria-label={ta("fieldOf", { field: ta("carbonFootprint"), item: m.name })}
                     type="number"
                     step="0.01"
                     min="0"
@@ -101,14 +102,14 @@ export function WarehouseSustainabilitySettings() {
                   />
                 </td>
                 <td>
-                  <input
+                  <input aria-label={ta("fieldOf", { field: ts("greenCertified"), item: m.name })}
                     type="checkbox"
                     checked={draft.greenCertified}
                     onChange={(e) => setDrafts((d) => ({ ...d, [m.id]: { ...draft, greenCertified: e.target.checked } }))}
                   />
                 </td>
                 <td>
-                  <input
+                  <input aria-label={ta("fieldOf", { field: ts("greenCertificationBody"), item: m.name })}
                     className="input w-32"
                     placeholder={ts("greenCertificationBodyPlaceholder")}
                     value={draft.greenCertificationBody}

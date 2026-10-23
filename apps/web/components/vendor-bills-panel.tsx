@@ -95,6 +95,7 @@ export function VendorBillsPanel() {
   const t = useTranslations("purchaseOrders");
   const confirm = useConfirm();
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
   const { data: me } = useMe();
 
   const { data: bills = null, error: billsError, reload: reloadBillList } = useApi<VendorBill[]>("/materials/vendor-bills");
@@ -226,14 +227,14 @@ export function VendorBillsPanel() {
           </div>
           {addingBill && (
             <form onSubmit={submitBill} className="flex flex-col gap-3">
-              <select className="input" value={billSupplierId} onChange={(e) => setBillSupplierId(e.target.value)}>
+              <select aria-label={t("supplier")} className="input" value={billSupplierId} onChange={(e) => setBillSupplierId(e.target.value)}>
                 {suppliers.map((s) => (
                   <option key={s.id} value={s.id}>
                     {s.name}
                   </option>
                 ))}
               </select>
-              <select className="input" value={billPurchaseOrderId} onChange={(e) => setBillPurchaseOrderId(e.target.value)}>
+              <select aria-label={ta("purchaseOrder")} className="input" value={billPurchaseOrderId} onChange={(e) => setBillPurchaseOrderId(e.target.value)}>
                 <option value="">{t("noLinkedPurchaseOrder")}</option>
                 {orders
                   .filter((po) => po.supplier.id === billSupplierId)
@@ -245,7 +246,7 @@ export function VendorBillsPanel() {
               </select>
               <input
                 required
-                placeholder={t("billNumberPlaceholder")}
+                placeholder={t("billNumberPlaceholder")} aria-label={t("billNumberPlaceholder")}
                 className="input"
                 value={billNumber}
                 onChange={(e) => setBillNumber(e.target.value)}
@@ -264,7 +265,7 @@ export function VendorBillsPanel() {
                 <div key={i} className="flex gap-2">
                   <input
                     required
-                    placeholder={t("lineDescriptionPlaceholder")}
+                    placeholder={t("lineDescriptionPlaceholder")} aria-label={t("lineDescriptionPlaceholder")}
                     className="input"
                     value={line.description}
                     onChange={(e) => setBillLines((ls) => ls.map((l, j) => (j === i ? { ...l, description: e.target.value } : l)))}
@@ -273,7 +274,7 @@ export function VendorBillsPanel() {
                     type="number"
                     step="0.01"
                     min="0.01"
-                    placeholder={t("quantity")}
+                    placeholder={t("quantity")} aria-label={t("quantity")}
                     className="input w-20"
                     value={line.quantity}
                     onChange={(e) => setBillLines((ls) => ls.map((l, j) => (j === i ? { ...l, quantity: e.target.value } : l)))}
@@ -282,7 +283,7 @@ export function VendorBillsPanel() {
                     type="number"
                     step="0.01"
                     min="0"
-                    placeholder={t("unitPrice")}
+                    placeholder={t("unitPrice")} aria-label={t("unitPrice")}
                     className="input w-20"
                     value={line.unitPrice}
                     onChange={(e) => setBillLines((ls) => ls.map((l, j) => (j === i ? { ...l, unitPrice: e.target.value } : l)))}
@@ -354,7 +355,7 @@ export function VendorBillsPanel() {
                         <button onClick={() => payBill(bill.id)} className="btn-secondary px-2 py-1 text-xs">
                           {t("markPaid")}
                         </button>
-                        <input
+                        <input aria-label={ta("scheduledPaymentDate")}
                           type="date"
                           className="input py-1 text-xs"
                           value={scheduleDrafts[bill.id] ?? ""}

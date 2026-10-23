@@ -41,6 +41,7 @@ const OPEN_STATUSES: ContractClaimStatus[] = ["notice_given", "submitted", "nego
 export function ContractClaimsPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("contractClaims");
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
 
@@ -150,7 +151,7 @@ export function ContractClaimsPanel({ projectId }: { projectId: string }) {
       {adding && (
         <form onSubmit={createClaim} className="card mb-3 flex flex-col gap-2">
           <div className="flex flex-wrap gap-2">
-            <select className="input" value={form.type} onChange={(e) => setForm((f) => ({ ...f, type: e.target.value as ContractClaimType }))}>
+            <select aria-label={ta("type")} className="input" value={form.type} onChange={(e) => setForm((f) => ({ ...f, type: e.target.value as ContractClaimType }))}>
               {CONTRACT_CLAIM_TYPES.map((type) => (
                 <option key={type} value={type}>
                   {t(`type_${type}`)}
@@ -159,14 +160,14 @@ export function ContractClaimsPanel({ projectId }: { projectId: string }) {
             </select>
             <input
               required
-              placeholder={t("titlePlaceholder")}
+              placeholder={t("titlePlaceholder")} aria-label={t("titlePlaceholder")}
               className="input flex-1"
               value={form.title}
               onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
             />
           </div>
           <textarea
-            placeholder={t("descriptionPlaceholder")}
+            placeholder={t("descriptionPlaceholder")} aria-label={t("descriptionPlaceholder")}
             className="input"
             rows={2}
             value={form.description}
@@ -186,7 +187,7 @@ export function ContractClaimsPanel({ projectId }: { projectId: string }) {
               type="number"
               step="0.01"
               min="0"
-              placeholder={t("requestedAmountPlaceholder", { currency })}
+              placeholder={t("requestedAmountPlaceholder", { currency })} aria-label={t("requestedAmountPlaceholder", { currency })}
               className="input w-40"
               value={form.requestedAmount}
               onChange={(e) => setForm((f) => ({ ...f, requestedAmount: e.target.value }))}
@@ -194,7 +195,7 @@ export function ContractClaimsPanel({ projectId }: { projectId: string }) {
             <input
               type="number"
               min="0"
-              placeholder={t("requestedDaysPlaceholder")}
+              placeholder={t("requestedDaysPlaceholder")} aria-label={t("requestedDaysPlaceholder")}
               className="input w-32"
               value={form.requestedDays}
               onChange={(e) => setForm((f) => ({ ...f, requestedDays: e.target.value }))}
@@ -264,7 +265,7 @@ export function ContractClaimsPanel({ projectId }: { projectId: string }) {
                           ) : (
                             <div className="flex flex-wrap gap-2">
                               <input
-                                placeholder={t("resolutionPlaceholder")}
+                                placeholder={t("resolutionPlaceholder")} aria-label={t("resolutionPlaceholder")}
                                 className="input flex-1"
                                 value={resolutionText}
                                 onChange={(e) => setResolutionText(e.target.value)}
@@ -290,7 +291,7 @@ export function ContractClaimsPanel({ projectId }: { projectId: string }) {
                       </ul>
                       <div className="flex gap-2">
                         <input
-                          placeholder={t("eventPlaceholder")}
+                          placeholder={t("eventPlaceholder")} aria-label={t("eventPlaceholder")}
                           className="input flex-1"
                           value={eventText}
                           onChange={(e) => setEventText(e.target.value)}

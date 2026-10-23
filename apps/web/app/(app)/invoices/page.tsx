@@ -70,6 +70,7 @@ export default function InvoicesPage() {
   const t = useTranslations("invoices");
   const confirm = useConfirm();
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
   const { data: me } = useMe();
   const [invoices, setInvoices] = useState<Invoice[] | null>(null);
   const [invoicesError, setInvoicesError] = useState<Error | null>(null);
@@ -494,7 +495,7 @@ export default function InvoicesPage() {
           className="rounded-lg border border-gray-200 dark:border-gray-700 p-4"
         >
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <input
+            <input aria-label={tc("name")}
               required
               placeholder={t("recurringNamePlaceholder")}
               className="input"
@@ -503,7 +504,7 @@ export default function InvoicesPage() {
                 setRecurringForm((f) => ({ ...f, name: e.target.value }))
               }
             />
-            <select
+            <select aria-label={ta("project")}
               required
               className="input"
               value={recurringForm.projectId}
@@ -518,7 +519,7 @@ export default function InvoicesPage() {
                 </option>
               ))}
             </select>
-            <select
+            <select aria-label={ta("client")}
               required
               className="input"
               value={recurringForm.clientId}
@@ -533,7 +534,7 @@ export default function InvoicesPage() {
                 </option>
               ))}
             </select>
-            <select
+            <select aria-label={ta("frequency")}
               className="input"
               value={recurringForm.frequency}
               onChange={(e) =>
@@ -593,7 +594,7 @@ export default function InvoicesPage() {
               <div key={i} className="flex items-end gap-2">
                 <input
                   required
-                  placeholder={t("lineDescriptionPlaceholder")}
+                  placeholder={t("lineDescriptionPlaceholder")} aria-label={t("lineDescriptionPlaceholder")}
                   className="input flex-1"
                   value={line.description}
                   onChange={(e) =>
@@ -604,7 +605,7 @@ export default function InvoicesPage() {
                   required
                   type="number"
                   step="0.01"
-                  placeholder={t("quantity")}
+                  placeholder={t("quantity")} aria-label={t("quantity")}
                   className="input w-24"
                   value={line.quantity}
                   onChange={(e) =>
@@ -615,7 +616,7 @@ export default function InvoicesPage() {
                   required
                   type="number"
                   step="0.01"
-                  placeholder={t("unitPrice")}
+                  placeholder={t("unitPrice")} aria-label={t("unitPrice")}
                   className="input w-28"
                   value={line.unitPrice}
                   onChange={(e) =>

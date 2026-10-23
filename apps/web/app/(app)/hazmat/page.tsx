@@ -37,6 +37,7 @@ interface StaleEntry {
 export default function HazmatPage() {
   const t = useTranslations("hazmat");
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
   const searchParams = useSearchParams();
 
   const { data: materials = null, reload: reloadMaterials } = useApi<HazardousMaterial[]>("/hazmat/materials");
@@ -123,20 +124,20 @@ export default function HazmatPage() {
         <form onSubmit={createMaterial} className="card mt-4 flex max-w-lg flex-col gap-2">
           <input
             required
-            placeholder={t("materialNamePlaceholder")}
+            placeholder={t("materialNamePlaceholder")} aria-label={t("materialNamePlaceholder")}
             className="input"
             value={form.name}
             onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
           />
           <div className="flex gap-2">
             <input
-              placeholder={t("manufacturerPlaceholder")}
+              placeholder={t("manufacturerPlaceholder")} aria-label={t("manufacturerPlaceholder")}
               className="input"
               value={form.manufacturer}
               onChange={(e) => setForm((f) => ({ ...f, manufacturer: e.target.value }))}
             />
             <input
-              placeholder={t("casNumberPlaceholder")}
+              placeholder={t("casNumberPlaceholder")} aria-label={t("casNumberPlaceholder")}
               className="input"
               value={form.casNumber}
               onChange={(e) => setForm((f) => ({ ...f, casNumber: e.target.value }))}
@@ -154,7 +155,7 @@ export default function HazmatPage() {
       )}
 
       <input
-        placeholder={t("searchPlaceholder")}
+        placeholder={t("searchPlaceholder")} aria-label={t("searchPlaceholder")}
         className="input mt-4 max-w-sm"
         value={search}
         onChange={(e) => setSearch(e.target.value)}
@@ -200,19 +201,19 @@ export default function HazmatPage() {
                     <div className="mt-3 flex flex-col gap-2 border-t border-gray-100 dark:border-gray-700 pt-3">
                       <div className="flex flex-wrap items-end gap-2">
                         <input
-                          placeholder={t("versionPlaceholder")}
+                          placeholder={t("versionPlaceholder")} aria-label={t("versionPlaceholder")}
                           className="input w-28"
                           value={sdsForm.version}
                           onChange={(e) => setSdsForm((f) => ({ ...f, version: e.target.value }))}
                         />
-                        <input
+                        <input aria-label={ta("revisionDate")}
                           type="date"
                           className="input w-auto"
                           value={sdsForm.revisionDate}
                           onChange={(e) => setSdsForm((f) => ({ ...f, revisionDate: e.target.value }))}
                         />
                         <input
-                          placeholder={t("hazardClassificationPlaceholder")}
+                          placeholder={t("hazardClassificationPlaceholder")} aria-label={t("hazardClassificationPlaceholder")}
                           className="input flex-1"
                           value={sdsForm.hazardClassification}
                           onChange={(e) => setSdsForm((f) => ({ ...f, hazardClassification: e.target.value }))}

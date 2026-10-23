@@ -41,6 +41,7 @@ export function SubmittalsPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("submittals");
   const tc = useTranslations("common");
   const tb = useTranslations("bulk");
+  const ta = useTranslations("a11y");
   const bulk = useBulkSelection();
 
   const deepLinkedId = useDeepLinkedRow("submittal");
@@ -211,7 +212,7 @@ export function SubmittalsPanel({ projectId }: { projectId: string }) {
                 className={`card ${deepLinkedId === item.id ? "ring-2 ring-brand-300" : ""}`}
               >
                 <div className="flex w-full items-start gap-3">
-                  <input type="checkbox" className="mt-1" checked={bulk.selected.has(item.id)} onChange={() => bulk.toggle(item.id)} />
+                  <input aria-label={ta("selectItem", { name: item.title })} type="checkbox" className="mt-1" checked={bulk.selected.has(item.id)} onChange={() => bulk.toggle(item.id)} />
                   <CopyLinkButton url={buildItemDeepLink(projectId, "quality", "submittal", item.id)} />
                   <button
                     onClick={() => {
@@ -270,7 +271,7 @@ export function SubmittalsPanel({ projectId }: { projectId: string }) {
 
                     {item.status === "submitted" && (
                       <div className="flex flex-col gap-2">
-                        <select
+                        <select aria-label={ta("decision")}
                           className="input w-fit"
                           value={reviewDecision}
                           onChange={(e) => setReviewDecision(e.target.value as SubmittalReviewDecision)}
@@ -284,7 +285,7 @@ export function SubmittalsPanel({ projectId }: { projectId: string }) {
                         <textarea
                           rows={2}
                           className="input"
-                          placeholder={t("reviewCommentsPlaceholder")}
+                          placeholder={t("reviewCommentsPlaceholder")} aria-label={t("reviewCommentsPlaceholder")}
                           value={reviewComments}
                           onChange={(e) => setReviewComments(e.target.value)}
                         />

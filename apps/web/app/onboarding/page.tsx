@@ -6,7 +6,7 @@ import { useTranslations } from "next-intl";
 import { apiFetch, ApiError } from "@/lib/api-client";
 import { MEMBERSHIP_ROLES_MANAGEABLE } from "@cantero/shared";
 import { Alert } from "@/components/ui/alert";
-import { FormError } from "@/components/ui/field";
+import { Field, FormError } from "@/components/ui/field";
 
 type StepKey = "profile" | "catalog" | "invite" | "project" | "done";
 const STEPS: StepKey[] = ["profile", "catalog", "invite", "project", "done"];
@@ -55,6 +55,7 @@ const NAV_PRESETS: Record<ProfileKey, string[]> = {
 export default function OnboardingPage() {
   const t = useTranslations("onboarding");
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
   const router = useRouter();
   const [stepIndex, setStepIndex] = useState(0);
   const [finishing, setFinishing] = useState(false);
@@ -253,7 +254,7 @@ export default function OnboardingPage() {
             {inviteError && <Alert tone="danger" className="mt-3">{inviteError}</Alert>}
 
             <form onSubmit={sendInvite} className="mt-4 flex flex-wrap items-end gap-2">
-              <input
+              <input aria-label={tc("email")}
                 required
                 type="email"
                 placeholder={t("inviteEmailPlaceholder")}
@@ -261,7 +262,7 @@ export default function OnboardingPage() {
                 value={inviteForm.email}
                 onChange={(e) => setInviteForm((f) => ({ ...f, email: e.target.value }))}
               />
-              <select
+              <select aria-label={ta("role")}
                 className="input w-auto"
                 value={inviteForm.role}
                 onChange={(e) => setInviteForm((f) => ({ ...f, role: e.target.value }))}
@@ -296,24 +297,22 @@ export default function OnboardingPage() {
             {projectError && <Alert tone="danger" className="mt-4">{projectError}</Alert>}
 
             <form onSubmit={createFirstProject} className="mt-4 space-y-3">
-              <div>
-                <label className="mb-1 block text-sm font-medium text-fg-muted">{t("clientNameLabel")}</label>
+              <Field label={t("clientNameLabel")}>
                 <input
                   className="input"
                   placeholder={t("clientNamePlaceholder")}
                   value={clientName}
                   onChange={(e) => setClientName(e.target.value)}
                 />
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-medium text-fg-muted">{t("projectNameLabel")}</label>
+              </Field>
+              <Field label={t("projectNameLabel")}>
                 <input
                   className="input"
                   placeholder={t("projectNamePlaceholder")}
                   value={projectName}
                   onChange={(e) => setProjectName(e.target.value)}
                 />
-              </div>
+              </Field>
 
               <div className="flex justify-between pt-2">
                 <button type="button" onClick={() => setStepIndex(2)} className="text-sm text-fg-subtle hover:text-fg-muted">

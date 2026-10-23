@@ -490,20 +490,20 @@ export default function PortalDashboardPage() {
               </Field>
               <input
                 required
-                placeholder={t("claimTitlePlaceholder")}
+                placeholder={t("claimTitlePlaceholder")} aria-label={t("claimTitlePlaceholder")}
                 className="input"
                 value={claimForm.title}
                 onChange={(e) => setClaimForm((f) => ({ ...f, title: e.target.value }))}
               />
               <input
-                placeholder={t("locationPlaceholder")}
+                placeholder={t("locationPlaceholder")} aria-label={t("locationPlaceholder")}
                 className="input"
                 value={claimForm.location}
                 onChange={(e) => setClaimForm((f) => ({ ...f, location: e.target.value }))}
               />
               <textarea
                 rows={2}
-                placeholder={t("descriptionPlaceholder")}
+                placeholder={t("descriptionPlaceholder")} aria-label={t("descriptionPlaceholder")}
                 className="input"
                 value={claimForm.description}
                 onChange={(e) => setClaimForm((f) => ({ ...f, description: e.target.value }))}
@@ -560,7 +560,7 @@ export default function PortalDashboardPage() {
               </Field>
               <input
                 required
-                placeholder={t("changeRequestTitlePlaceholder")}
+                placeholder={t("changeRequestTitlePlaceholder")} aria-label={t("changeRequestTitlePlaceholder")}
                 className="input"
                 value={changeRequestForm.title}
                 onChange={(e) => setChangeRequestForm((f) => ({ ...f, title: e.target.value }))}
@@ -568,7 +568,7 @@ export default function PortalDashboardPage() {
               <textarea
                 required
                 rows={2}
-                placeholder={t("descriptionPlaceholder")}
+                placeholder={t("descriptionPlaceholder")} aria-label={t("descriptionPlaceholder")}
                 className="input"
                 value={changeRequestForm.description}
                 onChange={(e) => setChangeRequestForm((f) => ({ ...f, description: e.target.value }))}
@@ -609,7 +609,7 @@ export default function PortalDashboardPage() {
           <form onSubmit={submitTicket} className="flex flex-col gap-2">
             <input
               required
-              placeholder={t("ticketSubjectPlaceholder")}
+              placeholder={t("ticketSubjectPlaceholder")} aria-label={t("ticketSubjectPlaceholder")}
               className="input"
               value={ticketForm.subject}
               onChange={(e) => setTicketForm((f) => ({ ...f, subject: e.target.value }))}
@@ -617,7 +617,7 @@ export default function PortalDashboardPage() {
             <textarea
               required
               rows={2}
-              placeholder={t("ticketContentPlaceholder")}
+              placeholder={t("ticketContentPlaceholder")} aria-label={t("ticketContentPlaceholder")}
               className="input"
               value={ticketForm.content}
               onChange={(e) => setTicketForm((f) => ({ ...f, content: e.target.value }))}

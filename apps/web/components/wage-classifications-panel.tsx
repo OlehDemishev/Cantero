@@ -34,6 +34,7 @@ export function WageClassificationsPanel() {
   const t = useTranslations("wageClassifications");
   const confirm = useConfirm();
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
 
@@ -134,7 +135,7 @@ export function WageClassificationsPanel() {
                     </ul>
                   )}
                   <div className="flex flex-wrap items-center gap-1.5">
-                    <select className="input py-1 text-xs" value={fundForm.fundType} onChange={(e) => setFundForm((f) => ({ ...f, fundType: e.target.value as FringeFundType }))}>
+                    <select aria-label={ta("fundType")} className="input py-1 text-xs" value={fundForm.fundType} onChange={(e) => setFundForm((f) => ({ ...f, fundType: e.target.value as FringeFundType }))}>
                       {FRINGE_FUND_TYPES.map((ft) => (
                         <option key={ft} value={ft}>
                           {t(`fundType_${ft}`)}
@@ -142,7 +143,7 @@ export function WageClassificationsPanel() {
                       ))}
                     </select>
                     <input
-                      placeholder={t("fundNamePlaceholder")}
+                      placeholder={t("fundNamePlaceholder")} aria-label={t("fundNamePlaceholder")}
                       className="input py-1 text-xs"
                       value={fundForm.name}
                       onChange={(e) => setFundForm((f) => ({ ...f, name: e.target.value }))}
@@ -151,7 +152,7 @@ export function WageClassificationsPanel() {
                       type="number"
                       step="0.01"
                       min="0"
-                      placeholder={t("fringeRatePlaceholder")}
+                      placeholder={t("fringeRatePlaceholder")} aria-label={t("fringeRatePlaceholder")}
                       className="input w-24 py-1 text-xs"
                       value={fundForm.ratePerHour}
                       onChange={(e) => setFundForm((f) => ({ ...f, ratePerHour: e.target.value }))}
@@ -170,7 +171,7 @@ export function WageClassificationsPanel() {
       <form onSubmit={create} className="flex flex-wrap items-end gap-2 border-t border-gray-100 pt-3 dark:border-gray-800">
         <input
           required
-          placeholder={t("tradePlaceholder")}
+          placeholder={t("tradePlaceholder")} aria-label={t("tradePlaceholder")}
           className="input"
           value={form.trade}
           onChange={(e) => setForm((f) => ({ ...f, trade: e.target.value }))}
@@ -180,7 +181,7 @@ export function WageClassificationsPanel() {
           type="number"
           step="0.01"
           min="0"
-          placeholder={t("hourlyRatePlaceholder")}
+          placeholder={t("hourlyRatePlaceholder")} aria-label={t("hourlyRatePlaceholder")}
           className="input w-32"
           value={form.hourlyRate}
           onChange={(e) => setForm((f) => ({ ...f, hourlyRate: e.target.value }))}
@@ -189,13 +190,13 @@ export function WageClassificationsPanel() {
           type="number"
           step="0.01"
           min="0"
-          placeholder={t("fringeRatePlaceholder")}
+          placeholder={t("fringeRatePlaceholder")} aria-label={t("fringeRatePlaceholder")}
           className="input w-32"
           value={form.fringeRate}
           onChange={(e) => setForm((f) => ({ ...f, fringeRate: e.target.value }))}
         />
         <input
-          placeholder={t("apprenticeRatioPlaceholder")}
+          placeholder={t("apprenticeRatioPlaceholder")} aria-label={t("apprenticeRatioPlaceholder")}
           className="input w-28"
           value={form.apprenticeRatio}
           onChange={(e) => setForm((f) => ({ ...f, apprenticeRatio: e.target.value }))}

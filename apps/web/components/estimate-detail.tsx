@@ -106,6 +106,7 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
   const t = useTranslations("estimates");
   const confirm = useConfirm();
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
   const router = useRouter();
   const { data: me } = useMe();
 
@@ -495,7 +496,7 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
           {estimate.status === "draft" && (
             <form onSubmit={addLine} className="mt-4 flex flex-col gap-2">
               <div className="flex flex-wrap items-end gap-2">
-                <select
+                <select aria-label={t("rateItem")}
                   className="input"
                   value={newLine.rateCatalogItemId}
                   onChange={(e) => {
@@ -512,7 +513,7 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
                   ))}
                 </select>
                 {!selectedRateItem?.formula && (
-                  <input
+                  <input aria-label={t("quantity")}
                     type="number"
                     step="0.01"
                     min="0.01"
@@ -522,7 +523,7 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
                   />
                 )}
                 {costCodes.length > 0 && (
-                  <select
+                  <select aria-label={ta("costCode")}
                     className="input w-auto"
                     value={newLine.costCodeId}
                     onChange={(e) => setNewLine((l) => ({ ...l, costCodeId: e.target.value }))}
@@ -593,7 +594,7 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
 
               {warehouses.length > 0 && (
                 <div className="mt-4 flex items-end gap-2">
-                  <select className="input w-auto" value={issueWarehouseId} onChange={(e) => setIssueWarehouseId(e.target.value)}>
+                  <select aria-label={ta("warehouse")} className="input w-auto" value={issueWarehouseId} onChange={(e) => setIssueWarehouseId(e.target.value)}>
                     {warehouses.map((w) => (
                       <option key={w.id} value={w.id}>
                         {w.name}
@@ -697,7 +698,7 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
               <textarea
                 className="input mt-2 w-full"
                 rows={4}
-                placeholder={t("coverLetterPlaceholder")}
+                placeholder={t("coverLetterPlaceholder")} aria-label={t("coverLetterPlaceholder")}
                 value={coverLetterDraft}
                 onChange={(e) => setCoverLetterDraft(e.target.value)}
               />
@@ -717,7 +718,7 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
             <div className="mt-4 border-t border-gray-100 dark:border-gray-700 pt-4">
               <span className="text-xs font-medium text-fg-subtle">{t("clientLink")}</span>
               <div className="mt-2 flex items-center gap-2">
-                {clientLink && <input readOnly className="input flex-1 text-xs" value={clientLink} />}
+                {clientLink && <input aria-label={t("clientLink")} readOnly className="input flex-1 text-xs" value={clientLink} />}
                 <button onClick={copyLink} className="btn-secondary shrink-0 px-3 py-1 text-xs">
                   {linkCopied ? tc("saved") : t("copyLink")}
                 </button>
@@ -734,7 +735,7 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
             <span className="text-xs font-medium text-fg-subtle">{t("saveAsTemplate")}</span>
             <input
               required
-              placeholder={t("templateName")}
+              placeholder={t("templateName")} aria-label={t("templateName")}
               className="input"
               value={templateName}
               onChange={(e) => {

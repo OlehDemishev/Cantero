@@ -36,6 +36,7 @@ export function DocumentsPanel({
   const t = useTranslations("documents");
   const confirm = useConfirm();
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
   const [busy, setBusy] = useState(false);
   const [category, setCategory] = useState<DocumentCategory>("other");
   const [newTags, setNewTags] = useState("");
@@ -195,13 +196,13 @@ export function DocumentsPanel({
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <input
           className="input w-auto"
-          placeholder={t("searchPlaceholder")}
+          placeholder={t("searchPlaceholder")} aria-label={t("searchPlaceholder")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
         <input
           className="input w-auto"
-          placeholder={t("tagFilterPlaceholder")}
+          placeholder={t("tagFilterPlaceholder")} aria-label={t("tagFilterPlaceholder")}
           value={tagFilter}
           onChange={(e) => setTagFilter(e.target.value)}
         />
@@ -259,7 +260,7 @@ export function DocumentsPanel({
                 <div className="mt-2 flex items-center gap-2 border-t border-gray-100 dark:border-gray-700 pt-2">
                   <input
                     className="input flex-1 text-xs"
-                    placeholder={t("tagsPlaceholder")}
+                    placeholder={t("tagsPlaceholder")} aria-label={t("tagsPlaceholder")}
                     value={tagsDraft}
                     onChange={(e) => setTagsDraft(e.target.value)}
                   />
@@ -276,7 +277,7 @@ export function DocumentsPanel({
                   <ul className="flex flex-col gap-1">
                     {versions.map((v) => (
                       <li key={v.id} className="flex items-center gap-2 text-xs text-fg-subtle">
-                        <input
+                        <input aria-label={ta("fieldOf", { field: ta("compare"), item: t("version", { n: v.version }) })}
                           type="checkbox"
                           checked={compareIds.includes(v.id)}
                           onChange={() => toggleCompareId(v.id)}
@@ -306,7 +307,7 @@ export function DocumentsPanel({
       )}
 
       <div className="mt-3 flex flex-wrap items-center gap-2">
-        <select
+        <select aria-label={t("category")}
           className="input w-auto"
           value={category}
           onChange={(e) => setCategory(e.target.value as DocumentCategory)}
@@ -319,7 +320,7 @@ export function DocumentsPanel({
         </select>
         <input
           className="input w-auto"
-          placeholder={t("tagsPlaceholder")}
+          placeholder={t("tagsPlaceholder")} aria-label={t("tagsPlaceholder")}
           value={newTags}
           onChange={(e) => setNewTags(e.target.value)}
         />

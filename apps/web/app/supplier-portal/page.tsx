@@ -37,6 +37,7 @@ interface PurchaseOrder {
 
 export default function SupplierPortalDashboardPage() {
   const t = useTranslations("supplierPortal");
+  const ta = useTranslations("a11y");
   const router = useRouter();
 
   const [me, setMe] = useState<Me | null>(null);
@@ -162,7 +163,7 @@ export default function SupplierPortalDashboardPage() {
                     ) : po.status !== "draft" ? (
                       <div className="mt-2 flex flex-col gap-1.5 border-t border-gray-100 dark:border-gray-700 pt-2">
                         <div className="flex gap-2">
-                          <input
+                          <input aria-label={ta("expectedDeliveryDate")}
                             type="date"
                             className="input"
                             value={form.eta}
@@ -170,7 +171,7 @@ export default function SupplierPortalDashboardPage() {
                           />
                           <input
                             className="input flex-1"
-                            placeholder={t("notePlaceholder")}
+                            placeholder={t("notePlaceholder")} aria-label={t("notePlaceholder")}
                             value={form.note}
                             onChange={(e) => setAckForms((f) => ({ ...f, [po.id]: { ...form, note: e.target.value } }))}
                           />

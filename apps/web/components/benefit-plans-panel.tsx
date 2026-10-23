@@ -28,6 +28,7 @@ interface Plan {
 
 export function BenefitPlansPanel() {
   const t = useTranslations("benefits");
+  const ta = useTranslations("a11y");
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
 
@@ -80,12 +81,12 @@ export function BenefitPlansPanel() {
       <form onSubmit={createPlan} className="mb-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-end">
         <input
           required
-          placeholder={t("planNamePlaceholder")}
+          placeholder={t("planNamePlaceholder")} aria-label={t("planNamePlaceholder")}
           className="input"
           value={form.name}
           onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
         />
-        <select className="input" value={form.type} onChange={(e) => setForm((f) => ({ ...f, type: e.target.value as BenefitPlanType }))}>
+        <select aria-label={ta("type")} className="input" value={form.type} onChange={(e) => setForm((f) => ({ ...f, type: e.target.value as BenefitPlanType }))}>
           {BENEFIT_PLAN_TYPES.map((type) => (
             <option key={type} value={type}>
               {t(`planType_${type}`)}
@@ -93,7 +94,7 @@ export function BenefitPlansPanel() {
           ))}
         </select>
         <input
-          placeholder={t("carrierPlaceholder")}
+          placeholder={t("carrierPlaceholder")} aria-label={t("carrierPlaceholder")}
           className="input"
           value={form.carrier}
           onChange={(e) => setForm((f) => ({ ...f, carrier: e.target.value }))}
@@ -128,7 +129,7 @@ export function BenefitPlansPanel() {
               )}
               <div className="mt-2 flex flex-wrap items-end gap-2">
                 <input
-                  placeholder={t("tierNamePlaceholder")}
+                  placeholder={t("tierNamePlaceholder")} aria-label={t("tierNamePlaceholder")}
                   className="input w-auto"
                   value={tierForms[plan.id]?.name ?? ""}
                   onChange={(e) => setTierForms((f) => ({ ...f, [plan.id]: { name: e.target.value, monthlyEmployerCost: f[plan.id]?.monthlyEmployerCost ?? "", monthlyEmployeeCost: f[plan.id]?.monthlyEmployeeCost ?? "" } }))}
@@ -136,7 +137,7 @@ export function BenefitPlansPanel() {
                 <input
                   type="number"
                   step="0.01"
-                  placeholder={t("employerCost")}
+                  placeholder={t("employerCost")} aria-label={t("employerCost")}
                   className="input w-28"
                   value={tierForms[plan.id]?.monthlyEmployerCost ?? ""}
                   onChange={(e) => setTierForms((f) => ({ ...f, [plan.id]: { name: f[plan.id]?.name ?? "", monthlyEmployerCost: e.target.value, monthlyEmployeeCost: f[plan.id]?.monthlyEmployeeCost ?? "" } }))}
@@ -144,7 +145,7 @@ export function BenefitPlansPanel() {
                 <input
                   type="number"
                   step="0.01"
-                  placeholder={t("employeeCost")}
+                  placeholder={t("employeeCost")} aria-label={t("employeeCost")}
                   className="input w-28"
                   value={tierForms[plan.id]?.monthlyEmployeeCost ?? ""}
                   onChange={(e) => setTierForms((f) => ({ ...f, [plan.id]: { name: f[plan.id]?.name ?? "", monthlyEmployerCost: f[plan.id]?.monthlyEmployerCost ?? "", monthlyEmployeeCost: e.target.value } }))}

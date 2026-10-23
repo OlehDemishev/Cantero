@@ -60,6 +60,7 @@ interface LineDraft {
 export function MaterialRfqsPanel() {
   const t = useTranslations("materialRfqs");
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
 
@@ -191,12 +192,12 @@ export function MaterialRfqsPanel() {
           <div className="flex gap-3">
             <input
               required
-              placeholder={t("rfqTitlePlaceholder")}
+              placeholder={t("rfqTitlePlaceholder")} aria-label={t("rfqTitlePlaceholder")}
               className="input flex-1"
               value={form.title}
               onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
             />
-            <select className="input w-auto" value={form.projectId} onChange={(e) => setForm((f) => ({ ...f, projectId: e.target.value }))}>
+            <select aria-label={ta("project")} className="input w-auto" value={form.projectId} onChange={(e) => setForm((f) => ({ ...f, projectId: e.target.value }))}>
               <option value="">{t("companyWide")}</option>
               {projects.map((p) => (
                 <option key={p.id} value={p.id}>
@@ -208,7 +209,7 @@ export function MaterialRfqsPanel() {
           <div className="flex flex-col gap-2">
             {lines.map((line, i) => (
               <div key={i} className="flex items-center gap-2">
-                <select
+                <select aria-label={ta("material")}
                   className="input flex-1"
                   value={line.materialCatalogItemId}
                   onChange={(e) => updateLine(i, "materialCatalogItemId", e.target.value)}
@@ -219,7 +220,7 @@ export function MaterialRfqsPanel() {
                     </option>
                   ))}
                 </select>
-                <input
+                <input aria-label={ta("quantity")}
                   type="number"
                   step="0.01"
                   min="0.01"
@@ -300,7 +301,7 @@ export function MaterialRfqsPanel() {
                         )}
                         {detail.status === "open" && (
                           <div className="mt-1.5 flex items-center gap-1.5">
-                            <select
+                            <select aria-label={ta("supplier")}
                               className="input py-1 text-xs"
                               value={quoteForms[line.id]?.supplierId ?? ""}
                               onChange={(e) => setQuoteForms((f) => ({ ...f, [line.id]: { ...f[line.id], supplierId: e.target.value, unitPrice: f[line.id]?.unitPrice ?? "" } }))}
@@ -316,7 +317,7 @@ export function MaterialRfqsPanel() {
                               type="number"
                               step="0.0001"
                               min="0"
-                              placeholder={t("unitPricePlaceholder")}
+                              placeholder={t("unitPricePlaceholder")} aria-label={t("unitPricePlaceholder")}
                               className="input w-24 py-1 text-xs"
                               value={quoteForms[line.id]?.unitPrice ?? ""}
                               onChange={(e) => setQuoteForms((f) => ({ ...f, [line.id]: { ...f[line.id], unitPrice: e.target.value, supplierId: f[line.id]?.supplierId ?? "" } }))}

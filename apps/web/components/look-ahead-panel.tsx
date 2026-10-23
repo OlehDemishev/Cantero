@@ -167,7 +167,7 @@ export function LookAheadPanel({ projectId }: { projectId: string }) {
                             <div className="mt-2 flex items-end gap-1.5">
                               <input
                                 required
-                                placeholder={t("varianceReasonPlaceholder")}
+                                placeholder={t("varianceReasonPlaceholder")} aria-label={t("varianceReasonPlaceholder")}
                                 className="input py-1 text-xs"
                                 value={varianceReason}
                                 onChange={(e) => setVarianceReason(e.target.value)}

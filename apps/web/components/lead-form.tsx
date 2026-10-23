@@ -110,27 +110,27 @@ export function LeadForm({ token }: { token: string }) {
             <form onSubmit={submit} className="mt-4 flex flex-col gap-3">
               <input
                 required
-                placeholder={t("namePlaceholder")}
+                placeholder={t("namePlaceholder")} aria-label={t("namePlaceholder")}
                 className="input"
                 value={form.name}
                 onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
               />
               <input
                 type="email"
-                placeholder={t("emailPlaceholder")}
+                placeholder={t("emailPlaceholder")} aria-label={t("emailPlaceholder")}
                 className="input"
                 value={form.email}
                 onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
               />
               <input
-                placeholder={t("phonePlaceholder")}
+                placeholder={t("phonePlaceholder")} aria-label={t("phonePlaceholder")}
                 className="input"
                 value={form.phone}
                 onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
               />
               <textarea
                 rows={3}
-                placeholder={t("messagePlaceholder")}
+                placeholder={t("messagePlaceholder")} aria-label={t("messagePlaceholder")}
                 className="input"
                 value={form.message}
                 onChange={(e) => setForm((f) => ({ ...f, message: e.target.value }))}

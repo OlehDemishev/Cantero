@@ -85,7 +85,7 @@ export function MessageTemplatesPanel() {
             </p>
             <textarea
               className="input mt-2 h-20 text-xs"
-              placeholder={t("placeholder")}
+              placeholder={t("placeholder")} aria-label={t("placeholder")}
               value={drafts[entry.key] ?? ""}
               onChange={(e) => setDrafts((d) => ({ ...d, [entry.key]: e.target.value }))}
             />

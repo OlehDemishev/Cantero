@@ -106,7 +106,7 @@ export function ScheduledReportsPanel() {
         <form onSubmit={createScheduledReport} className="flex flex-col gap-3">
           <input
             required
-            placeholder={t("scheduleName")}
+            placeholder={t("scheduleName")} aria-label={t("scheduleName")}
             className="input"
             value={scheduleForm.name}
             onChange={(e) => setScheduleForm((f) => ({ ...f, name: e.target.value }))}

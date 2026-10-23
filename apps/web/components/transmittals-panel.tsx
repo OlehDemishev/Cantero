@@ -36,6 +36,7 @@ interface DraftItem {
 export function TransmittalsPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("transmittals");
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
 
   const { data: transmittals = null, reload: reloadTransmittals, error: transmittalsError } = useApi<Transmittal[]>(`/projects/${projectId}/transmittals`);
   const [adding, setAdding] = useState(false);
@@ -108,18 +109,18 @@ export function TransmittalsPanel({ projectId }: { projectId: string }) {
           <div className="flex flex-wrap gap-2">
             <input
               required
-              placeholder={t("recipientNamePlaceholder")}
+              placeholder={t("recipientNamePlaceholder")} aria-label={t("recipientNamePlaceholder")}
               className="input flex-1"
               value={form.recipientName}
               onChange={(e) => setForm((f) => ({ ...f, recipientName: e.target.value }))}
             />
             <input
-              placeholder={t("recipientCompanyPlaceholder")}
+              placeholder={t("recipientCompanyPlaceholder")} aria-label={t("recipientCompanyPlaceholder")}
               className="input flex-1"
               value={form.recipientCompany}
               onChange={(e) => setForm((f) => ({ ...f, recipientCompany: e.target.value }))}
             />
-            <select className="input" value={form.method} onChange={(e) => setForm((f) => ({ ...f, method: e.target.value as TransmittalMethod }))}>
+            <select aria-label={ta("method")} className="input" value={form.method} onChange={(e) => setForm((f) => ({ ...f, method: e.target.value as TransmittalMethod }))}>
               {TRANSMITTAL_METHODS.map((m) => (
                 <option key={m} value={m}>
                   {t(`method_${m}`)}
@@ -128,7 +129,7 @@ export function TransmittalsPanel({ projectId }: { projectId: string }) {
             </select>
           </div>
           <input
-            placeholder={t("purposePlaceholder")}
+            placeholder={t("purposePlaceholder")} aria-label={t("purposePlaceholder")}
             className="input"
             value={form.purpose}
             onChange={(e) => setForm((f) => ({ ...f, purpose: e.target.value }))}
@@ -142,13 +143,13 @@ export function TransmittalsPanel({ projectId }: { projectId: string }) {
           </div>
           {items.map((item, i) => (
             <div key={i} className="flex gap-2">
-              <input
+              <input aria-label={tc("description")}
                 placeholder={t("itemDescriptionPlaceholder")}
                 className="input flex-1"
                 value={item.description}
                 onChange={(e) => setItems((its) => its.map((it, j) => (j === i ? { ...it, description: e.target.value } : it)))}
               />
-              <input
+              <input aria-label={ta("quantity")}
                 type="number"
                 min="1"
                 className="input w-20"
@@ -202,7 +203,7 @@ export function TransmittalsPanel({ projectId }: { projectId: string }) {
               ) : ackingId === tr.id ? (
                 <div className="mt-2 flex items-center gap-2">
                   <input
-                    placeholder={t("acknowledgedByPlaceholder")}
+                    placeholder={t("acknowledgedByPlaceholder")} aria-label={t("acknowledgedByPlaceholder")}
                     className="input flex-1 py-1 text-xs"
                     value={ackName}
                     onChange={(e) => setAckName(e.target.value)}

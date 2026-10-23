@@ -198,7 +198,7 @@ export function DrawRequestsPanel({ projectId }: { projectId: string }) {
                 {draw.lenderName ? ` · ${draw.lenderName}` : ""}
               </p>
               <div className="mt-2 flex flex-wrap items-center gap-2">
-                <select
+                <select aria-label={tc("status")}
                   className="input w-auto py-1 text-xs"
                   value={draw.status}
                   onChange={(e) => changeStatus(draw.id, e.target.value as DrawRequestStatus)}

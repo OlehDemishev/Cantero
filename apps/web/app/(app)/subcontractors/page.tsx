@@ -42,6 +42,7 @@ const CURRENT_YEAR = new Date().getFullYear();
 export default function SubcontractorsPage() {
   const t = useTranslations("subcontractorCompliance");
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
   const { data: me } = useMe();
   const isUsCompany = me?.company.country === "US";
 
@@ -122,9 +123,9 @@ export default function SubcontractorsPage() {
       <div className="mt-6 card max-w-md">
         <h2 className="mb-4 text-sm font-semibold text-fg-muted">{t("newSubcontractor")}</h2>
         <form onSubmit={createSubcontractor} className="flex flex-col gap-3">
-          <input required placeholder={tc("name")} className="input" value={newForm.name} onChange={(e) => setNewForm((f) => ({ ...f, name: e.target.value }))} />
-          <input type="email" placeholder={tc("email")} className="input" value={newForm.email} onChange={(e) => setNewForm((f) => ({ ...f, email: e.target.value }))} />
-          <input placeholder={tc("phone")} className="input" value={newForm.phone} onChange={(e) => setNewForm((f) => ({ ...f, phone: e.target.value }))} />
+          <input required placeholder={tc("name")} aria-label={tc("name")} className="input" value={newForm.name} onChange={(e) => setNewForm((f) => ({ ...f, name: e.target.value }))} />
+          <input type="email" placeholder={tc("email")} aria-label={tc("email")} className="input" value={newForm.email} onChange={(e) => setNewForm((f) => ({ ...f, email: e.target.value }))} />
+          <input placeholder={tc("phone")} aria-label={tc("phone")} className="input" value={newForm.phone} onChange={(e) => setNewForm((f) => ({ ...f, phone: e.target.value }))} />
           <button type="submit" disabled={busy} className="btn-primary self-start">
             {tc("create")}
           </button>
@@ -149,7 +150,7 @@ export default function SubcontractorsPage() {
         <div className="mt-8 card">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-sm font-semibold text-fg-muted">{t("taxSummaryTitle")}</h2>
-            <select
+            <select aria-label={ta("year")}
               className="input w-auto"
               value={taxSummaryYear}
               onChange={(e) => {

@@ -21,6 +21,7 @@ interface DrawingSheetVersion {
 export function DrawingRevisionsPanel({ sheetId, onSuperseded }: { sheetId: string; onSuperseded: (newSheetId: string) => void }) {
   const t = useTranslations("drawings");
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
 
   const { data: versions = null, error: versionsError, reload: reloadVersions } = useApi<DrawingSheetVersion[]>(`/drawing-sheets/${sheetId}/versions`);
   const [revision, setRevision] = useState("");
@@ -76,8 +77,8 @@ export function DrawingRevisionsPanel({ sheetId, onSuperseded }: { sheetId: stri
       )}
 
       <form onSubmit={uploadRevision} className="flex flex-wrap items-end gap-2">
-        <input placeholder={t("revisionPlaceholder")} className="input w-24" value={revision} onChange={(e) => setRevision(e.target.value)} />
-        <input type="date" className="input" value={revisionDate} onChange={(e) => setRevisionDate(e.target.value)} />
+        <input placeholder={t("revisionPlaceholder")} aria-label={t("revisionPlaceholder")} className="input w-24" value={revision} onChange={(e) => setRevision(e.target.value)} />
+        <input aria-label={ta("revisionDate")} type="date" className="input" value={revisionDate} onChange={(e) => setRevisionDate(e.target.value)} />
         <input ref={fileInputRef} type="file" accept="application/pdf,image/*" className="hidden" />
         <button type="button" onClick={() => fileInputRef.current?.click()} className="btn-secondary shrink-0">
           {tc("chooseFile")}

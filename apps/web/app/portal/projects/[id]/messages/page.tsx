@@ -113,7 +113,7 @@ export default function PortalProjectMessagesPage({ params }: { params: Promise<
               required
               rows={2}
               className="input flex-1"
-              placeholder={t("messagePlaceholder")}
+              placeholder={t("messagePlaceholder")} aria-label={t("messagePlaceholder")}
               value={content}
               onChange={(e) => setContent(e.target.value)}
             />

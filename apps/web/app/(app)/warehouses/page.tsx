@@ -92,13 +92,13 @@ export default function WarehousesPage() {
             <input
               required
               autoFocus
-              placeholder={tc("name")}
+              placeholder={tc("name")} aria-label={tc("name")}
               className="input"
               value={form.name}
               onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
             />
             <input
-              placeholder={t("address")}
+              placeholder={t("address")} aria-label={t("address")}
               className="input"
               value={form.address}
               onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))}

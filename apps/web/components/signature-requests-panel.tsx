@@ -137,7 +137,7 @@ export function SignatureRequestsPanel({ documents }: { documents: DocumentOptio
                 <input
                   required
                   className="input flex-1"
-                  placeholder={t("signerName")}
+                  placeholder={t("signerName")} aria-label={t("signerName")}
                   value={s.name}
                   onChange={(e) => setSigners((arr) => arr.map((row, j) => (j === i ? { ...row, name: e.target.value } : row)))}
                 />
@@ -145,7 +145,7 @@ export function SignatureRequestsPanel({ documents }: { documents: DocumentOptio
                   required
                   type="email"
                   className="input flex-1"
-                  placeholder={t("signerEmail")}
+                  placeholder={t("signerEmail")} aria-label={t("signerEmail")}
                   value={s.email}
                   onChange={(e) => setSigners((arr) => arr.map((row, j) => (j === i ? { ...row, email: e.target.value } : row)))}
                 />

@@ -36,6 +36,7 @@ export default function BenefitsPage() {
   const t = useTranslations("benefits");
   const tc = useTranslations("common");
   const tl = useTranslations("labels");
+  const ta = useTranslations("a11y");
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
   const isManager = useCan()("hr.payroll");
@@ -116,14 +117,14 @@ export default function BenefitsPage() {
           />
         ) : (
           <form onSubmit={enroll} className="flex flex-col gap-2">
-            <select className="input" value={form.workerId} onChange={(e) => setForm((f) => ({ ...f, workerId: e.target.value }))}>
+            <select aria-label={ta("worker")} className="input" value={form.workerId} onChange={(e) => setForm((f) => ({ ...f, workerId: e.target.value }))}>
               {workers.map((w) => (
                 <option key={w.id} value={w.id}>
                   {w.name}
                 </option>
               ))}
             </select>
-            <select
+            <select aria-label={ta("plan")}
               className="input"
               value={form.planId}
               onChange={(e) => {
@@ -137,7 +138,7 @@ export default function BenefitsPage() {
                 </option>
               ))}
             </select>
-            <select className="input" value={form.tierId} onChange={(e) => setForm((f) => ({ ...f, tierId: e.target.value }))}>
+            <select aria-label={ta("tier")} className="input" value={form.tierId} onChange={(e) => setForm((f) => ({ ...f, tierId: e.target.value }))}>
               {selectedPlan?.tiers.map((tier) => (
                 <option key={tier.id} value={tier.id}>
                   {tier.name} ({tl("perMonth", { amount: formatCurrency(tier.monthlyEmployeeCost, currency) })})

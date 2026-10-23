@@ -33,6 +33,7 @@ interface HrCaseDetail extends HrCase {
 export function WorkerHrCasesPanel({ workerId }: { workerId: string }) {
   const tc = useTranslations("common");
   const th = useTranslations("hrCases");
+  const ta = useTranslations("a11y");
 
   const { data: hrCases = null, reload: reloadHrCases, error: hrCasesError } = useApi<HrCase[]>(`/workers/${workerId}/hr-cases`);
   const [hrCaseExpandedId, setHrCaseExpandedId] = useState<string | null>(null);
@@ -115,7 +116,7 @@ export function WorkerHrCasesPanel({ workerId }: { workerId: string }) {
 
       {addingHrCase && (
         <form onSubmit={openHrCase} className="card mb-3 flex flex-col gap-2">
-          <select className="input" value={hrCaseForm.category} onChange={(e) => setHrCaseForm((f) => ({ ...f, category: e.target.value as HrCaseCategory }))}>
+          <select aria-label={ta("category")} className="input" value={hrCaseForm.category} onChange={(e) => setHrCaseForm((f) => ({ ...f, category: e.target.value as HrCaseCategory }))}>
             {HR_CASE_CATEGORIES.map((c) => (
               <option key={c} value={c}>
                 {th(`category_${c}`)}
@@ -125,7 +126,7 @@ export function WorkerHrCasesPanel({ workerId }: { workerId: string }) {
           <textarea
             required
             rows={2}
-            placeholder={th("descriptionPlaceholder")}
+            placeholder={th("descriptionPlaceholder")} aria-label={th("descriptionPlaceholder")}
             className="input"
             value={hrCaseForm.description}
             onChange={(e) => setHrCaseForm((f) => ({ ...f, description: e.target.value }))}
@@ -181,7 +182,7 @@ export function WorkerHrCasesPanel({ workerId }: { workerId: string }) {
                       ))}
                     </ul>
                     <div className="flex flex-wrap items-end gap-2">
-                      <select
+                      <select aria-label={ta("actionType")}
                         className="input w-auto"
                         value={hrActionForm.type}
                         onChange={(e) => setHrActionForm((f) => ({ ...f, type: e.target.value as HrCaseActionType }))}
@@ -193,7 +194,7 @@ export function WorkerHrCasesPanel({ workerId }: { workerId: string }) {
                         ))}
                       </select>
                       <input
-                        placeholder={th("actionDescriptionPlaceholder")}
+                        placeholder={th("actionDescriptionPlaceholder")} aria-label={th("actionDescriptionPlaceholder")}
                         className="input flex-1"
                         value={hrActionForm.description}
                         onChange={(e) => setHrActionForm((f) => ({ ...f, description: e.target.value }))}

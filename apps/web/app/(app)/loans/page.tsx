@@ -52,6 +52,7 @@ export default function LoansPage() {
   const t = useTranslations("loans");
   const tc = useTranslations("common");
   const tl = useTranslations("labels");
+  const ta = useTranslations("a11y");
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
 
@@ -155,12 +156,12 @@ export default function LoansPage() {
         <form onSubmit={createLoan} className="card mt-4 flex max-w-lg flex-col gap-2">
           <input
             required
-            placeholder={t("lenderNamePlaceholder")}
+            placeholder={t("lenderNamePlaceholder")} aria-label={t("lenderNamePlaceholder")}
             className="input"
             value={form.lenderName}
             onChange={(e) => setForm((f) => ({ ...f, lenderName: e.target.value }))}
           />
-          <select className="input" value={form.equipmentId} onChange={(e) => setForm((f) => ({ ...f, equipmentId: e.target.value }))}>
+          <select aria-label={ta("equipment")} className="input" value={form.equipmentId} onChange={(e) => setForm((f) => ({ ...f, equipmentId: e.target.value }))}>
             <option value="">{t("noLinkedEquipment")}</option>
             {equipment.map((eq) => (
               <option key={eq.id} value={eq.id}>
@@ -174,7 +175,7 @@ export default function LoansPage() {
               type="number"
               step="0.01"
               min="0"
-              placeholder={t("principalPlaceholder", { currency })}
+              placeholder={t("principalPlaceholder", { currency })} aria-label={t("principalPlaceholder", { currency })}
               className="input w-40"
               value={form.principal}
               onChange={(e) => setForm((f) => ({ ...f, principal: e.target.value }))}
@@ -184,7 +185,7 @@ export default function LoansPage() {
               step="0.01"
               min="0"
               max="100"
-              placeholder={t("interestRatePlaceholder")}
+              placeholder={t("interestRatePlaceholder")} aria-label={t("interestRatePlaceholder")}
               className="input w-32"
               value={form.interestRatePercent}
               onChange={(e) => setForm((f) => ({ ...f, interestRatePercent: e.target.value }))}
@@ -193,7 +194,7 @@ export default function LoansPage() {
               required
               type="number"
               min="1"
-              placeholder={t("termMonthsPlaceholder")}
+              placeholder={t("termMonthsPlaceholder")} aria-label={t("termMonthsPlaceholder")}
               className="input w-32"
               value={form.termMonths}
               onChange={(e) => setForm((f) => ({ ...f, termMonths: e.target.value }))}

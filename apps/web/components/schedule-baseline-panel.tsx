@@ -86,7 +86,7 @@ export function ScheduleBaselinePanel({ projectId }: { projectId: string }) {
 
       {adding && (
         <form onSubmit={create} className="card mb-3 flex flex-wrap items-end gap-2">
-          <input required placeholder={t("namePlaceholder")} className="input flex-1" value={name} onChange={(e) => setName(e.target.value)} />
+          <input required placeholder={t("namePlaceholder")} aria-label={t("namePlaceholder")} className="input flex-1" value={name} onChange={(e) => setName(e.target.value)} />
           <button type="submit" disabled={busy} className="btn-primary">
             {tc("save")}
           </button>

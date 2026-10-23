@@ -98,6 +98,7 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
   const { id } = use(params);
   const t = useTranslations("equipment");
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
 
@@ -350,7 +351,7 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
           <h2 className="mb-3 text-sm font-semibold text-fg-muted">{tc("actions")}</h2>
           {equipment.status === "available" && (
             <form onSubmit={checkOut} className="flex flex-col gap-3">
-              <select
+              <select aria-label={ta("project")}
                 className="input"
                 value={checkOutForm.projectId}
                 onChange={(e) => setCheckOutForm((f) => ({ ...f, projectId: e.target.value }))}
@@ -362,7 +363,7 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
                   </option>
                 ))}
               </select>
-              <select
+              <select aria-label={ta("worker")}
                 className="input"
                 value={checkOutForm.workerId}
                 onChange={(e) => setCheckOutForm((f) => ({ ...f, workerId: e.target.value }))}
@@ -423,7 +424,7 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
               <span className="text-xs font-semibold uppercase tracking-wide text-fg-subtle">{t("rentOutToThirdParty")}</span>
               <input
                 required
-                placeholder={t("renterNamePlaceholder")}
+                placeholder={t("renterNamePlaceholder")} aria-label={t("renterNamePlaceholder")}
                 className="input"
                 value={rentalForm.renterName}
                 onChange={(e) => setRentalForm((f) => ({ ...f, renterName: e.target.value }))}
@@ -434,12 +435,12 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
                   type="number"
                   step="0.01"
                   min="0"
-                  placeholder={t("dailyRatePlaceholder", { currency })}
+                  placeholder={t("dailyRatePlaceholder", { currency })} aria-label={t("dailyRatePlaceholder", { currency })}
                   className="input w-40"
                   value={rentalForm.dailyRate}
                   onChange={(e) => setRentalForm((f) => ({ ...f, dailyRate: e.target.value }))}
                 />
-                <input
+                <input aria-label={ta("expectedReturnDate")}
                   type="date"
                   className="input w-auto"
                   value={rentalForm.expectedReturnDate}
@@ -578,7 +579,7 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
                 </p>
               )}
               <form onSubmit={saveDepreciationSchedule} className="flex flex-wrap items-end gap-2">
-                <select
+                <select aria-label={ta("depreciationMethod")}
                   className="input"
                   value={depreciationForm.method}
                   onChange={(e) => setDepreciationForm((f) => ({ ...f, method: e.target.value as DepreciationMethod }))}
@@ -634,7 +635,7 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
                         />
                       </Field>
                       <input
-                        placeholder={t("disposalNotesPlaceholder")}
+                        placeholder={t("disposalNotesPlaceholder")} aria-label={t("disposalNotesPlaceholder")}
                         className="input"
                         value={disposeForm.notes}
                         onChange={(e) => setDisposeForm((f) => ({ ...f, notes: e.target.value }))}

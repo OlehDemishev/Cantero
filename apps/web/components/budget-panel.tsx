@@ -206,14 +206,14 @@ export function BudgetPanel({ projectId }: { projectId: string }) {
                 required
                 type="number"
                 step="0.01"
-                placeholder={t("revisionAmountPlaceholder")}
+                placeholder={t("revisionAmountPlaceholder")} aria-label={t("revisionAmountPlaceholder")}
                 className="input w-40"
                 value={revisionForm.amount}
                 onChange={(e) => setRevisionForm((f) => ({ ...f, amount: e.target.value }))}
               />
               <input
                 required
-                placeholder={t("revisionReasonPlaceholder")}
+                placeholder={t("revisionReasonPlaceholder")} aria-label={t("revisionReasonPlaceholder")}
                 className="input flex-1"
                 value={revisionForm.reason}
                 onChange={(e) => setRevisionForm((f) => ({ ...f, reason: e.target.value }))}
@@ -270,14 +270,14 @@ export function BudgetPanel({ projectId }: { projectId: string }) {
                   type="number"
                   step="0.01"
                   min="0.01"
-                  placeholder={t("drawAmountPlaceholder")}
+                  placeholder={t("drawAmountPlaceholder")} aria-label={t("drawAmountPlaceholder")}
                   className="input w-40"
                   value={drawForm.amount}
                   onChange={(e) => setDrawForm((f) => ({ ...f, amount: e.target.value }))}
                 />
                 <input
                   required
-                  placeholder={t("drawReasonPlaceholder")}
+                  placeholder={t("drawReasonPlaceholder")} aria-label={t("drawReasonPlaceholder")}
                   className="input flex-1"
                   value={drawForm.reason}
                   onChange={(e) => setDrawForm((f) => ({ ...f, reason: e.target.value }))}

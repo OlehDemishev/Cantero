@@ -56,6 +56,7 @@ interface ShipmentLineDraft {
 export function PurchaseOrdersPanel() {
   const t = useTranslations("purchaseOrders");
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
   const { data: me } = useMe();
 
   const PURCHASE_ORDERS_PAGE_SIZE = 100;
@@ -207,7 +208,7 @@ export function PurchaseOrdersPanel() {
           {t("newOrder")}
         </h2>
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-          <select
+          <select aria-label={t("supplier")}
             className="input"
             value={supplierId}
             onChange={(e) => setSupplierId(e.target.value)}
@@ -241,7 +242,7 @@ export function PurchaseOrdersPanel() {
           </div>
           {lines.map((line, i) => (
             <div key={i} className="flex gap-2">
-              <select
+              <select aria-label={t("material")}
                 className="input"
                 value={line.materialCatalogItemId}
                 onChange={(e) =>
@@ -264,7 +265,7 @@ export function PurchaseOrdersPanel() {
                 type="number"
                 step="0.01"
                 min="0.01"
-                placeholder={t("quantity")}
+                placeholder={t("quantity")} aria-label={t("quantity")}
                 className="input w-20"
                 value={line.quantity}
                 onChange={(e) =>
@@ -279,7 +280,7 @@ export function PurchaseOrdersPanel() {
                 type="number"
                 step="0.01"
                 min="0"
-                placeholder={t("unitPrice")}
+                placeholder={t("unitPrice")} aria-label={t("unitPrice")}
                 className="input w-20"
                 value={line.unitPrice}
                 onChange={(e) =>
@@ -381,7 +382,7 @@ export function PurchaseOrdersPanel() {
 
                 {receivingOrderId === po.id && (
                   <div className="mt-3 flex flex-col gap-2 border-t border-gray-100 dark:border-gray-700 pt-3">
-                    <select
+                    <select aria-label={ta("warehouse")}
                       className="input"
                       value={shipmentWarehouseId}
                       onChange={(e) => setShipmentWarehouseId(e.target.value)}
@@ -406,7 +407,7 @@ export function PurchaseOrdersPanel() {
                             type="number"
                             step="0.01"
                             min="0"
-                            placeholder={t("quantityReceivedPlaceholder")}
+                            placeholder={t("quantityReceivedPlaceholder")} aria-label={t("quantityReceivedPlaceholder")}
                             className="input w-32"
                             value={sl.quantityReceived}
                             onChange={(e) =>
@@ -423,7 +424,7 @@ export function PurchaseOrdersPanel() {
                             type="number"
                             step="0.01"
                             min="0"
-                            placeholder={t("quantityDamagedPlaceholder")}
+                            placeholder={t("quantityDamagedPlaceholder")} aria-label={t("quantityDamagedPlaceholder")}
                             className="input w-32"
                             value={sl.quantityDamaged}
                             onChange={(e) =>
@@ -436,7 +437,7 @@ export function PurchaseOrdersPanel() {
                               )
                             }
                           />
-                          <select
+                          <select aria-label={ta("shortfall")}
                             className="input"
                             value={sl.shortfallType}
                             onChange={(e) =>

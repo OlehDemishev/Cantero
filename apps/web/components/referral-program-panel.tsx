@@ -13,6 +13,7 @@ interface ReferralStats {
 
 export function ReferralProgramPanel() {
   const t = useTranslations("referrals");
+  const ta = useTranslations("a11y");
   const { data: company = null } = useApi<Company>("/company");
   const { data: stats = null } = useApi<ReferralStats>("/company/referral");
   const [copied, setCopied] = useState(false);
@@ -33,7 +34,7 @@ export function ReferralProgramPanel() {
       <p className="mb-4 text-xs text-fg-subtle">{t("hint")}</p>
 
       <div className="flex items-center gap-2">
-        <input readOnly className="input flex-1 text-xs" value={link} />
+        <input aria-label={ta("shareLink")} readOnly className="input flex-1 text-xs" value={link} />
         <button onClick={copyLink} className="btn-secondary shrink-0 px-3 py-1.5 text-xs">
           {copied ? t("copied") : t("copyLink")}
         </button>

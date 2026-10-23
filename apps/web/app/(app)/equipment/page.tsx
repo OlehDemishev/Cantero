@@ -34,6 +34,7 @@ interface Equipment {
 export default function EquipmentPage() {
   const t = useTranslations("equipment");
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
 
@@ -171,14 +172,14 @@ export default function EquipmentPage() {
       <section className="card mt-6">
         <h2 className="mb-4 text-sm font-semibold text-fg-muted">{t("addEquipment")}</h2>
         <form onSubmit={createEquipment} className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
-          <input
+          <input aria-label={tc("name")}
             required
             placeholder={t("namePlaceholder")}
             className="input"
             value={form.name}
             onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
           />
-          <input
+          <input aria-label={ta("category")}
             required
             placeholder={t("categoryPlaceholder")}
             className="input"
@@ -186,7 +187,7 @@ export default function EquipmentPage() {
             onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
           />
           <input
-            placeholder={t("serialNumberPlaceholder")}
+            placeholder={t("serialNumberPlaceholder")} aria-label={t("serialNumberPlaceholder")}
             className="input"
             value={form.serialNumber}
             onChange={(e) => setForm((f) => ({ ...f, serialNumber: e.target.value }))}

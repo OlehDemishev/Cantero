@@ -32,6 +32,7 @@ export function TeamWorkloadPanel({ currency }: { currency: string }) {
   const t = useTranslations("reports");
   const tc = useTranslations("common");
   const tt = useTranslations("team");
+  const ta = useTranslations("a11y");
   const can = useCan();
   const canExportPayroll = can("hr.payroll");
 
@@ -76,9 +77,9 @@ export function TeamWorkloadPanel({ currency }: { currency: string }) {
       <div className="mb-3 mt-10 flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-sm font-semibold text-fg-muted">{t("teamWorkload")}</h2>
         <div className="flex items-center gap-2 text-xs text-fg-subtle">
-          <input type="date" className="input w-auto" value={workloadFrom} onChange={(e) => setWorkloadFrom(e.target.value)} />
+          <input aria-label={ta("fromDate")} type="date" className="input w-auto" value={workloadFrom} onChange={(e) => setWorkloadFrom(e.target.value)} />
           <span>–</span>
-          <input type="date" className="input w-auto" value={workloadTo} onChange={(e) => setWorkloadTo(e.target.value)} />
+          <input aria-label={ta("toDate")} type="date" className="input w-auto" value={workloadTo} onChange={(e) => setWorkloadTo(e.target.value)} />
           {canExportPayroll && (
             <>
               <button onClick={downloadPayrollExport} className="btn-secondary px-3 py-1 text-xs">

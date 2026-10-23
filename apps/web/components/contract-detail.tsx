@@ -34,6 +34,7 @@ interface Contract {
 export function ContractDetail({ contractId }: { contractId: string }) {
   const t = useTranslations("contracts");
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
   const router = useRouter();
 
   const [contract, setContract] = useState<Contract | null>(null);
@@ -147,7 +148,7 @@ export function ContractDetail({ contractId }: { contractId: string }) {
         <div className="lg:col-span-2">
           {contract.status === "draft" ? (
             <>
-              <textarea
+              <textarea aria-label={ta("contractText")}
                 rows={16}
                 className="input w-full font-mono text-xs"
                 value={bodyDraft}

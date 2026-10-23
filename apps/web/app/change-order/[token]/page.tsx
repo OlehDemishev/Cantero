@@ -179,15 +179,14 @@ export default function PublicChangeOrderPage({ params }: { params: Promise<{ to
                 <textarea rows={2} className="input" value={note} onChange={(e) => setNote(e.target.value)} />
               </Field>
 
-              <div className="mt-4 flex flex-col gap-1.5 text-sm">
-                <span className="font-medium text-fg-muted">{t("signerNameLabel")}</span>
+              <Field label={t("signerNameLabel")} className="mt-4">
                 <input
                   className="input"
                   placeholder={t("signerNamePlaceholder")}
                   value={signerName}
                   onChange={(e) => setSignerName(e.target.value)}
                 />
-              </div>
+              </Field>
               <div className="mt-3 flex flex-col gap-1.5 text-sm">
                 <span className="font-medium text-fg-muted">{t("signHere")}</span>
                 <SignaturePad onChange={setSignatureDataUrl} clearLabel={t("clearSignature")} />

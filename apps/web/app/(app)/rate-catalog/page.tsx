@@ -69,6 +69,7 @@ export default function RateCatalogPage() {
   const t = useTranslations("rateCatalog");
   const tc = useTranslations("common");
   const ti = useTranslations("import");
+  const ta = useTranslations("a11y");
 
   const { data: items = null, reload: reloadItems } = useApi<RateCatalogItem[]>("/estimates/rate-catalog");
   const { data: materials = [], reload: reloadMaterials } = useApi<MaterialCatalogItem[]>("/materials/catalog");
@@ -299,7 +300,7 @@ export default function RateCatalogPage() {
         ))}
         <form onSubmit={createCatalog} className="flex items-center gap-1">
           <input
-            placeholder={t("newCatalogName")}
+            placeholder={t("newCatalogName")} aria-label={t("newCatalogName")}
             className="input w-40 py-1 text-xs"
             value={newCatalogName}
             onChange={(e) => setNewCatalogName(e.target.value)}
@@ -327,21 +328,21 @@ export default function RateCatalogPage() {
             <input
               required
               autoFocus
-              placeholder={t("code")}
+              placeholder={t("code")} aria-label={t("code")}
               className="input"
               value={form.code}
               onChange={(e) => setForm((f) => ({ ...f, code: e.target.value }))}
             />
             <input
               required
-              placeholder={tc("name")}
+              placeholder={tc("name")} aria-label={tc("name")}
               className="input"
               value={form.name}
               onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
             />
             <input
               required
-              placeholder={t("unit")}
+              placeholder={t("unit")} aria-label={t("unit")}
               className="input"
               value={form.unit}
               onChange={(e) => setForm((f) => ({ ...f, unit: e.target.value }))}
@@ -398,7 +399,7 @@ export default function RateCatalogPage() {
             </div>
             {lines.map((line, i) => (
               <div key={i} className="flex gap-2">
-                <select
+                <select aria-label={ta("material")}
                   className="input"
                   value={line.materialCatalogItemId}
                   onChange={(e) =>
@@ -411,7 +412,7 @@ export default function RateCatalogPage() {
                     </option>
                   ))}
                 </select>
-                <input
+                <input aria-label={ta("quantity")}
                   type="number"
                   step="0.001"
                   className="input w-24"
@@ -462,13 +463,13 @@ export default function RateCatalogPage() {
                     <tr key={item.id} className="border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-700">
                       <td className="py-2 font-mono text-xs">{item.code}</td>
                       <td>
-                        <input className="input py-1 text-xs" value={editForm.name} onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))} />
+                        <input aria-label={tc("name")} className="input py-1 text-xs" value={editForm.name} onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))} />
                       </td>
                       <td>
-                        <input className="input w-16 py-1 text-xs" value={editForm.unit} onChange={(e) => setEditForm((f) => ({ ...f, unit: e.target.value }))} />
+                        <input aria-label={t("unit")} className="input w-16 py-1 text-xs" value={editForm.unit} onChange={(e) => setEditForm((f) => ({ ...f, unit: e.target.value }))} />
                       </td>
                       <td>
-                        <input
+                        <input aria-label={ta("laborHours")}
                           type="number"
                           step="0.01"
                           className="input w-20 py-1 text-xs"
@@ -477,7 +478,7 @@ export default function RateCatalogPage() {
                         />
                       </td>
                       <td>
-                        <select
+                        <select aria-label={t("catalog")}
                           className="input py-1 text-xs"
                           value={editForm.catalogId}
                           onChange={(e) => setEditForm((f) => ({ ...f, catalogId: e.target.value }))}

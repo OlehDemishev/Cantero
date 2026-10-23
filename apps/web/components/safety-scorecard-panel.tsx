@@ -61,6 +61,7 @@ const CURRENT_YEAR = new Date().getFullYear();
 
 export function SafetyScorecardPanel() {
   const t = useTranslations("sustainability");
+  const ta = useTranslations("a11y");
 
   const [year, setYear] = useState(CURRENT_YEAR);
   const canSee = useCan()("site.manage");
@@ -88,7 +89,7 @@ export function SafetyScorecardPanel() {
       <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-sm font-semibold text-fg-muted">{t("safetyScorecard")}</h2>
         <div className="flex items-center gap-2">
-          <select className="input w-auto py-1 text-xs" value={year} onChange={(e) => setYear(Number(e.target.value))}>
+          <select aria-label={ta("year")} className="input w-auto py-1 text-xs" value={year} onChange={(e) => setYear(Number(e.target.value))}>
             {Array.from({ length: 5 }, (_, i) => CURRENT_YEAR - i).map((y) => (
               <option key={y} value={y}>
                 {y}

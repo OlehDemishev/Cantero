@@ -17,6 +17,7 @@ interface Reminder {
 
 export function ClientRemindersPanel({ clientId }: { clientId: string }) {
   const t = useTranslations("clients");
+  const ta = useTranslations("a11y");
 
   const { data: reminders = null, reload: reloadReminders, error: remindersError } = useApi<Reminder[]>(`/clients/${clientId}/reminders`);
   const [reminderForm, setReminderForm] = useState({ title: "", dueDate: "" });
@@ -76,12 +77,12 @@ export function ClientRemindersPanel({ clientId }: { clientId: string }) {
       <form onSubmit={addReminder} className="mt-4 flex flex-col gap-2">
         <input
           required
-          placeholder={t("reminderTitle")}
+          placeholder={t("reminderTitle")} aria-label={t("reminderTitle")}
           className="input"
           value={reminderForm.title}
           onChange={(e) => setReminderForm((f) => ({ ...f, title: e.target.value }))}
         />
-        <input
+        <input aria-label={ta("dueDate")}
           required
           type="date"
           className="input"

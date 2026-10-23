@@ -110,7 +110,7 @@ export default function ContractsPage() {
             <form onSubmit={createTemplate} className="flex flex-col gap-2 border-t border-gray-100 pt-3 dark:border-gray-800">
               <input
                 required
-                placeholder={t("templateNamePlaceholder")}
+                placeholder={t("templateNamePlaceholder")} aria-label={t("templateNamePlaceholder")}
                 className="input"
                 value={templateForm.name}
                 onChange={(e) => setTemplateForm((f) => ({ ...f, name: e.target.value }))}
@@ -118,7 +118,7 @@ export default function ContractsPage() {
               <textarea
                 required
                 rows={5}
-                placeholder={t("templateBodyPlaceholder")}
+                placeholder={t("templateBodyPlaceholder")} aria-label={t("templateBodyPlaceholder")}
                 className="input"
                 value={templateForm.body}
                 onChange={(e) => setTemplateForm((f) => ({ ...f, body: e.target.value }))}

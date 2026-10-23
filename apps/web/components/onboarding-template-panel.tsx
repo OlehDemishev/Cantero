@@ -60,7 +60,7 @@ export function OnboardingTemplatePanel() {
       <form onSubmit={handleSubmit} className="flex max-w-md gap-2">
         <input
           required
-          placeholder={t("onboardingTaskTitlePlaceholder")}
+          placeholder={t("onboardingTaskTitlePlaceholder")} aria-label={t("onboardingTaskTitlePlaceholder")}
           className="input flex-1"
           value={title}
           onChange={(e) => setTitle(e.target.value)}

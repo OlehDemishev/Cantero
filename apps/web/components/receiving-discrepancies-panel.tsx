@@ -22,6 +22,7 @@ interface ReceivingDiscrepancy {
 export function ReceivingDiscrepanciesPanel() {
   const t = useTranslations("purchaseOrders");
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
   const { data: discrepancies = null, reload: reloadDiscrepancies, error: discrepanciesError } = useApi<ReceivingDiscrepancy[]>("/materials/purchase-orders/receiving-discrepancies");
   const [resolvingId, setResolvingId] = useState<string | null>(null);
   const [resolutionForm, setResolutionForm] = useState({ resolution: "credit_issued" as ReceivingDiscrepancyResolution, resolutionNotes: "" });
@@ -65,7 +66,7 @@ export function ReceivingDiscrepanciesPanel() {
               {d.resolution === "pending" &&
                 (resolvingId === d.id ? (
                   <div className="mt-2 flex flex-wrap items-center gap-2">
-                    <select
+                    <select aria-label={ta("resolution")}
                       className="input"
                       value={resolutionForm.resolution}
                       onChange={(e) => setResolutionForm((f) => ({ ...f, resolution: e.target.value as ReceivingDiscrepancyResolution }))}
@@ -77,7 +78,7 @@ export function ReceivingDiscrepanciesPanel() {
                       ))}
                     </select>
                     <input
-                      placeholder={t("resolutionNotesPlaceholder")}
+                      placeholder={t("resolutionNotesPlaceholder")} aria-label={t("resolutionNotesPlaceholder")}
                       className="input flex-1"
                       value={resolutionForm.resolutionNotes}
                       onChange={(e) => setResolutionForm((f) => ({ ...f, resolutionNotes: e.target.value }))}

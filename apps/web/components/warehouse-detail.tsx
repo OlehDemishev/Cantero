@@ -159,6 +159,7 @@ function MaterialPicker({
   value: string;
   onChange: (id: string) => void;
 }) {
+  const ta = useTranslations("a11y");
   const [query, setQuery] = useState("");
   const selectedMaterial = materials.find((m) => m.id === value);
 
@@ -180,6 +181,7 @@ function MaterialPicker({
     <>
       <input
         list={id}
+        aria-label={ta("material")}
         className="input w-36"
         placeholder="SKU"
         value={query}
@@ -205,6 +207,7 @@ export function WarehouseDetail({
 }) {
   const t = useTranslations("warehouses");
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
 
@@ -760,7 +763,7 @@ export function WarehouseDetail({
       </h2>
       <form onSubmit={lookupBarcode} className="flex items-end gap-2">
         <input
-          placeholder={t("barcodePlaceholder")}
+          placeholder={t("barcodePlaceholder")} aria-label={t("barcodePlaceholder")}
           className="input w-56"
           value={barcodeInput}
           onChange={(e) => setBarcodeInput(e.target.value)}
@@ -835,7 +838,7 @@ export function WarehouseDetail({
                   </td>
                   <td>
                     {warehouseLocationOptions.length > 0 ? (
-                      <select
+                      <select aria-label={ta("fieldOf", { field: ta("binLocation"), item: l.materialCatalogItem.name })}
                         className="input w-auto py-0.5 text-xs"
                         value={l.binLocationId ?? ""}
                         onChange={(e) =>
@@ -851,7 +854,7 @@ export function WarehouseDetail({
                       </select>
                     ) : editingBinFor === l.materialCatalogItem.id ? (
                       <span className="flex items-center gap-1">
-                        <input
+                        <input aria-label={ta("fieldOf", { field: ta("binLocation"), item: l.materialCatalogItem.name })}
                           autoFocus
                           className="input w-24 py-0.5 text-xs"
                           value={binDraft}
@@ -898,7 +901,7 @@ export function WarehouseDetail({
             setReservationForm((r) => ({ ...r, materialCatalogItemId: id }))
           }
         />
-        <input
+        <input aria-label={t("movementQuantity")}
           type="number"
           step="0.01"
           className="input w-24"
@@ -908,7 +911,7 @@ export function WarehouseDetail({
           }
         />
         <input
-          placeholder={t("reservationNotePlaceholder")}
+          placeholder={t("reservationNotePlaceholder")} aria-label={t("reservationNotePlaceholder")}
           className="input w-48"
           value={reservationForm.note}
           onChange={(e) =>
@@ -1092,7 +1095,7 @@ export function WarehouseDetail({
             setMovement((m) => ({ ...m, materialCatalogItemId: id }))
           }
         />
-        <select
+        <select aria-label={ta("movementType")}
           className="input w-auto"
           value={movement.type}
           onChange={(e) =>
@@ -1108,7 +1111,7 @@ export function WarehouseDetail({
             </option>
           ))}
         </select>
-        <input
+        <input aria-label={t("movementQuantity")}
           type="number"
           step="0.01"
           className="input w-24"
@@ -1122,7 +1125,7 @@ export function WarehouseDetail({
             type="number"
             step="0.0001"
             min="0"
-            placeholder={t("unitCostPlaceholder")}
+            placeholder={t("unitCostPlaceholder")} aria-label={t("unitCostPlaceholder")}
             className="input w-32"
             value={movement.unitCost}
             onChange={(e) =>
@@ -1144,7 +1147,7 @@ export function WarehouseDetail({
             </span>
             {serialNumberDrafts.map((sn, i) => (
               <div key={i} className="flex items-center gap-1.5">
-                <input
+                <input aria-label={ta("serialNumber", { n: i + 1 })}
                   className="input w-40"
                   placeholder={`SN-${i + 1}`}
                   value={sn}
@@ -1293,7 +1296,7 @@ export function WarehouseDetail({
             <span className="pb-2.5 text-sm text-fg-subtle">
               →
             </span>
-            <select
+            <select aria-label={ta("destinationWarehouse")}
               className="input w-auto"
               value={transfer.toWarehouseId}
               onChange={(e) =>
@@ -1306,7 +1309,7 @@ export function WarehouseDetail({
                 </option>
               ))}
             </select>
-            <input
+            <input aria-label={t("movementQuantity")}
               type="number"
               step="0.01"
               className="input w-24"
@@ -1341,7 +1344,7 @@ export function WarehouseDetail({
             <span className="pb-2.5 text-sm text-fg-subtle">
               →
             </span>
-            <select
+            <select aria-label={ta("destinationWarehouse")}
               className="input w-auto"
               value={inTransitForm.toWarehouseId}
               onChange={(e) =>
@@ -1357,7 +1360,7 @@ export function WarehouseDetail({
                 </option>
               ))}
             </select>
-            <input
+            <input aria-label={t("movementQuantity")}
               type="number"
               step="0.01"
               className="input w-24"
@@ -1525,7 +1528,7 @@ export function WarehouseDetail({
                       </td>
                       <td>
                         {activeCount.status === "draft" ? (
-                          <input
+                          <input aria-label={ta("fieldOf", { field: ta("countedQuantity"), item: line.materialCatalogItem.name })}
                             type="number"
                             step="0.01"
                             className="input w-24"
@@ -1580,7 +1583,7 @@ export function WarehouseDetail({
       </h2>
       <form onSubmit={createSupplierReturn} className="flex flex-col gap-2">
         <div className="flex flex-wrap items-end gap-2">
-          <select
+          <select aria-label={ta("supplier")}
             className="input w-auto"
             value={supplierReturnForm.supplierId}
             onChange={(e) =>
@@ -1593,7 +1596,7 @@ export function WarehouseDetail({
               </option>
             ))}
           </select>
-          <select
+          <select aria-label={ta("purchaseOrder")}
             className="input w-auto"
             value={supplierReturnForm.purchaseOrderId}
             onChange={(e) =>
@@ -1607,7 +1610,7 @@ export function WarehouseDetail({
               </option>
             ))}
           </select>
-          <select
+          <select aria-label={t("returnReasonLabel")}
             className="input w-auto"
             value={supplierReturnForm.reason}
             onChange={(e) =>
@@ -1624,7 +1627,7 @@ export function WarehouseDetail({
             ))}
           </select>
           <input
-            placeholder={t("note")}
+            placeholder={t("note")} aria-label={t("note")}
             className="input w-48"
             value={supplierReturnForm.notes}
             onChange={(e) =>
@@ -1645,7 +1648,7 @@ export function WarehouseDetail({
                 )
               }
             />
-            <input
+            <input aria-label={t("movementQuantity")}
               type="number"
               step="0.01"
               className="input w-24"
@@ -1724,7 +1727,7 @@ export function WarehouseDetail({
             {t("kit")}
           </h2>
           <div className="flex flex-wrap items-end gap-2">
-            <select
+            <select aria-label={t("kit")}
               className="input w-auto"
               value={assembleForm.kitId}
               onChange={(e) => setAssembleForm((f) => ({ ...f, kitId: e.target.value }))}
@@ -1735,7 +1738,7 @@ export function WarehouseDetail({
                 </option>
               ))}
             </select>
-            <input
+            <input aria-label={t("movementQuantity")}
               type="number"
               step="0.01"
               className="input w-24"

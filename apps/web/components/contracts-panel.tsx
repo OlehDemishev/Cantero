@@ -21,6 +21,7 @@ interface Contract {
 export function ContractsPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("contracts");
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
 
   const { data: contracts = null, reload: reloadContracts } = useApi<Contract[]>(`/contracts?projectId=${projectId}`);
   const { data: templates = [] } = useApi<ContractTemplate[]>("/contract-templates");
@@ -74,12 +75,12 @@ export function ContractsPanel({ projectId }: { projectId: string }) {
           <div className="flex flex-wrap items-end gap-2">
             <input
               required
-              placeholder={t("titlePlaceholder")}
+              placeholder={t("titlePlaceholder")} aria-label={t("titlePlaceholder")}
               className="input"
               value={form.title}
               onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
             />
-            <select className="input w-auto" value={form.templateId} onChange={(e) => setForm((f) => ({ ...f, templateId: e.target.value }))}>
+            <select aria-label={ta("template")} className="input w-auto" value={form.templateId} onChange={(e) => setForm((f) => ({ ...f, templateId: e.target.value }))}>
               <option value="">{t("customBody")}</option>
               {templates.map((tpl) => (
                 <option key={tpl.id} value={tpl.id}>
@@ -95,7 +96,7 @@ export function ContractsPanel({ projectId }: { projectId: string }) {
             <textarea
               required
               rows={3}
-              placeholder={t("bodyPlaceholder")}
+              placeholder={t("bodyPlaceholder")} aria-label={t("bodyPlaceholder")}
               className="input"
               value={form.body}
               onChange={(e) => setForm((f) => ({ ...f, body: e.target.value }))}

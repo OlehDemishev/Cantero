@@ -100,14 +100,14 @@ export function CostCodesPanel() {
       <form onSubmit={create} className="flex flex-wrap items-end gap-2 border-t border-gray-100 pt-3 dark:border-gray-800">
         <input
           required
-          placeholder={t("codePlaceholder")}
+          placeholder={t("codePlaceholder")} aria-label={t("codePlaceholder")}
           className="input w-28"
           value={form.code}
           onChange={(e) => setForm((f) => ({ ...f, code: e.target.value }))}
         />
         <input
           required
-          placeholder={t("namePlaceholder")}
+          placeholder={t("namePlaceholder")} aria-label={t("namePlaceholder")}
           className="input"
           value={form.name}
           onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}

@@ -353,7 +353,7 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
             <form onSubmit={addInstallment} className="mt-3 flex flex-wrap items-end gap-2">
               <input
                 required
-                placeholder={t("installmentLabel")}
+                placeholder={t("installmentLabel")} aria-label={t("installmentLabel")}
                 className="input w-auto"
                 value={installmentForm.label}
                 onChange={(e) => setInstallmentForm((f) => ({ ...f, label: e.target.value }))}
@@ -362,12 +362,12 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
                 required
                 type="number"
                 step="0.01"
-                placeholder={t("amount")}
+                placeholder={t("amount")} aria-label={t("amount")}
                 className="input w-28"
                 value={installmentForm.amount}
                 onChange={(e) => setInstallmentForm((f) => ({ ...f, amount: e.target.value }))}
               />
-              <input
+              <input aria-label={t("dueDate")}
                 type="date"
                 className="input w-auto"
                 value={installmentForm.dueDate}

@@ -406,7 +406,7 @@ export function CompanySettingsPanel({ isManager }: { isManager: boolean }) {
           <div className="flex flex-col gap-2">
             <input
               className="input"
-              placeholder={t("streetAddress")}
+              placeholder={t("streetAddress")} aria-label={t("streetAddress")}
               value={companyForm.address}
               onChange={(e) => setCompanyForm((f) => ({ ...f, address: e.target.value }))}
               disabled={!isManager}
@@ -414,14 +414,14 @@ export function CompanySettingsPanel({ isManager }: { isManager: boolean }) {
             <div className="flex gap-2">
               <input
                 className="input flex-1"
-                placeholder={t("city")}
+                placeholder={t("city")} aria-label={t("city")}
                 value={companyForm.city}
                 onChange={(e) => setCompanyForm((f) => ({ ...f, city: e.target.value }))}
                 disabled={!isManager}
               />
               <input
                 className="input w-28"
-                placeholder={t("postalCode")}
+                placeholder={t("postalCode")} aria-label={t("postalCode")}
                 value={companyForm.postalCode}
                 onChange={(e) => setCompanyForm((f) => ({ ...f, postalCode: e.target.value }))}
                 disabled={!isManager}
@@ -430,14 +430,14 @@ export function CompanySettingsPanel({ isManager }: { isManager: boolean }) {
             <div className="flex gap-2">
               <input
                 className="input flex-1"
-                placeholder={t("vatIdPlaceholder")}
+                placeholder={t("vatIdPlaceholder")} aria-label={t("vatIdPlaceholder")}
                 value={companyForm.vatId}
                 onChange={(e) => setCompanyForm((f) => ({ ...f, vatId: e.target.value }))}
                 disabled={!isManager}
               />
               <input
                 className="input flex-1"
-                placeholder={t("ibanPlaceholder")}
+                placeholder={t("ibanPlaceholder")} aria-label={t("ibanPlaceholder")}
                 value={companyForm.iban}
                 onChange={(e) => setCompanyForm((f) => ({ ...f, iban: e.target.value }))}
                 disabled={!isManager}
@@ -455,14 +455,14 @@ export function CompanySettingsPanel({ isManager }: { isManager: boolean }) {
             <div className="flex gap-2">
               <input
                 className="input flex-1"
-                placeholder={t("beraternummer")}
+                placeholder={t("beraternummer")} aria-label={t("beraternummer")}
                 value={companyForm.datevConsultantNumber}
                 onChange={(e) => setCompanyForm((f) => ({ ...f, datevConsultantNumber: e.target.value }))}
                 disabled={!isManager}
               />
               <input
                 className="input flex-1"
-                placeholder={t("mandantennummer")}
+                placeholder={t("mandantennummer")} aria-label={t("mandantennummer")}
                 value={companyForm.datevClientNumber}
                 onChange={(e) => setCompanyForm((f) => ({ ...f, datevClientNumber: e.target.value }))}
                 disabled={!isManager}
@@ -508,7 +508,7 @@ export function CompanySettingsPanel({ isManager }: { isManager: boolean }) {
             <input
               type="number"
               className="input w-28"
-              placeholder={t("sachkontenlaenge")}
+              placeholder={t("sachkontenlaenge")} aria-label={t("sachkontenlaenge")}
               value={companyForm.datevSachkontenlaenge}
               onChange={(e) => setCompanyForm((f) => ({ ...f, datevSachkontenlaenge: e.target.value }))}
               disabled={!isManager}
@@ -516,14 +516,14 @@ export function CompanySettingsPanel({ isManager }: { isManager: boolean }) {
             <div className="flex gap-2">
               <input
                 className="input flex-1"
-                placeholder={t("receivablesAccount")}
+                placeholder={t("receivablesAccount")} aria-label={t("receivablesAccount")}
                 value={companyForm.datevReceivablesAccount}
                 onChange={(e) => setCompanyForm((f) => ({ ...f, datevReceivablesAccount: e.target.value }))}
                 disabled={!isManager}
               />
               <input
                 className="input flex-1"
-                placeholder={t("payablesAccount")}
+                placeholder={t("payablesAccount")} aria-label={t("payablesAccount")}
                 value={companyForm.datevPayablesAccount}
                 onChange={(e) => setCompanyForm((f) => ({ ...f, datevPayablesAccount: e.target.value }))}
                 disabled={!isManager}
@@ -532,21 +532,21 @@ export function CompanySettingsPanel({ isManager }: { isManager: boolean }) {
             <div className="flex gap-2">
               <input
                 className="input flex-1"
-                placeholder={t("revenueAccountStandard")}
+                placeholder={t("revenueAccountStandard")} aria-label={t("revenueAccountStandard")}
                 value={companyForm.datevRevenueAccountStandard}
                 onChange={(e) => setCompanyForm((f) => ({ ...f, datevRevenueAccountStandard: e.target.value }))}
                 disabled={!isManager}
               />
               <input
                 className="input flex-1"
-                placeholder={t("revenueAccountReduced")}
+                placeholder={t("revenueAccountReduced")} aria-label={t("revenueAccountReduced")}
                 value={companyForm.datevRevenueAccountReduced}
                 onChange={(e) => setCompanyForm((f) => ({ ...f, datevRevenueAccountReduced: e.target.value }))}
                 disabled={!isManager}
               />
               <input
                 className="input flex-1"
-                placeholder={t("revenueAccountExempt")}
+                placeholder={t("revenueAccountExempt")} aria-label={t("revenueAccountExempt")}
                 value={companyForm.datevRevenueAccountExempt}
                 onChange={(e) => setCompanyForm((f) => ({ ...f, datevRevenueAccountExempt: e.target.value }))}
                 disabled={!isManager}
@@ -554,7 +554,7 @@ export function CompanySettingsPanel({ isManager }: { isManager: boolean }) {
             </div>
             <input
               className="input"
-              placeholder={t("expenseAccountSubcontractors")}
+              placeholder={t("expenseAccountSubcontractors")} aria-label={t("expenseAccountSubcontractors")}
               value={companyForm.datevExpenseAccountSubcontractors}
               onChange={(e) => setCompanyForm((f) => ({ ...f, datevExpenseAccountSubcontractors: e.target.value }))}
               disabled={!isManager}
@@ -569,14 +569,14 @@ export function CompanySettingsPanel({ isManager }: { isManager: boolean }) {
           <div className="flex gap-2">
             <input
               className="input w-32"
-              placeholder={t("peppolScheme")}
+              placeholder={t("peppolScheme")} aria-label={t("peppolScheme")}
               value={companyForm.peppolScheme}
               onChange={(e) => setCompanyForm((f) => ({ ...f, peppolScheme: e.target.value }))}
               disabled={!isManager}
             />
             <input
               className="input flex-1"
-              placeholder={t("peppolParticipantId")}
+              placeholder={t("peppolParticipantId")} aria-label={t("peppolParticipantId")}
               value={companyForm.peppolParticipantId}
               onChange={(e) => setCompanyForm((f) => ({ ...f, peppolParticipantId: e.target.value }))}
               disabled={!isManager}

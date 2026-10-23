@@ -40,6 +40,7 @@ export function PermitsPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("permits");
   const confirm = useConfirm();
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
 
   const { data: permits = null, reload: reloadPermits, error: permitsError } = useApi<Permit[]>(`/projects/${projectId}/permits`);
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -217,19 +218,19 @@ export function PermitsPanel({ projectId }: { projectId: string }) {
                       <form onSubmit={(e) => createInspection(e, p.id)} className="flex flex-wrap items-end gap-2">
                         <input
                           required
-                          placeholder={t("inspectionTypePlaceholder")}
+                          placeholder={t("inspectionTypePlaceholder")} aria-label={t("inspectionTypePlaceholder")}
                           className="input w-auto"
                           value={inspectionForm.inspectionType}
                           onChange={(e) => setInspectionForm((f) => ({ ...f, inspectionType: e.target.value }))}
                         />
-                        <input
+                        <input aria-label={ta("scheduledDate")}
                           type="date"
                           className="input w-auto"
                           value={inspectionForm.scheduledDate}
                           onChange={(e) => setInspectionForm((f) => ({ ...f, scheduledDate: e.target.value }))}
                         />
                         <input
-                          placeholder={t("inspectorNamePlaceholder")}
+                          placeholder={t("inspectorNamePlaceholder")} aria-label={t("inspectorNamePlaceholder")}
                           className="input w-auto"
                           value={inspectionForm.inspectorName}
                           onChange={(e) => setInspectionForm((f) => ({ ...f, inspectorName: e.target.value }))}
@@ -250,19 +251,19 @@ export function PermitsPanel({ projectId }: { projectId: string }) {
       <form onSubmit={createPermit} className="flex flex-wrap items-end gap-2 border-t border-gray-100 pt-3 dark:border-gray-800">
         <input
           required
-          placeholder={t("permitTypePlaceholder")}
+          placeholder={t("permitTypePlaceholder")} aria-label={t("permitTypePlaceholder")}
           className="input"
           value={permitForm.permitType}
           onChange={(e) => setPermitForm((f) => ({ ...f, permitType: e.target.value }))}
         />
         <input
-          placeholder={t("permitNumberPlaceholder")}
+          placeholder={t("permitNumberPlaceholder")} aria-label={t("permitNumberPlaceholder")}
           className="input"
           value={permitForm.permitNumber}
           onChange={(e) => setPermitForm((f) => ({ ...f, permitNumber: e.target.value }))}
         />
         <input
-          placeholder={t("authorityPlaceholder")}
+          placeholder={t("authorityPlaceholder")} aria-label={t("authorityPlaceholder")}
           className="input"
           value={permitForm.authorityName}
           onChange={(e) => setPermitForm((f) => ({ ...f, authorityName: e.target.value }))}

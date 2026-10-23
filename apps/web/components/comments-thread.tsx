@@ -101,7 +101,7 @@ export function CommentsThread({ param, entityId }: { param: CommentParam; entit
         <textarea
           rows={2}
           className="input text-xs"
-          placeholder={t("addCommentPlaceholder")}
+          placeholder={t("addCommentPlaceholder")} aria-label={t("addCommentPlaceholder")}
           value={content}
           onChange={(e) => handleContentChange(e.target.value)}
         />

@@ -109,7 +109,7 @@ export function CustomRolesPanel({ isManager }: { isManager: boolean }) {
             <form onSubmit={createCustomRole} className="flex flex-col gap-3">
               <input
                 required
-                placeholder={t("customRoleNamePlaceholder")}
+                placeholder={t("customRoleNamePlaceholder")} aria-label={t("customRoleNamePlaceholder")}
                 className="input"
                 value={customRoleForm.name}
                 onChange={(e) => setCustomRoleForm((f) => ({ ...f, name: e.target.value }))}

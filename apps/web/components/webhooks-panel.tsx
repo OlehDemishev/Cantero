@@ -33,6 +33,7 @@ export function WebhooksPanel() {
   const t = useTranslations("settings");
   const confirm = useConfirm();
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
   const { data: webhooks = null, reload: reloadWebhooks } = useApi<WebhookEndpoint[]>("/company/webhooks");
   const [webhookForm, setWebhookForm] = useState<{ url: string; events: WebhookEvent[] }>({ url: "", events: [] });
   const [createdWebhookSecret, setCreatedWebhookSecret] = useState<string | null>(null);
@@ -200,7 +201,7 @@ export function WebhooksPanel() {
       )}
 
       <form onSubmit={createWebhook} className="flex flex-col gap-2">
-        <input
+        <input aria-label={ta("url")}
           required
           type="url"
           placeholder={t("webhookUrlPlaceholder")}

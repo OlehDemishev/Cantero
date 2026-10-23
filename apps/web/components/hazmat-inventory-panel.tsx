@@ -24,6 +24,7 @@ export function HazmatInventoryPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("hazmat");
   const confirm = useConfirm();
   const td = useTranslations("dialog");
+  const ta = useTranslations("a11y");
 
   const { data: items = null, reload: reloadItems, error: itemsError } = useApi<InventoryItem[]>(`/projects/${projectId}/hazmat-inventory`);
   const [materials, setMaterials] = useState<HazardousMaterial[]>([]);
@@ -98,7 +99,7 @@ export function HazmatInventoryPanel({ projectId }: { projectId: string }) {
       )}
 
       <form onSubmit={addItem} className="flex flex-wrap items-end gap-2">
-        <select className="input" value={form.hazardousMaterialId} onChange={(e) => setForm((f) => ({ ...f, hazardousMaterialId: e.target.value }))}>
+        <select aria-label={ta("material")} className="input" value={form.hazardousMaterialId} onChange={(e) => setForm((f) => ({ ...f, hazardousMaterialId: e.target.value }))}>
           {materials.map((m) => (
             <option key={m.id} value={m.id}>
               {m.name}
@@ -106,13 +107,13 @@ export function HazmatInventoryPanel({ projectId }: { projectId: string }) {
           ))}
         </select>
         <input
-          placeholder={t("quantityPlaceholder")}
+          placeholder={t("quantityPlaceholder")} aria-label={t("quantityPlaceholder")}
           className="input w-auto"
           value={form.quantity}
           onChange={(e) => setForm((f) => ({ ...f, quantity: e.target.value }))}
         />
         <input
-          placeholder={t("locationPlaceholder")}
+          placeholder={t("locationPlaceholder")} aria-label={t("locationPlaceholder")}
           className="input w-auto"
           value={form.location}
           onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))}

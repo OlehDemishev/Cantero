@@ -31,6 +31,7 @@ function today() {
 
 export function TaxLiabilityPanel() {
   const t = useTranslations("tax");
+  const ta = useTranslations("a11y");
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
   const isManager = useCan()("finance.manage");
@@ -75,15 +76,15 @@ export function TaxLiabilityPanel() {
       ) : (
         <>
           <div className="mb-3 flex flex-wrap items-end gap-2">
-            <select className="input w-auto" value={jurisdictionId} onChange={(e) => setJurisdictionId(e.target.value)}>
+            <select aria-label={ta("taxJurisdiction")} className="input w-auto" value={jurisdictionId} onChange={(e) => setJurisdictionId(e.target.value)}>
               {jurisdictions.map((j) => (
                 <option key={j.id} value={j.id}>
                   {j.name}
                 </option>
               ))}
             </select>
-            <input type="date" className="input w-auto" value={periodStart} onChange={(e) => setPeriodStart(e.target.value)} />
-            <input type="date" className="input w-auto" value={periodEnd} onChange={(e) => setPeriodEnd(e.target.value)} />
+            <input aria-label={ta("periodStart")} type="date" className="input w-auto" value={periodStart} onChange={(e) => setPeriodStart(e.target.value)} />
+            <input aria-label={ta("periodEnd")} type="date" className="input w-auto" value={periodEnd} onChange={(e) => setPeriodEnd(e.target.value)} />
           </div>
 
           {reportError && !report && <ErrorState error={reportError} onRetry={reloadReport} compact />}

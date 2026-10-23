@@ -63,6 +63,7 @@ export default function SuppliersPage() {
   const t = useTranslations("suppliers");
   const confirm = useConfirm();
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
   const { data: suppliers = null, reload: reloadSuppliers, error: suppliersError } = useApi<Supplier[]>("/materials/suppliers");
   const [form, setForm] = useState({ name: "", email: "", phone: "" });
   const [submitting, setSubmitting] = useState(false);
@@ -218,20 +219,20 @@ export default function SuppliersPage() {
             <input
               required
               autoFocus
-              placeholder={tc("name")}
+              placeholder={tc("name")} aria-label={tc("name")}
               className="input"
               value={form.name}
               onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
             />
             <input
-              placeholder={tc("email")}
+              placeholder={tc("email")} aria-label={tc("email")}
               type="email"
               className="input"
               value={form.email}
               onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
             />
             <input
-              placeholder={tc("phone")}
+              placeholder={tc("phone")} aria-label={tc("phone")}
               className="input"
               value={form.phone}
               onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
@@ -370,7 +371,7 @@ export default function SuppliersPage() {
                             </ul>
                           )}
                           <form onSubmit={(e) => addDocument(e, s.id)} className="flex flex-wrap items-end gap-2">
-                            <select
+                            <select aria-label={ta("documentType")}
                               className="input w-auto"
                               value={docForm.type}
                               onChange={(e) => setDocForm((f) => ({ ...f, type: e.target.value as SupplierDocumentType }))}
@@ -383,12 +384,12 @@ export default function SuppliersPage() {
                             </select>
                             <input
                               required
-                              placeholder={t("documentNamePlaceholder")}
+                              placeholder={t("documentNamePlaceholder")} aria-label={t("documentNamePlaceholder")}
                               className="input w-auto"
                               value={docForm.name}
                               onChange={(e) => setDocForm((f) => ({ ...f, name: e.target.value }))}
                             />
-                            <input
+                            <input aria-label={ta("expiryDate")}
                               required
                               type="date"
                               className="input w-auto"
@@ -440,7 +441,7 @@ export default function SuppliersPage() {
                               </select>
                             </Field>
                             <input
-                              placeholder={t("reviewCommentsPlaceholder")}
+                              placeholder={t("reviewCommentsPlaceholder")} aria-label={t("reviewCommentsPlaceholder")}
                               className="input"
                               value={reviewForm.comments}
                               onChange={(e) => setReviewForm((f) => ({ ...f, comments: e.target.value }))}

@@ -35,14 +35,14 @@ export function WorkerPtoPanel({ workerId, onChanged }: { workerId: string; onCh
           required
           type="number"
           step="0.5"
-          placeholder={t("ptoDeltaHoursPlaceholder")}
+          placeholder={t("ptoDeltaHoursPlaceholder")} aria-label={t("ptoDeltaHoursPlaceholder")}
           className="input"
           value={ptoForm.deltaHours}
           onChange={(e) => setPtoForm((f) => ({ ...f, deltaHours: e.target.value }))}
         />
         <input
           required
-          placeholder={t("ptoReasonPlaceholder")}
+          placeholder={t("ptoReasonPlaceholder")} aria-label={t("ptoReasonPlaceholder")}
           className="input"
           value={ptoForm.reason}
           onChange={(e) => setPtoForm((f) => ({ ...f, reason: e.target.value }))}

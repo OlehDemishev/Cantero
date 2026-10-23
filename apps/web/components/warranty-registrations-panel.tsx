@@ -25,6 +25,7 @@ interface WarrantyRegistration {
 export function WarrantyRegistrationsPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("warrantyRegistry");
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
 
   const { data: registrations = null, reload: reloadRegistrations, error: registrationsError } = useApi<WarrantyRegistration[]>(`/projects/${projectId}/warranty-registrations`);
   const [adding, setAdding] = useState(false);
@@ -76,18 +77,18 @@ export function WarrantyRegistrationsPanel({ projectId }: { projectId: string })
         <form onSubmit={create} className="card mb-3 flex flex-wrap items-end gap-2">
           <input
             required
-            placeholder={t("scopePlaceholder")}
+            placeholder={t("scopePlaceholder")} aria-label={t("scopePlaceholder")}
             className="input"
             value={form.scope}
             onChange={(e) => setForm((f) => ({ ...f, scope: e.target.value }))}
           />
           <input
-            placeholder={t("manufacturerPlaceholder")}
+            placeholder={t("manufacturerPlaceholder")} aria-label={t("manufacturerPlaceholder")}
             className="input"
             value={form.manufacturer}
             onChange={(e) => setForm((f) => ({ ...f, manufacturer: e.target.value }))}
           />
-          <select className="input" value={form.coverageType} onChange={(e) => setForm((f) => ({ ...f, coverageType: e.target.value as WarrantyCoverageType }))}>
+          <select aria-label={ta("coverageType")} className="input" value={form.coverageType} onChange={(e) => setForm((f) => ({ ...f, coverageType: e.target.value as WarrantyCoverageType }))}>
             {WARRANTY_COVERAGE_TYPES.map((c) => (
               <option key={c} value={c}>
                 {t(`coverage_${c}`)}
@@ -98,7 +99,7 @@ export function WarrantyRegistrationsPanel({ projectId }: { projectId: string })
             required
             type="number"
             min="1"
-            placeholder={t("termMonthsPlaceholder")}
+            placeholder={t("termMonthsPlaceholder")} aria-label={t("termMonthsPlaceholder")}
             className="input w-32"
             value={form.termMonths}
             onChange={(e) => setForm((f) => ({ ...f, termMonths: e.target.value }))}

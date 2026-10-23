@@ -41,6 +41,7 @@ export function TrainingCatalogPanel() {
   const confirm = useConfirm();
   const td = useTranslations("dialog");
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
 
   const { data: courses = null, reload: reloadCourses, error: coursesError } = useApi<TrainingCourse[]>("/training/courses");
   const { data: workers = [] } = useApi<Worker[]>("/workers");
@@ -133,13 +134,13 @@ export function TrainingCatalogPanel() {
       <form onSubmit={createCourse} className="mb-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-end">
         <input
           required
-          placeholder={t("courseTitlePlaceholder")}
+          placeholder={t("courseTitlePlaceholder")} aria-label={t("courseTitlePlaceholder")}
           className="input"
           value={form.title}
           onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
         />
         <input
-          placeholder={t("categoryPlaceholder")}
+          placeholder={t("categoryPlaceholder")} aria-label={t("categoryPlaceholder")}
           className="input"
           value={form.category}
           onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
@@ -192,7 +193,7 @@ export function TrainingCatalogPanel() {
                 {expandedCourseId === course.id && (
                   <div className="mt-3 border-t border-gray-100 dark:border-gray-700 pt-3">
                     <div className="mb-2 flex gap-2">
-                      <select className="input" value={enrollWorkerId} onChange={(e) => setEnrollWorkerId(e.target.value)}>
+                      <select aria-label={ta("worker")} className="input" value={enrollWorkerId} onChange={(e) => setEnrollWorkerId(e.target.value)}>
                         {workers.map((w) => (
                           <option key={w.id} value={w.id}>
                             {w.name}

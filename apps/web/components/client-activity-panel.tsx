@@ -25,6 +25,7 @@ interface Client {
 export function ClientActivityPanel({ clientId }: { clientId: string }) {
   const t = useTranslations("clients");
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
 
   const { data: activities = null, reload: reloadActivities, error: activitiesError } = useApi<Activity[]>(`/clients/${clientId}/activities`);
   const [activityForm, setActivityForm] = useState({ type: "note" as ActivityType, content: "" });
@@ -91,7 +92,7 @@ export function ClientActivityPanel({ clientId }: { clientId: string }) {
 
       <form onSubmit={addActivity} className="mt-4 flex flex-col gap-2">
         <div className="flex gap-2">
-          <select
+          <select aria-label={ta("type")}
             className="input w-auto"
             value={activityForm.type}
             onChange={(e) => setActivityForm((f) => ({ ...f, type: e.target.value as ActivityType }))}
@@ -109,7 +110,7 @@ export function ClientActivityPanel({ clientId }: { clientId: string }) {
         <textarea
           required
           rows={2}
-          placeholder={t("activityContent")}
+          placeholder={t("activityContent")} aria-label={t("activityContent")}
           className="input"
           value={activityForm.content}
           onChange={(e) => setActivityForm((f) => ({ ...f, content: e.target.value }))}
@@ -118,7 +119,7 @@ export function ClientActivityPanel({ clientId }: { clientId: string }) {
 
       <h2 className="mb-3 mt-8 text-sm font-semibold text-fg-muted">{t("notes")}</h2>
       <form onSubmit={saveNotes} className="flex flex-col gap-2">
-        <textarea
+        <textarea aria-label={t("notes")}
           rows={4}
           className="input"
           value={notesInput}

@@ -25,6 +25,7 @@ export function ProjectMembersPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("projectMembers");
   const confirm = useConfirm();
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
   const canManage = useCan()("projects.manage");
 
   const { data: project = null, reload: reloadProject } = useApi<Project>(`/projects/${projectId}`);
@@ -120,7 +121,7 @@ export function ProjectMembersPanel({ projectId }: { projectId: string }) {
 
             {availableMembers.length > 0 && (
               <form onSubmit={addMember} className="mt-3 flex items-center gap-2">
-                <select className="input" value={selectedUserId} onChange={(e) => setSelectedUserId(e.target.value)}>
+                <select aria-label={ta("member")} className="input" value={selectedUserId} onChange={(e) => setSelectedUserId(e.target.value)}>
                   <option value="">{t("selectMember")}</option>
                   {availableMembers.map((cm) => (
                     <option key={cm.userId} value={cm.userId}>

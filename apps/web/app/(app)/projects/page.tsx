@@ -155,11 +155,11 @@ export default function ProjectsPage() {
           <div className="mb-3 flex flex-wrap items-center gap-2">
             <input
               className="input w-auto flex-1"
-              placeholder={t("searchPlaceholder")}
+              placeholder={t("searchPlaceholder")} aria-label={t("searchPlaceholder")}
               value={filters.search}
               onChange={(e) => setFilters((f) => ({ ...f, search: e.target.value }))}
             />
-            <select
+            <select aria-label={t("client")}
               className="input w-auto"
               value={filters.clientId}
               onChange={(e) => setFilters((f) => ({ ...f, clientId: e.target.value }))}

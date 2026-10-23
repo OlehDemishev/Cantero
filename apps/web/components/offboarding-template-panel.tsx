@@ -68,7 +68,7 @@ export function OffboardingTemplatePanel() {
       <form onSubmit={handleSubmit} className="flex max-w-md gap-2">
         <input
           required
-          placeholder={t("offboardingTaskTitlePlaceholder")}
+          placeholder={t("offboardingTaskTitlePlaceholder")} aria-label={t("offboardingTaskTitlePlaceholder")}
           className="input flex-1"
           value={title}
           onChange={(e) => setTitle(e.target.value)}

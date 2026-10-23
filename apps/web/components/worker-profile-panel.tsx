@@ -33,6 +33,7 @@ export function WorkerProfilePanel({ workerId, currency, onChanged }: { workerId
   const confirm = useConfirm();
   const td = useTranslations("dialog");
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
 
   const [worker, setWorker] = useState<WorkerProfile | null>(null);
   const [workerError, setWorkerError] = useState<Error | null>(null);
@@ -146,13 +147,13 @@ export function WorkerProfilePanel({ workerId, currency, onChanged }: { workerId
       <form onSubmit={saveProfile} className="card flex flex-col gap-3">
         <input
           required
-          placeholder={tc("name")}
+          placeholder={tc("name")} aria-label={tc("name")}
           className="input"
           value={form.name}
           onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
         />
         <input
-          placeholder={t("role")}
+          placeholder={t("role")} aria-label={t("role")}
           className="input"
           value={form.role}
           onChange={(e) => setForm((f) => ({ ...f, role: e.target.value }))}
@@ -237,7 +238,7 @@ export function WorkerProfilePanel({ workerId, currency, onChanged }: { workerId
         </div>
       ) : (
         <form onSubmit={setClockInPin} className="flex items-center gap-2">
-          <input
+          <input aria-label={ta("pin")}
             type="text"
             inputMode="numeric"
             pattern="\d{4,6}"

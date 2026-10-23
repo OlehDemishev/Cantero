@@ -70,6 +70,7 @@ export default function FleetPage() {
   const t = useTranslations("fleet");
   const tc = useTranslations("common");
   const tl = useTranslations("labels");
+  const ta = useTranslations("a11y");
 
   const { data: vehicles = null, error: vehiclesError, reload: reloadVehicles } = useApi<Vehicle[]>("/vehicles");
   const { data: workers = [] } = useApi<Worker[]>("/workers");
@@ -185,13 +186,13 @@ export default function FleetPage() {
         <form onSubmit={createVehicle} className="card mt-4 flex max-w-lg flex-col gap-2">
           <input
             required
-            placeholder={t("vehicleNamePlaceholder")}
+            placeholder={t("vehicleNamePlaceholder")} aria-label={t("vehicleNamePlaceholder")}
             className="input"
             value={form.name}
             onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
           />
           <div className="flex flex-wrap gap-2">
-            <select className="input" value={form.type} onChange={(e) => setForm((f) => ({ ...f, type: e.target.value as VehicleType }))}>
+            <select aria-label={ta("type")} className="input" value={form.type} onChange={(e) => setForm((f) => ({ ...f, type: e.target.value as VehicleType }))}>
               {VEHICLE_TYPES.map((vt) => (
                 <option key={vt} value={vt}>
                   {t(`type_${vt}`)}
@@ -199,19 +200,19 @@ export default function FleetPage() {
               ))}
             </select>
             <input
-              placeholder={t("vinPlaceholder")}
+              placeholder={t("vinPlaceholder")} aria-label={t("vinPlaceholder")}
               className="input"
               value={form.vin}
               onChange={(e) => setForm((f) => ({ ...f, vin: e.target.value }))}
             />
             <input
-              placeholder={t("licensePlatePlaceholder")}
+              placeholder={t("licensePlatePlaceholder")} aria-label={t("licensePlatePlaceholder")}
               className="input"
               value={form.licensePlate}
               onChange={(e) => setForm((f) => ({ ...f, licensePlate: e.target.value }))}
             />
           </div>
-          <select className="input" value={form.assignedDriverId} onChange={(e) => setForm((f) => ({ ...f, assignedDriverId: e.target.value }))}>
+          <select aria-label={ta("driver")} className="input" value={form.assignedDriverId} onChange={(e) => setForm((f) => ({ ...f, assignedDriverId: e.target.value }))}>
             <option value="">{t("noAssignedDriver")}</option>
             {workers.map((w) => (
               <option key={w.id} value={w.id}>
@@ -341,7 +342,7 @@ export default function FleetPage() {
                           </ul>
                         )}
                         <div className="flex flex-wrap items-end gap-2">
-                          <select
+                          <select aria-label={ta("result")}
                             className="input w-auto"
                             value={inspectionForm.result}
                             onChange={(e) => setInspectionForm((f) => ({ ...f, result: e.target.value as VehicleInspectionResult }))}
@@ -350,7 +351,7 @@ export default function FleetPage() {
                             <option value="failed">{t("result_failed")}</option>
                           </select>
                           <input
-                            placeholder={t("inspectorNamePlaceholder")}
+                            placeholder={t("inspectorNamePlaceholder")} aria-label={t("inspectorNamePlaceholder")}
                             className="input w-auto"
                             value={inspectionForm.inspectorName}
                             onChange={(e) => setInspectionForm((f) => ({ ...f, inspectorName: e.target.value }))}
@@ -381,7 +382,7 @@ export default function FleetPage() {
                             type="number"
                             min="0"
                             step="0.01"
-                            placeholder={t("quantityPlaceholder")}
+                            placeholder={t("quantityPlaceholder")} aria-label={t("quantityPlaceholder")}
                             className="input w-28"
                             value={fuelForm.quantity}
                             onChange={(e) => setFuelForm((f) => ({ ...f, quantity: e.target.value }))}
@@ -390,7 +391,7 @@ export default function FleetPage() {
                             type="number"
                             min="0"
                             step="0.01"
-                            placeholder={t("costPlaceholder")}
+                            placeholder={t("costPlaceholder")} aria-label={t("costPlaceholder")}
                             className="input w-28"
                             value={fuelForm.cost}
                             onChange={(e) => setFuelForm((f) => ({ ...f, cost: e.target.value }))}
@@ -399,7 +400,7 @@ export default function FleetPage() {
                             type="number"
                             min="0"
                             step="0.1"
-                            placeholder={t("odometerPlaceholder")}
+                            placeholder={t("odometerPlaceholder")} aria-label={t("odometerPlaceholder")}
                             className="input w-32"
                             value={fuelForm.odometerMiles}
                             onChange={(e) => setFuelForm((f) => ({ ...f, odometerMiles: e.target.value }))}
@@ -408,7 +409,7 @@ export default function FleetPage() {
                             type="number"
                             min="0"
                             step="0.1"
-                            placeholder={t("idleHoursPlaceholder")}
+                            placeholder={t("idleHoursPlaceholder")} aria-label={t("idleHoursPlaceholder")}
                             className="input w-28"
                             value={fuelForm.idleHours}
                             onChange={(e) => setFuelForm((f) => ({ ...f, idleHours: e.target.value }))}

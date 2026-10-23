@@ -262,13 +262,13 @@ export function MeetingsPanel({ projectId }: { projectId: string }) {
 
                       <div className="mt-2 flex flex-wrap items-center gap-1.5">
                         <input
-                          placeholder={t("actionItemDescriptionPlaceholder")}
+                          placeholder={t("actionItemDescriptionPlaceholder")} aria-label={t("actionItemDescriptionPlaceholder")}
                           className="input flex-1 py-1 text-xs"
                           value={draft.description}
                           onChange={(e) => setActionItemDrafts((f) => ({ ...f, [meeting.id]: { ...draft, description: e.target.value } }))}
                         />
                         <input
-                          placeholder={t("actionItemOwnerPlaceholder")}
+                          placeholder={t("actionItemOwnerPlaceholder")} aria-label={t("actionItemOwnerPlaceholder")}
                           className="input w-40 py-1 text-xs"
                           value={draft.ownerName}
                           onChange={(e) => setActionItemDrafts((f) => ({ ...f, [meeting.id]: { ...draft, ownerName: e.target.value } }))}
@@ -308,7 +308,7 @@ function ResolveButton({ itemId, onResolve, t }: { itemId: string; onResolve: (i
     <div className="flex items-center gap-1">
       <input
         autoFocus
-        placeholder={t("resolvedByPlaceholder")}
+        placeholder={t("resolvedByPlaceholder")} aria-label={t("resolvedByPlaceholder")}
         className="input w-28 py-0.5 text-xs"
         value={name}
         onChange={(e) => setName(e.target.value)}

@@ -35,6 +35,7 @@ export function StockKits() {
   const confirm = useConfirm();
   const td = useTranslations("dialog");
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
 
   const { data: kits = null, error: kitsError, reload: reloadKits } = useApi<StockKit[]>("/materials/stock-kits");
   const [materials, setMaterials] = useState<MaterialCatalogItem[]>([]);
@@ -119,7 +120,7 @@ export function StockKits() {
         </Field>
         <input
           required
-          placeholder={tc("name")}
+          placeholder={tc("name")} aria-label={tc("name")}
           className="input"
           value={form.name}
           onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
@@ -128,7 +129,7 @@ export function StockKits() {
         <p className="text-xs font-semibold uppercase tracking-wide text-fg-subtle">{t("components")}</p>
         {components.map((c, i) => (
           <div key={i} className="flex items-center gap-2">
-            <select
+            <select aria-label={ta("material")}
               className="input"
               value={c.materialCatalogItemId}
               onChange={(e) =>
@@ -141,7 +142,7 @@ export function StockKits() {
                 </option>
               ))}
             </select>
-            <input
+            <input aria-label={ta("quantity")}
               type="number"
               step="0.000001"
               className="input w-24"

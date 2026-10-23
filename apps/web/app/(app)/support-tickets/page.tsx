@@ -54,6 +54,7 @@ interface TicketDetail extends Ticket {
 export default function SupportTicketsPage() {
   const t = useTranslations("supportTickets");
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
   const isManager = useCan()("site.manage");
 
   const [statusFilter, setStatusFilter] = useState<TicketStatus | "">("");
@@ -196,7 +197,7 @@ export default function SupportTicketsPage() {
 
       {adding && (
         <form onSubmit={createTicket} className="card mt-4 flex flex-col gap-2 max-w-lg">
-          <select className="input" value={form.requesterClientId} onChange={(e) => setForm((f) => ({ ...f, requesterClientId: e.target.value }))}>
+          <select aria-label={ta("requester")} className="input" value={form.requesterClientId} onChange={(e) => setForm((f) => ({ ...f, requesterClientId: e.target.value }))}>
             <option value="">{t("internalRequester")}</option>
             {clients.map((c) => (
               <option key={c.id} value={c.id}>
@@ -206,32 +207,32 @@ export default function SupportTicketsPage() {
           </select>
           <input
             required
-            placeholder={t("requesterNamePlaceholder")}
+            placeholder={t("requesterNamePlaceholder")} aria-label={t("requesterNamePlaceholder")}
             className="input"
             value={form.requesterName}
             onChange={(e) => setForm((f) => ({ ...f, requesterName: e.target.value }))}
           />
           <input
-            placeholder={t("requesterEmailPlaceholder")}
+            placeholder={t("requesterEmailPlaceholder")} aria-label={t("requesterEmailPlaceholder")}
             className="input"
             value={form.requesterEmail}
             onChange={(e) => setForm((f) => ({ ...f, requesterEmail: e.target.value }))}
           />
           <input
             required
-            placeholder={t("subjectPlaceholder")}
+            placeholder={t("subjectPlaceholder")} aria-label={t("subjectPlaceholder")}
             className="input"
             value={form.subject}
             onChange={(e) => setForm((f) => ({ ...f, subject: e.target.value }))}
           />
           <div className="flex gap-2">
             <input
-              placeholder={t("categoryPlaceholder")}
+              placeholder={t("categoryPlaceholder")} aria-label={t("categoryPlaceholder")}
               className="input"
               value={form.category}
               onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
             />
-            <select className="input w-auto" value={form.priority} onChange={(e) => setForm((f) => ({ ...f, priority: e.target.value as TicketPriority }))}>
+            <select aria-label={ta("priority")} className="input w-auto" value={form.priority} onChange={(e) => setForm((f) => ({ ...f, priority: e.target.value as TicketPriority }))}>
               {TICKET_PRIORITIES.map((p) => (
                 <option key={p} value={p}>
                   {t(`priority_${p}`)}
@@ -303,7 +304,7 @@ export default function SupportTicketsPage() {
                   {expanded && detail && detail.id === ticket.id && (
                     <div className="mt-3 flex flex-col gap-3 border-t border-gray-100 dark:border-gray-700 pt-3">
                       <div className="flex flex-wrap items-center gap-2">
-                        <select
+                        <select aria-label={ta("assignee")}
                           className="input w-auto"
                           value={detail.assignedTo?.id ?? ""}
                           onChange={(e) => assign(ticket.id, e.target.value)}
@@ -340,7 +341,7 @@ export default function SupportTicketsPage() {
                       <div className="flex flex-col gap-2">
                         <textarea
                           rows={2}
-                          placeholder={t("replyPlaceholder")}
+                          placeholder={t("replyPlaceholder")} aria-label={t("replyPlaceholder")}
                           className="input"
                           value={replyText}
                           onChange={(e) => setReplyText(e.target.value)}

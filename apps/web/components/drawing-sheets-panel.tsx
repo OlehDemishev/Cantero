@@ -95,10 +95,10 @@ export function DrawingSheetsPanel({ projectId }: { projectId: string }) {
 
       <p className="border-t border-gray-100 pt-3 text-xs text-fg-subtle dark:border-gray-800">{t("singleSheetHint")}</p>
       <form onSubmit={upload} className="mt-1 flex flex-wrap items-end gap-2">
-        <input required placeholder={t("sheetNumberPlaceholder")} className="input w-32" value={form.sheetNumber} onChange={(e) => setForm((f) => ({ ...f, sheetNumber: e.target.value }))} />
-        <input placeholder={t("disciplinePlaceholder")} className="input w-32" value={form.discipline} onChange={(e) => setForm((f) => ({ ...f, discipline: e.target.value }))} />
-        <input placeholder={t("titlePlaceholder")} className="input" value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} />
-        <input placeholder={t("revisionPlaceholder")} className="input w-24" value={form.revision} onChange={(e) => setForm((f) => ({ ...f, revision: e.target.value }))} />
+        <input required placeholder={t("sheetNumberPlaceholder")} aria-label={t("sheetNumberPlaceholder")} className="input w-32" value={form.sheetNumber} onChange={(e) => setForm((f) => ({ ...f, sheetNumber: e.target.value }))} />
+        <input placeholder={t("disciplinePlaceholder")} aria-label={t("disciplinePlaceholder")} className="input w-32" value={form.discipline} onChange={(e) => setForm((f) => ({ ...f, discipline: e.target.value }))} />
+        <input placeholder={t("titlePlaceholder")} aria-label={t("titlePlaceholder")} className="input" value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} />
+        <input placeholder={t("revisionPlaceholder")} aria-label={t("revisionPlaceholder")} className="input w-24" value={form.revision} onChange={(e) => setForm((f) => ({ ...f, revision: e.target.value }))} />
         <input
           id="drawing-sheet-file-input"
           ref={sheetFileInputRef}

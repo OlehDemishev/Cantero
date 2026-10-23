@@ -29,6 +29,7 @@ interface Prequalification {
 export function SubcontractorPrequalificationPanel({ subcontractorId }: { subcontractorId: string }) {
   const t = useTranslations("subcontractorPrequalification");
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
 
   const { data: cycles = null, reload: reloadCycles, error: cyclesError } = useApi<Prequalification[]>(`/subcontractors/${subcontractorId}/prequalifications`);
   const [adding, setAdding] = useState(false);
@@ -100,7 +101,7 @@ export function SubcontractorPrequalificationPanel({ subcontractorId }: { subcon
         <form onSubmit={create} className="mb-3 flex flex-col gap-2 rounded-md border border-gray-200 dark:border-gray-700 p-2">
           <div className="flex flex-wrap gap-2">
             <input
-              placeholder={t("licenseNumberPlaceholder")}
+              placeholder={t("licenseNumberPlaceholder")} aria-label={t("licenseNumberPlaceholder")}
               className="input"
               value={form.licenseNumber}
               onChange={(e) => setForm((f) => ({ ...f, licenseNumber: e.target.value }))}
@@ -108,14 +109,14 @@ export function SubcontractorPrequalificationPanel({ subcontractorId }: { subcon
             <input
               type="number"
               step="0.01"
-              placeholder={t("bondingCapacityPlaceholder")}
+              placeholder={t("bondingCapacityPlaceholder")} aria-label={t("bondingCapacityPlaceholder")}
               className="input w-36"
               value={form.bondingCapacity}
               onChange={(e) => setForm((f) => ({ ...f, bondingCapacity: e.target.value }))}
             />
             <input
               type="number"
-              placeholder={t("yearsInBusinessPlaceholder")}
+              placeholder={t("yearsInBusinessPlaceholder")} aria-label={t("yearsInBusinessPlaceholder")}
               className="input w-28"
               value={form.yearsInBusiness}
               onChange={(e) => setForm((f) => ({ ...f, yearsInBusiness: e.target.value }))}
@@ -123,7 +124,7 @@ export function SubcontractorPrequalificationPanel({ subcontractorId }: { subcon
             <input
               type="number"
               step="0.01"
-              placeholder={t("safetyEmrPlaceholder")}
+              placeholder={t("safetyEmrPlaceholder")} aria-label={t("safetyEmrPlaceholder")}
               className="input w-28"
               value={form.safetyEmrRating}
               onChange={(e) => setForm((f) => ({ ...f, safetyEmrRating: e.target.value }))}
@@ -131,7 +132,7 @@ export function SubcontractorPrequalificationPanel({ subcontractorId }: { subcon
           </div>
           <textarea
             rows={2}
-            placeholder={t("referencesNotesPlaceholder")}
+            placeholder={t("referencesNotesPlaceholder")} aria-label={t("referencesNotesPlaceholder")}
             className="input"
             value={form.referencesNotes}
             onChange={(e) => setForm((f) => ({ ...f, referencesNotes: e.target.value }))}
@@ -175,18 +176,18 @@ export function SubcontractorPrequalificationPanel({ subcontractorId }: { subcon
                       type="number"
                       min="0"
                       max="100"
-                      placeholder={t("scorePlaceholder")}
+                      placeholder={t("scorePlaceholder")} aria-label={t("scorePlaceholder")}
                       className="input w-20 py-0.5 text-xs"
                       value={decideForm.score}
                       onChange={(e) => setDecideForm((f) => ({ ...f, score: e.target.value }))}
                     />
                     <input
-                      placeholder={t("reviewedByPlaceholder")}
+                      placeholder={t("reviewedByPlaceholder")} aria-label={t("reviewedByPlaceholder")}
                       className="input w-32 py-0.5 text-xs"
                       value={decideForm.reviewedByName}
                       onChange={(e) => setDecideForm((f) => ({ ...f, reviewedByName: e.target.value }))}
                     />
-                    <input
+                    <input aria-label={ta("expiryDate")}
                       type="date"
                       className="input py-0.5 text-xs"
                       value={decideForm.expiresAt}

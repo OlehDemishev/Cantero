@@ -52,6 +52,7 @@ export function PunchListPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("punchList");
   const tc = useTranslations("common");
   const tb = useTranslations("bulk");
+  const ta = useTranslations("a11y");
 
   const { data: items = null, reload: reloadItems, error: itemsError } = useApi<PunchListItem[]>(`/punch-list?projectId=${projectId}`);
   const { data: workers = [] } = useApi<Worker[]>("/workers");
@@ -160,7 +161,7 @@ export function PunchListPanel({ projectId }: { projectId: string }) {
         <div className="flex items-center gap-1.5">
           {templates.length > 0 && (
             <>
-              <select
+              <select aria-label={ta("template")}
                 className="input w-auto py-1 text-xs"
                 value={selectedTemplateId}
                 onChange={(e) => setSelectedTemplateId(e.target.value)}
@@ -306,7 +307,7 @@ export function PunchListPanel({ projectId }: { projectId: string }) {
             <li key={item.id} ref={(el) => { rowRefs.current[item.id] = el; }} className={`card ${deepLinkedId === item.id ? "ring-2 ring-brand-300" : ""}`}>
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-start gap-2">
-                  <input type="checkbox" className="no-print mt-1" checked={bulk.selected.has(item.id)} onChange={() => bulk.toggle(item.id)} />
+                  <input aria-label={ta("selectItem", { name: item.title })} type="checkbox" className="no-print mt-1" checked={bulk.selected.has(item.id)} onChange={() => bulk.toggle(item.id)} />
                   <span className="no-print"><CopyLinkButton url={buildItemDeepLink(projectId, "quality", "punch_list", item.id)} /></span>
                   <div>
                   <div className="flex items-center gap-2">
@@ -343,7 +344,7 @@ export function PunchListPanel({ projectId }: { projectId: string }) {
                           )}
                           <div className="mt-1 flex items-center gap-1.5">
                             <input
-                              placeholder={t("changeOrderIdPlaceholder")}
+                              placeholder={t("changeOrderIdPlaceholder")} aria-label={t("changeOrderIdPlaceholder")}
                               className="input py-0.5 text-xs"
                               value={changeOrderIdDrafts[item.id] ?? ""}
                               onChange={(e) => setChangeOrderIdDrafts((f) => ({ ...f, [item.id]: e.target.value }))}

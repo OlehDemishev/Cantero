@@ -41,6 +41,7 @@ interface SupplierPrice {
 export function WarehouseReorderSettings() {
   const t = useTranslations("warehouses");
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
 
   const [materials, setMaterials] = useState<MaterialCatalogItem[] | null>(null);
   const canSeeSuppliers = useCan()("purchasing.view");
@@ -159,7 +160,7 @@ export function WarehouseReorderSettings() {
                   </button>
                 </td>
                 <td>
-                  <input
+                  <input aria-label={ta("fieldOf", { field: t("reorderThreshold"), item: m.name })}
                     type="number"
                     step="0.01"
                     className="input w-24"
@@ -170,7 +171,7 @@ export function WarehouseReorderSettings() {
                   />
                 </td>
                 <td>
-                  <input
+                  <input aria-label={ta("fieldOf", { field: t("reorderQuantity"), item: m.name })}
                     type="number"
                     step="0.01"
                     className="input w-24"
@@ -181,7 +182,7 @@ export function WarehouseReorderSettings() {
                   />
                 </td>
                 <td>
-                  <select
+                  <select aria-label={ta("fieldOf", { field: t("preferredSupplier"), item: m.name })}
                     className="input w-auto"
                     value={draft.preferredSupplierId}
                     onChange={(e) =>

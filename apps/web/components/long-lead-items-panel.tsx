@@ -38,6 +38,7 @@ const EMPTY_FORM = { description: "", supplierId: "", requiredOnSiteDate: "", ex
 export function LongLeadItemsPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("longLeadItems");
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
 
   const { data: items = null, reload: reloadItems, error: itemsError } = useApi<LongLeadItem[]>(`/long-lead-items?projectId=${projectId}`);
   const canSeeSuppliers = useCan()("purchasing.view");
@@ -162,7 +163,7 @@ export function LongLeadItemsPanel({ projectId }: { projectId: string }) {
                   <td className="py-1.5">{item.description}</td>
                   <td>{item.supplier?.name ?? "—"}</td>
                   <td>
-                    <select
+                    <select aria-label={ta("fieldOf", { field: t("status"), item: item.description })}
                       className="input py-0.5 text-xs"
                       value={item.status}
                       onChange={(e) => updateStatus(item.id, e.target.value as LongLeadItemStatus)}
@@ -175,7 +176,7 @@ export function LongLeadItemsPanel({ projectId }: { projectId: string }) {
                     </select>
                   </td>
                   <td>
-                    <input
+                    <input aria-label={ta("fieldOf", { field: t("requiredOnSiteDate"), item: item.description })}
                       type="date"
                       className="input py-0.5 text-xs"
                       value={item.requiredOnSiteDate?.slice(0, 10) ?? ""}
@@ -183,7 +184,7 @@ export function LongLeadItemsPanel({ projectId }: { projectId: string }) {
                     />
                   </td>
                   <td>
-                    <input
+                    <input aria-label={ta("fieldOf", { field: t("expectedDeliveryDate"), item: item.description })}
                       type="date"
                       className="input py-0.5 text-xs"
                       value={item.expectedDeliveryDate?.slice(0, 10) ?? ""}
@@ -191,7 +192,7 @@ export function LongLeadItemsPanel({ projectId }: { projectId: string }) {
                     />
                   </td>
                   <td>
-                    <input
+                    <input aria-label={ta("fieldOf", { field: t("actualDeliveryDate"), item: item.description })}
                       type="date"
                       className="input py-0.5 text-xs"
                       value={item.actualDeliveryDate?.slice(0, 10) ?? ""}

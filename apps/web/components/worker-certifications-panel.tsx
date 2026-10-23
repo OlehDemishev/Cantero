@@ -17,6 +17,7 @@ interface Certification {
 
 export function WorkerCertificationsPanel({ workerId }: { workerId: string }) {
   const t = useTranslations("team");
+  const ta = useTranslations("a11y");
   const confirm = useConfirm();
   const { data: certifications = null, reload: reloadCertifications, error: certificationsError } = useApi<Certification[]>(`/workers/${workerId}/certifications`);
   const [certForm, setCertForm] = useState({ name: "", expiresAt: "" });
@@ -79,12 +80,12 @@ export function WorkerCertificationsPanel({ workerId }: { workerId: string }) {
       <form onSubmit={addCertification} className="mt-3 flex flex-col gap-2">
         <input
           required
-          placeholder={t("certificationNamePlaceholder")}
+          placeholder={t("certificationNamePlaceholder")} aria-label={t("certificationNamePlaceholder")}
           className="input"
           value={certForm.name}
           onChange={(e) => setCertForm((f) => ({ ...f, name: e.target.value }))}
         />
-        <input
+        <input aria-label={ta("expiryDate")}
           required
           type="date"
           className="input"

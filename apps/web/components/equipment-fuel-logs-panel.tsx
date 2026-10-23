@@ -34,6 +34,7 @@ interface Tco {
 
 export function EquipmentFuelLogsPanel({ equipmentId, currency }: { equipmentId: string; currency: string }) {
   const t = useTranslations("equipment");
+  const ta = useTranslations("a11y");
   const { data: fuelLogs = null, reload: reloadFuelLogs } = useApi<FuelLog[]>(`/equipment/${equipmentId}/fuel-logs`);
   const canSeeSuppliers = useCan()("purchasing.view");
   const { data: suppliers = [] } = useApi<Supplier[]>(canSeeSuppliers ? "/materials/suppliers" : null);
@@ -126,7 +127,7 @@ export function EquipmentFuelLogsPanel({ equipmentId, currency }: { equipmentId:
           type="number"
           step="0.01"
           min="0.01"
-          placeholder={t("quantityPlaceholder")}
+          placeholder={t("quantityPlaceholder")} aria-label={t("quantityPlaceholder")}
           className="input w-32"
           value={fuelForm.quantity}
           onChange={(e) => setFuelForm((f) => ({ ...f, quantity: e.target.value }))}
@@ -135,7 +136,7 @@ export function EquipmentFuelLogsPanel({ equipmentId, currency }: { equipmentId:
           type="number"
           step="0.01"
           min="0"
-          placeholder={t("cost")}
+          placeholder={t("cost")} aria-label={t("cost")}
           className="input"
           value={fuelForm.cost}
           onChange={(e) => setFuelForm((f) => ({ ...f, cost: e.target.value }))}
@@ -144,12 +145,12 @@ export function EquipmentFuelLogsPanel({ equipmentId, currency }: { equipmentId:
           type="number"
           step="0.1"
           min="0"
-          placeholder={t("meterHoursPlaceholder")}
+          placeholder={t("meterHoursPlaceholder")} aria-label={t("meterHoursPlaceholder")}
           className="input w-32"
           value={fuelForm.meterHours}
           onChange={(e) => setFuelForm((f) => ({ ...f, meterHours: e.target.value }))}
         />
-        <select className="input" value={fuelForm.supplierId} onChange={(e) => setFuelForm((f) => ({ ...f, supplierId: e.target.value }))}>
+        <select aria-label={ta("vendor")} className="input" value={fuelForm.supplierId} onChange={(e) => setFuelForm((f) => ({ ...f, supplierId: e.target.value }))}>
           <option value="">{t("noSupplier")}</option>
           {suppliers.map((s) => (
             <option key={s.id} value={s.id}>

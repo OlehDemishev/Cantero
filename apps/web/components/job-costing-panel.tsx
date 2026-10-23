@@ -210,7 +210,7 @@ export function JobCostingPanel({ projectId }: { projectId: string }) {
           {transferring && (
             <form onSubmit={submitTransfer} className="card mb-3 flex flex-col gap-2">
               <div className="flex flex-wrap gap-2">
-                <select
+                <select aria-label={t("transferFrom")}
                   className="input"
                   value={transferForm.fromCostCodeId}
                   onChange={(e) => setTransferForm((f) => ({ ...f, fromCostCodeId: e.target.value }))}
@@ -224,7 +224,7 @@ export function JobCostingPanel({ projectId }: { projectId: string }) {
                     </option>
                   ))}
                 </select>
-                <select
+                <select aria-label={t("transferTo")}
                   className="input"
                   value={transferForm.toCostCodeId}
                   onChange={(e) => setTransferForm((f) => ({ ...f, toCostCodeId: e.target.value }))}
@@ -243,14 +243,14 @@ export function JobCostingPanel({ projectId }: { projectId: string }) {
                   type="number"
                   step="0.01"
                   min="0.01"
-                  placeholder={t("transferAmountPlaceholder")}
+                  placeholder={t("transferAmountPlaceholder")} aria-label={t("transferAmountPlaceholder")}
                   className="input w-40"
                   value={transferForm.amount}
                   onChange={(e) => setTransferForm((f) => ({ ...f, amount: e.target.value }))}
                 />
                 <input
                   required
-                  placeholder={t("transferReasonPlaceholder")}
+                  placeholder={t("transferReasonPlaceholder")} aria-label={t("transferReasonPlaceholder")}
                   className="input flex-1"
                   value={transferForm.reason}
                   onChange={(e) => setTransferForm((f) => ({ ...f, reason: e.target.value }))}

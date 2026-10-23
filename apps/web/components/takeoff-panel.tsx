@@ -245,7 +245,7 @@ export function TakeoffPanel({ projectId }: { projectId: string }) {
           </button>
         ))}
         <form onSubmit={submitUpload} className="flex flex-wrap items-center gap-1">
-          <input placeholder={t("newTakeoffName")} className="input w-40 py-1 text-xs" value={uploadName} onChange={(e) => setUploadName(e.target.value)} />
+          <input placeholder={t("newTakeoffName")} aria-label={t("newTakeoffName")} className="input w-40 py-1 text-xs" value={uploadName} onChange={(e) => setUploadName(e.target.value)} />
           <input ref={fileInputRef} type="file" accept="image/*,application/pdf" className="hidden" onChange={(e) => chooseFile(e.target.files?.[0] ?? null)} />
           <button type="button" onClick={() => fileInputRef.current?.click()} className="btn-secondary px-2 py-1 text-xs">
             {uploadFile ? uploadFile.name : tc("chooseFile")}
@@ -405,7 +405,7 @@ export function TakeoffPanel({ projectId }: { projectId: string }) {
                     <>
                       {addToEstimateFor === m.id ? (
                         <>
-                          <select className="input w-auto py-1 text-xs" value={addToEstimateId} onChange={(e) => setAddToEstimateId(e.target.value)}>
+                          <select aria-label={t("addToEstimate")} className="input w-auto py-1 text-xs" value={addToEstimateId} onChange={(e) => setAddToEstimateId(e.target.value)}>
                             <option value="">—</option>
                             {draftEstimates.map((e) => (
                               <option key={e.id} value={e.id}>

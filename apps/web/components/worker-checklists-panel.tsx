@@ -42,9 +42,11 @@ export function WorkerChecklistsPanel({ workerId }: { workerId: string }) {
       ) : (
         <ul className="flex flex-col gap-1.5">
           {onboardingTasks.map((task) => (
-            <li key={task.id} className="card flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={task.done} onChange={() => toggleOnboardingTask(task.id)} />
-              <span className={task.done ? "text-fg-subtle line-through" : "text-fg"}>{task.title}</span>
+            <li key={task.id} className="card text-sm">
+              <label className="flex items-center gap-2">
+                <input type="checkbox" checked={task.done} onChange={() => toggleOnboardingTask(task.id)} />
+                <span className={task.done ? "text-fg-subtle line-through" : "text-fg"}>{task.title}</span>
+              </label>
             </li>
           ))}
         </ul>
@@ -55,9 +57,11 @@ export function WorkerChecklistsPanel({ workerId }: { workerId: string }) {
           <h2 className="mb-3 mt-8 text-sm font-semibold text-fg-muted">{t("offboardingChecklist")}</h2>
           <ul className="flex flex-col gap-1.5">
             {offboardingTasks.map((task) => (
-              <li key={task.id} className="card flex items-center gap-2 text-sm">
-                <input type="checkbox" checked={task.done} onChange={() => toggleOffboardingTask(task.id)} />
-                <span className={task.done ? "text-fg-subtle line-through" : "text-fg"}>{task.title}</span>
+              <li key={task.id} className="card text-sm">
+                <label className="flex items-center gap-2">
+                  <input type="checkbox" checked={task.done} onChange={() => toggleOffboardingTask(task.id)} />
+                  <span className={task.done ? "text-fg-subtle line-through" : "text-fg"}>{task.title}</span>
+                </label>
               </li>
             ))}
           </ul>

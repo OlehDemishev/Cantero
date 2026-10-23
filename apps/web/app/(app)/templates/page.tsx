@@ -188,13 +188,13 @@ export default function TemplatesPage() {
                 <div key={i} className="flex gap-2">
                   <input
                     className="input"
-                    placeholder={t("itemTitlePlaceholder")}
+                    placeholder={t("itemTitlePlaceholder")} aria-label={t("itemTitlePlaceholder")}
                     value={item.title}
                     onChange={(e) => updateItem(i, { title: e.target.value })}
                   />
                   <input
                     className="input"
-                    placeholder={t("itemLocationPlaceholder")}
+                    placeholder={t("itemLocationPlaceholder")} aria-label={t("itemLocationPlaceholder")}
                     value={item.location}
                     onChange={(e) => updateItem(i, { location: e.target.value })}
                   />

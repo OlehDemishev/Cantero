@@ -78,7 +78,7 @@ export function SavedViewsBar<T extends object>({
       <div className="flex items-center gap-1.5">
         <input
           className="input w-32 py-1 text-xs"
-          placeholder={t("nameThisView")}
+          placeholder={t("nameThisView")} aria-label={t("nameThisView")}
           value={name}
           onChange={(e) => setName(e.target.value)}
         />

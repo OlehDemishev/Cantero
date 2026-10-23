@@ -272,11 +272,11 @@ export default function ClientsPage() {
           <div className="mb-4 flex flex-wrap items-center gap-2">
             <input
               className="input w-auto flex-1"
-              placeholder={t("searchPlaceholder")}
+              placeholder={t("searchPlaceholder")} aria-label={t("searchPlaceholder")}
               value={filters.search}
               onChange={(e) => setFilters((f) => ({ ...f, search: e.target.value }))}
             />
-            <select
+            <select aria-label={t("owner")}
               className="input w-auto"
               value={filters.ownerWorkerId}
               onChange={(e) => setFilters((f) => ({ ...f, ownerWorkerId: e.target.value }))}
@@ -350,7 +350,7 @@ export default function ClientsPage() {
                             <textarea
                               rows={2}
                               className="input text-xs"
-                              placeholder={t("lostReasonPlaceholder")}
+                              placeholder={t("lostReasonPlaceholder")} aria-label={t("lostReasonPlaceholder")}
                               value={lostReasonDraft}
                               onChange={(e) => setLostReasonDraft(e.target.value)}
                             />

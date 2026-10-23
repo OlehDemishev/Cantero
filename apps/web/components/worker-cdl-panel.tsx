@@ -7,6 +7,7 @@ import { apiFetch, ApiError, notifyApiError } from "@/lib/api-client";
 export function WorkerCdlPanel({ workerId }: { workerId: string }) {
   const t = useTranslations("team");
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
 
   const [cdlExpiresAt, setCdlExpiresAt] = useState("");
   const [cdlBusy, setCdlBusy] = useState(false);
@@ -39,7 +40,7 @@ export function WorkerCdlPanel({ workerId }: { workerId: string }) {
     <>
       <h2 className="mb-3 mt-8 text-sm font-semibold text-fg-muted">{t("cdlExpiry")}</h2>
       <form onSubmit={saveCdlExpiry} className="flex items-center gap-2">
-        <input type="date" className="input flex-1" value={cdlExpiresAt} onChange={(e) => setCdlExpiresAt(e.target.value)} />
+        <input aria-label={ta("expiryDate")} type="date" className="input flex-1" value={cdlExpiresAt} onChange={(e) => setCdlExpiresAt(e.target.value)} />
         <button type="submit" disabled={cdlBusy} className="btn-secondary shrink-0">
           {tc("save")}
         </button>

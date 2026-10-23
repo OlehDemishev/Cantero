@@ -26,6 +26,7 @@ interface Client {
 export function ClientTaxPanel({ clientId }: { clientId: string }) {
   const tt = useTranslations("tax");
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
 
   const { data: taxJurisdictions = [] } = useApi<TaxJurisdiction[]>("/tax/jurisdictions");
   const [taxJurisdictionId, setTaxJurisdictionId] = useState("");
@@ -83,7 +84,7 @@ export function ClientTaxPanel({ clientId }: { clientId: string }) {
     <div className="mt-6 card max-w-md">
       <h2 className="mb-3 text-sm font-semibold text-fg-muted">{tt("clientTaxTitle")}</h2>
       <form onSubmit={saveTaxJurisdiction} className="flex items-center gap-2">
-        <select className="input flex-1" value={taxJurisdictionId} onChange={(e) => setTaxJurisdictionId(e.target.value)}>
+        <select aria-label={ta("taxJurisdiction")} className="input flex-1" value={taxJurisdictionId} onChange={(e) => setTaxJurisdictionId(e.target.value)}>
           <option value="">{tt("noJurisdictionAssigned")}</option>
           {taxJurisdictions.map((j) => (
             <option key={j.id} value={j.id}>
@@ -121,12 +122,12 @@ export function ClientTaxPanel({ clientId }: { clientId: string }) {
       )}
       <form onSubmit={addExemptionCertificate} className="flex flex-wrap items-end gap-2">
         <input
-          placeholder={tt("certificateNumberPlaceholder")}
+          placeholder={tt("certificateNumberPlaceholder")} aria-label={tt("certificateNumberPlaceholder")}
           className="input w-auto"
           value={certForm.certificateNumber}
           onChange={(e) => setCertForm((f) => ({ ...f, certificateNumber: e.target.value }))}
         />
-        <input type="date" className="input w-auto" value={certForm.expiresAt} onChange={(e) => setCertForm((f) => ({ ...f, expiresAt: e.target.value }))} />
+        <input aria-label={ta("expiryDate")} type="date" className="input w-auto" value={certForm.expiresAt} onChange={(e) => setCertForm((f) => ({ ...f, expiresAt: e.target.value }))} />
         <button type="submit" disabled={taxBusy} className="btn-secondary shrink-0 px-2.5 py-1 text-xs">
           {tt("addCertificate")}
         </button>

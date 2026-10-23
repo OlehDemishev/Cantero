@@ -16,6 +16,7 @@ interface Broadcast {
 
 export function CrewSmsBroadcastPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("crewSmsBroadcast");
+  const ta = useTranslations("a11y");
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -46,7 +47,7 @@ export function CrewSmsBroadcastPanel({ projectId }: { projectId: string }) {
       <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("title")}</h2>
       <div className="card">
         <form onSubmit={handleSend} className="flex flex-col gap-2">
-          <textarea
+          <textarea aria-label={ta("message")}
             className="input h-20"
             placeholder={t("placeholder")}
             value={message}

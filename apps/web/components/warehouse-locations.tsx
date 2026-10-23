@@ -55,6 +55,7 @@ export function WarehouseLocations({ warehouseId }: { warehouseId: string }) {
   const t = useTranslations("warehouses");
   const confirm = useConfirm();
   const td = useTranslations("dialog");
+  const ta = useTranslations("a11y");
   const { data: locations = null, reload: reloadLocations } = useApi<WarehouseLocation[]>(`/materials/warehouse-locations?warehouseId=${warehouseId}`);
   const [form, setForm] = useState({ parentId: "", kind: "zone" as (typeof KINDS)[number], code: "" });
   const [error, setError] = useState<string | null>(null);
@@ -114,7 +115,7 @@ export function WarehouseLocations({ warehouseId }: { warehouseId: string }) {
             ))}
           </select>
         </Field>
-        <select
+        <select aria-label={ta("locationType")}
           className="input w-auto"
           value={form.kind}
           onChange={(e) => setForm((f) => ({ ...f, kind: e.target.value as (typeof KINDS)[number] }))}
@@ -127,7 +128,7 @@ export function WarehouseLocations({ warehouseId }: { warehouseId: string }) {
         </select>
         <input
           required
-          placeholder={t("locationCode")}
+          placeholder={t("locationCode")} aria-label={t("locationCode")}
           className="input w-28"
           value={form.code}
           onChange={(e) => setForm((f) => ({ ...f, code: e.target.value }))}

@@ -16,6 +16,7 @@ const CNAME_TARGET = "portal.cantero.dev";
 export function CustomPortalDomainPanel({ canManage }: { canManage: boolean }) {
   const t = useTranslations("customPortalDomain");
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
 
   const [company, setCompany] = useState<Company | null>(null);
   const [domainInput, setDomainInput] = useState("");
@@ -70,7 +71,7 @@ export function CustomPortalDomainPanel({ canManage }: { canManage: boolean }) {
 
       <form onSubmit={save} className="flex flex-col gap-2">
         <div className="flex items-center gap-2">
-          <input
+          <input aria-label={ta("domain")}
             className="input flex-1 text-xs"
             placeholder="portal.mycompany.com"
             value={domainInput}

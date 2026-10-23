@@ -21,6 +21,7 @@ interface VariantSummary {
 export function EstimateVariantsPanel({ estimateId, currency }: { estimateId: string; currency: string }) {
   const t = useTranslations("estimates");
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
   const router = useRouter();
 
   const { data: variants = null } = useApi<VariantSummary[]>(`/estimates/${estimateId}/variants`);
@@ -80,7 +81,7 @@ export function EstimateVariantsPanel({ estimateId, currency }: { estimateId: st
         </div>
       )}
       <form onSubmit={createVariant} className="flex items-end gap-2">
-        <input
+        <input aria-label={ta("label")}
           required
           placeholder={t("variantLabelPlaceholder")}
           className="input"

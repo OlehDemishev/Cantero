@@ -23,6 +23,7 @@ interface MaintenanceRecord {
 
 export function EquipmentMaintenanceRecordsPanel({ equipmentId, currency }: { equipmentId: string; currency: string }) {
   const t = useTranslations("equipment");
+  const ta = useTranslations("a11y");
   const { data: maintenanceRecords = null, reload: reloadMaintenanceRecords } = useApi<MaintenanceRecord[]>(`/equipment/${equipmentId}/maintenance-records`);
   const canSeeSuppliers = useCan()("purchasing.view");
   const { data: suppliers = [] } = useApi<Supplier[]>(canSeeSuppliers ? "/materials/suppliers" : null);
@@ -82,7 +83,7 @@ export function EquipmentMaintenanceRecordsPanel({ equipmentId, currency }: { eq
       <form onSubmit={addMaintenanceRecord} className="flex flex-col gap-2">
         <input
           required
-          placeholder={t("descriptionPlaceholder")}
+          placeholder={t("descriptionPlaceholder")} aria-label={t("descriptionPlaceholder")}
           className="input"
           value={maintenanceForm.description}
           onChange={(e) => setMaintenanceForm((f) => ({ ...f, description: e.target.value }))}
@@ -92,7 +93,7 @@ export function EquipmentMaintenanceRecordsPanel({ equipmentId, currency }: { eq
             type="number"
             step="0.01"
             min="0"
-            placeholder={t("cost")}
+            placeholder={t("cost")} aria-label={t("cost")}
             className="input"
             value={maintenanceForm.cost}
             onChange={(e) => setMaintenanceForm((f) => ({ ...f, cost: e.target.value }))}
@@ -101,12 +102,12 @@ export function EquipmentMaintenanceRecordsPanel({ equipmentId, currency }: { eq
             type="number"
             step="0.1"
             min="0"
-            placeholder={t("meterHoursPlaceholder")}
+            placeholder={t("meterHoursPlaceholder")} aria-label={t("meterHoursPlaceholder")}
             className="input w-32"
             value={maintenanceForm.meterHours}
             onChange={(e) => setMaintenanceForm((f) => ({ ...f, meterHours: e.target.value }))}
           />
-          <select
+          <select aria-label={ta("vendor")}
             className="input"
             value={maintenanceForm.supplierId}
             onChange={(e) => setMaintenanceForm((f) => ({ ...f, supplierId: e.target.value }))}

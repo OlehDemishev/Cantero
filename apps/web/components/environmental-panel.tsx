@@ -48,6 +48,7 @@ const OPEN_INCIDENT_STATUSES: EnvironmentalIncidentStatus[] = ["open", "containe
 export function EnvironmentalPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("environmental");
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
 
   const { data: permits = null, reload: reloadPermits, error: permitsError } = useApi<StormwaterPermit[]>(`/projects/${projectId}/stormwater-permits`);
   const { data: incidents = null, reload: reloadIncidents, error: incidentsError } = useApi<EnvironmentalIncident[]>(`/projects/${projectId}/environmental-incidents`);
@@ -162,7 +163,7 @@ export function EnvironmentalPanel({ projectId }: { projectId: string }) {
       {addingPermit && (
         <form onSubmit={createPermit} className="card mb-3 flex flex-wrap items-end gap-2">
           <input
-            placeholder={t("permitNumberPlaceholder")}
+            placeholder={t("permitNumberPlaceholder")} aria-label={t("permitNumberPlaceholder")}
             className="input"
             value={permitForm.permitNumber}
             onChange={(e) => setPermitForm((f) => ({ ...f, permitNumber: e.target.value }))}
@@ -212,12 +213,12 @@ export function EnvironmentalPanel({ projectId }: { projectId: string }) {
                   {inspectingPermitId === p.id ? (
                     <>
                       <input
-                        placeholder={t("triggerReasonPlaceholder")}
+                        placeholder={t("triggerReasonPlaceholder")} aria-label={t("triggerReasonPlaceholder")}
                         className="input"
                         value={inspectionForm.triggerReason}
                         onChange={(e) => setInspectionForm((f) => ({ ...f, triggerReason: e.target.value }))}
                       />
-                      <select
+                      <select aria-label={ta("result")}
                         className="input"
                         value={inspectionForm.result}
                         onChange={(e) => setInspectionForm((f) => ({ ...f, result: e.target.value as BmpInspectionResult }))}
@@ -226,7 +227,7 @@ export function EnvironmentalPanel({ projectId }: { projectId: string }) {
                         <option value="deficient">{t("result_deficient")}</option>
                       </select>
                       <input
-                        placeholder={t("inspectorNamePlaceholder")}
+                        placeholder={t("inspectorNamePlaceholder")} aria-label={t("inspectorNamePlaceholder")}
                         className="input"
                         value={inspectionForm.inspectorName}
                         onChange={(e) => setInspectionForm((f) => ({ ...f, inspectorName: e.target.value }))}
@@ -268,14 +269,14 @@ export function EnvironmentalPanel({ projectId }: { projectId: string }) {
         <form onSubmit={reportIncident} className="card mb-3 flex flex-col gap-2">
           <textarea
             required
-            placeholder={t("descriptionPlaceholder")}
+            placeholder={t("descriptionPlaceholder")} aria-label={t("descriptionPlaceholder")}
             className="input"
             rows={2}
             value={incidentForm.description}
             onChange={(e) => setIncidentForm((f) => ({ ...f, description: e.target.value }))}
           />
           <div className="flex flex-wrap items-center gap-2">
-            <select
+            <select aria-label={ta("severity")}
               className="input"
               value={incidentForm.severity}
               onChange={(e) => setIncidentForm((f) => ({ ...f, severity: e.target.value as EnvironmentalIncidentSeverity }))}

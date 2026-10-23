@@ -219,7 +219,7 @@ export function CustomReportsPanel() {
           </button>
           <input
             className="input w-auto"
-            placeholder={t("reportNamePlaceholder")}
+            placeholder={t("reportNamePlaceholder")} aria-label={t("reportNamePlaceholder")}
             value={reportName}
             onChange={(e) => setReportName(e.target.value)}
           />

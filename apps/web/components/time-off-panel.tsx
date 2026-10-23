@@ -29,6 +29,7 @@ interface TimeOffRequest {
 export function TimeOffPanel() {
   const t = useTranslations("timeOff");
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
   const canDecide = useCan()("site.crewTime");
 
   const { data: requests = null, reload: reloadRequests, error: requestsError } = useApi<TimeOffRequest[]>("/time-off");
@@ -79,7 +80,7 @@ export function TimeOffPanel() {
         <div className="card lg:col-span-1">
           <h3 className="mb-3 text-xs font-semibold text-fg-subtle">{t("newRequest")}</h3>
           <form onSubmit={submit} className="flex flex-col gap-2">
-            <select
+            <select aria-label={ta("worker")}
               required
               className="input"
               value={form.workerId}
@@ -92,7 +93,7 @@ export function TimeOffPanel() {
                 </option>
               ))}
             </select>
-            <select
+            <select aria-label={t("type")}
               className="input"
               value={form.type}
               onChange={(e) => setForm((f) => ({ ...f, type: e.target.value as TimeOffType }))}
@@ -101,14 +102,14 @@ export function TimeOffPanel() {
               <option value="sick">{t("sick")}</option>
               <option value="unpaid">{t("unpaid")}</option>
             </select>
-            <input
+            <input aria-label={ta("startDate")}
               required
               type="date"
               className="input"
               value={form.startDate}
               onChange={(e) => setForm((f) => ({ ...f, startDate: e.target.value, endDate: f.endDate && f.endDate < e.target.value ? e.target.value : f.endDate }))}
             />
-            <input
+            <input aria-label={ta("endDate")}
               required
               type="date"
               min={form.startDate || undefined}
@@ -117,7 +118,7 @@ export function TimeOffPanel() {
               onChange={(e) => setForm((f) => ({ ...f, endDate: e.target.value }))}
             />
             <input
-              placeholder={t("reason")}
+              placeholder={t("reason")} aria-label={t("reason")}
               className="input"
               value={form.reason}
               onChange={(e) => setForm((f) => ({ ...f, reason: e.target.value }))}

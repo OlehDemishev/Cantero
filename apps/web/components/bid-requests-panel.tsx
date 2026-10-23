@@ -79,6 +79,7 @@ export function BidRequestsPanel({ projectId }: { projectId: string }) {
   const confirm = useConfirm();
   const td = useTranslations("dialog");
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
 
@@ -325,13 +326,13 @@ export function BidRequestsPanel({ projectId }: { projectId: string }) {
             {lineForm.map((row, i) => (
               <div key={i} className="flex items-center gap-1.5">
                 <input
-                  placeholder={t("positionNo")}
+                  placeholder={t("positionNo")} aria-label={t("positionNo")}
                   className="input w-20 py-1 text-xs"
                   value={row.positionNo}
                   onChange={(e) => updateLineRow(i, "positionNo", e.target.value)}
                 />
                 <input
-                  placeholder={t("lineDescription")}
+                  placeholder={t("lineDescription")} aria-label={t("lineDescription")}
                   className="input flex-1 py-1 text-xs"
                   value={row.description}
                   onChange={(e) => updateLineRow(i, "description", e.target.value)}
@@ -339,13 +340,13 @@ export function BidRequestsPanel({ projectId }: { projectId: string }) {
                 <input
                   type="number"
                   step="any"
-                  placeholder={t("quantity")}
+                  placeholder={t("quantity")} aria-label={t("quantity")}
                   className="input w-20 py-1 text-xs"
                   value={row.quantity}
                   onChange={(e) => updateLineRow(i, "quantity", e.target.value)}
                 />
                 <input
-                  placeholder={t("unit")}
+                  placeholder={t("unit")} aria-label={t("unit")}
                   className="input w-16 py-1 text-xs"
                   value={row.unit}
                   onChange={(e) => updateLineRow(i, "unit", e.target.value)}
@@ -411,13 +412,13 @@ export function BidRequestsPanel({ projectId }: { projectId: string }) {
                         ))}
                       </div>
                       <form onSubmit={(e) => addCriterion(r.id, e)} className="mt-1.5 flex items-center gap-1.5">
-                        <input
+                        <input aria-label={ta("criterion")}
                           placeholder={t("criterionLabelPlaceholder")}
                           className="input py-1 text-xs"
                           value={criterionForm.label}
                           onChange={(e) => setCriterionForm((f) => ({ ...f, label: e.target.value }))}
                         />
-                        <input
+                        <input aria-label={ta("weight")}
                           type="number"
                           min="1"
                           max="10"
@@ -460,7 +461,7 @@ export function BidRequestsPanel({ projectId }: { projectId: string }) {
                               {d.criteria.map((c) => (
                                 <td key={c.id} className="px-1 text-center">
                                   {dBid ? (
-                                    <select
+                                    <select aria-label={ta("fieldOf", { field: ta("score"), item: `${inv.subcontractor.name}, ${c.label}` })}
                                       className="input w-14 py-0.5 text-center text-xs"
                                       value={scoresByCriterion[c.id] ?? ""}
                                       onChange={(e) => scoreBid(r.id, dBid.id, c.id, Number(e.target.value))}

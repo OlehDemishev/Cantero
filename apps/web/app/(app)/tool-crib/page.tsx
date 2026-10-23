@@ -37,6 +37,7 @@ interface ToolCribItem {
 export default function ToolCribPage() {
   const t = useTranslations("toolCrib");
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
   const { data: me } = useMe();
 
   const { data: items = null, error: itemsError, reload: reloadItems } = useApi<ToolCribItem[]>("/tool-crib/items");
@@ -139,13 +140,13 @@ export default function ToolCribPage() {
         <form onSubmit={create} className="card mb-6 flex flex-wrap items-end gap-2">
           <input
             required
-            placeholder={t("namePlaceholder")}
+            placeholder={t("namePlaceholder")} aria-label={t("namePlaceholder")}
             className="input"
             value={form.name}
             onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
           />
           <input
-            placeholder={t("barcodePlaceholder")}
+            placeholder={t("barcodePlaceholder")} aria-label={t("barcodePlaceholder")}
             className="input"
             value={form.barcode}
             onChange={(e) => setForm((f) => ({ ...f, barcode: e.target.value }))}
@@ -154,7 +155,7 @@ export default function ToolCribPage() {
             type="number"
             step="0.01"
             min="0"
-            placeholder={t("replacementCostPlaceholder")}
+            placeholder={t("replacementCostPlaceholder")} aria-label={t("replacementCostPlaceholder")}
             className="input w-40"
             value={form.replacementCost}
             onChange={(e) => setForm((f) => ({ ...f, replacementCost: e.target.value }))}
@@ -162,7 +163,7 @@ export default function ToolCribPage() {
           <input
             type="number"
             min="0"
-            placeholder={t("parLevelPlaceholder")}
+            placeholder={t("parLevelPlaceholder")} aria-label={t("parLevelPlaceholder")}
             className="input w-32"
             value={form.parLevel}
             onChange={(e) => setForm((f) => ({ ...f, parLevel: e.target.value }))}
@@ -170,7 +171,7 @@ export default function ToolCribPage() {
           <input
             type="number"
             min="0"
-            placeholder={t("quantityOnHandPlaceholder")}
+            placeholder={t("quantityOnHandPlaceholder")} aria-label={t("quantityOnHandPlaceholder")}
             className="input w-32"
             value={form.quantityOnHand}
             onChange={(e) => setForm((f) => ({ ...f, quantityOnHand: e.target.value }))}
@@ -218,7 +219,7 @@ export default function ToolCribPage() {
                         </span>
                         {checkInId === co.id ? (
                           <div className="flex items-center gap-1.5">
-                            <select
+                            <select aria-label={ta("returnCondition")}
                               className="input py-0.5 text-xs"
                               value={checkInForm.returnCondition}
                               onChange={(e) => setCheckInForm((f) => ({ ...f, returnCondition: e.target.value as ToolCheckoutCondition }))}
@@ -234,7 +235,7 @@ export default function ToolCribPage() {
                                 type="number"
                                 step="0.01"
                                 min="0"
-                                placeholder={t("chargeAmountPlaceholder", { currency: me?.company.currency ?? "" })}
+                                placeholder={t("chargeAmountPlaceholder", { currency: me?.company.currency ?? "" })} aria-label={t("chargeAmountPlaceholder", { currency: me?.company.currency ?? "" })}
                                 className="input w-28 py-0.5 text-xs"
                                 value={checkInForm.chargeAmount}
                                 onChange={(e) => setCheckInForm((f) => ({ ...f, chargeAmount: e.target.value }))}
@@ -259,7 +260,7 @@ export default function ToolCribPage() {
 
                 {checkoutItemId === item.id ? (
                   <div className="mt-3 flex flex-wrap items-end gap-2 border-t border-gray-100 dark:border-gray-700 pt-3">
-                    <select
+                    <select aria-label={ta("worker")}
                       className="input"
                       value={checkoutForm.workerId}
                       onChange={(e) => setCheckoutForm((f) => ({ ...f, workerId: e.target.value }))}
@@ -274,7 +275,7 @@ export default function ToolCribPage() {
                       type="number"
                       min="1"
                       max={item.quantityOnHand}
-                      placeholder={t("quantity")}
+                      placeholder={t("quantity")} aria-label={t("quantity")}
                       className="input w-24"
                       value={checkoutForm.quantity}
                       onChange={(e) => setCheckoutForm((f) => ({ ...f, quantity: e.target.value }))}

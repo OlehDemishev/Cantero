@@ -7,6 +7,7 @@ import { Alert } from "@/components/ui/alert";
 
 export default function SupplierPortalLoginPage() {
   const t = useTranslations("supplierPortal");
+  const ta = useTranslations("a11y");
   const [email, setEmail] = useState("");
   const [busy, setBusy] = useState(false);
   const [sent, setSent] = useState(false);
@@ -45,7 +46,7 @@ export default function SupplierPortalLoginPage() {
             </Alert>
           ) : (
             <form onSubmit={requestLink} className="mt-4 flex flex-col gap-3">
-              <input
+              <input aria-label={ta("email")}
                 required
                 type="email"
                 placeholder={t("emailPlaceholder")}

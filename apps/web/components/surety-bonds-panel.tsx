@@ -28,6 +28,7 @@ interface SuretyBond {
 export function SuretyBondsPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("suretyBonds");
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
 
@@ -89,7 +90,7 @@ export function SuretyBondsPanel({ projectId }: { projectId: string }) {
 
       {adding && (
         <form onSubmit={createBond} className="card mb-3 flex flex-wrap items-end gap-2">
-          <select className="input" value={form.type} onChange={(e) => setForm((f) => ({ ...f, type: e.target.value as SuretyBondType }))}>
+          <select aria-label={ta("type")} className="input" value={form.type} onChange={(e) => setForm((f) => ({ ...f, type: e.target.value as SuretyBondType }))}>
             {SURETY_BOND_TYPES.map((type) => (
               <option key={type} value={type}>
                 {t(`type_${type}`)}
@@ -98,13 +99,13 @@ export function SuretyBondsPanel({ projectId }: { projectId: string }) {
           </select>
           <input
             required
-            placeholder={t("suretyNamePlaceholder")}
+            placeholder={t("suretyNamePlaceholder")} aria-label={t("suretyNamePlaceholder")}
             className="input"
             value={form.suretyName}
             onChange={(e) => setForm((f) => ({ ...f, suretyName: e.target.value }))}
           />
           <input
-            placeholder={t("bondNumberPlaceholder")}
+            placeholder={t("bondNumberPlaceholder")} aria-label={t("bondNumberPlaceholder")}
             className="input"
             value={form.bondNumber}
             onChange={(e) => setForm((f) => ({ ...f, bondNumber: e.target.value }))}
@@ -114,7 +115,7 @@ export function SuretyBondsPanel({ projectId }: { projectId: string }) {
             type="number"
             step="0.01"
             min="0"
-            placeholder={t("penalSumPlaceholder", { currency })}
+            placeholder={t("penalSumPlaceholder", { currency })} aria-label={t("penalSumPlaceholder", { currency })}
             className="input w-40"
             value={form.penalSum}
             onChange={(e) => setForm((f) => ({ ...f, penalSum: e.target.value }))}

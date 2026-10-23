@@ -21,6 +21,7 @@ export function MarkupRulesPanel() {
   const confirm = useConfirm();
   const td = useTranslations("dialog");
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
 
   const { data: rules = null, reload: reloadRules, error: rulesError } = useApi<MarkupRule[]>("/markup-rules");
   const [form, setForm] = useState({ costType: "materials" as MarkupCostType, markupPercent: "" });
@@ -77,7 +78,7 @@ export function MarkupRulesPanel() {
       )}
 
       <form onSubmit={save} className="flex flex-wrap items-end gap-2 border-t border-gray-100 pt-3 dark:border-gray-800">
-        <select className="input" value={form.costType} onChange={(e) => setForm((f) => ({ ...f, costType: e.target.value as MarkupCostType }))}>
+        <select aria-label={ta("costType")} className="input" value={form.costType} onChange={(e) => setForm((f) => ({ ...f, costType: e.target.value as MarkupCostType }))}>
           {MARKUP_COST_TYPES.map((ct) => (
             <option key={ct} value={ct}>
               {t(`costType_${ct}`)}
@@ -90,7 +91,7 @@ export function MarkupRulesPanel() {
           step="0.01"
           min="0"
           max="500"
-          placeholder={t("markupPercentPlaceholder")}
+          placeholder={t("markupPercentPlaceholder")} aria-label={t("markupPercentPlaceholder")}
           className="input w-32"
           value={form.markupPercent}
           onChange={(e) => setForm((f) => ({ ...f, markupPercent: e.target.value }))}

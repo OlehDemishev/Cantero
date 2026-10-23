@@ -136,7 +136,7 @@ export function ClientDetail({ clientId }: { clientId: string }) {
           <textarea
             rows={2}
             className="input"
-            placeholder={t("lostReasonPlaceholder")}
+            placeholder={t("lostReasonPlaceholder")} aria-label={t("lostReasonPlaceholder")}
             value={lostReasonDraft}
             onChange={(e) => setLostReasonDraft(e.target.value)}
           />
@@ -154,7 +154,7 @@ export function ClientDetail({ clientId }: { clientId: string }) {
           <input
             required
             className="input"
-            placeholder={t("projectName")}
+            placeholder={t("projectName")} aria-label={t("projectName")}
             value={convertForm.name}
             onChange={(e) => setConvertForm((f) => ({ ...f, name: e.target.value }))}
           />

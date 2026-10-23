@@ -88,26 +88,26 @@ export function ClientBillingAddressPanel({ clientId }: { clientId: string }) {
       <form onSubmit={saveBilling} className="flex flex-col gap-2">
         <input
           className="input"
-          placeholder={t("street")}
+          placeholder={t("street")} aria-label={t("street")}
           value={billingForm.street}
           onChange={(e) => setBillingForm((f) => ({ ...f, street: e.target.value }))}
         />
         <div className="flex gap-2">
           <input
             className="input flex-1"
-            placeholder={t("city")}
+            placeholder={t("city")} aria-label={t("city")}
             value={billingForm.city}
             onChange={(e) => setBillingForm((f) => ({ ...f, city: e.target.value }))}
           />
           <input
             className="input w-24"
-            placeholder={t("postalCode")}
+            placeholder={t("postalCode")} aria-label={t("postalCode")}
             value={billingForm.postalCode}
             onChange={(e) => setBillingForm((f) => ({ ...f, postalCode: e.target.value }))}
           />
           <input
             className="input w-16"
-            placeholder={t("countryCode")}
+            placeholder={t("countryCode")} aria-label={t("countryCode")}
             maxLength={2}
             value={billingForm.country}
             onChange={(e) => setBillingForm((f) => ({ ...f, country: e.target.value.toUpperCase() }))}
@@ -115,26 +115,26 @@ export function ClientBillingAddressPanel({ clientId }: { clientId: string }) {
         </div>
         <input
           className="input"
-          placeholder={t("vatIdPlaceholder")}
+          placeholder={t("vatIdPlaceholder")} aria-label={t("vatIdPlaceholder")}
           value={billingForm.vatId}
           onChange={(e) => setBillingForm((f) => ({ ...f, vatId: e.target.value }))}
         />
         <input
           className="input"
-          placeholder={t("datevDebitorNumber")}
+          placeholder={t("datevDebitorNumber")} aria-label={t("datevDebitorNumber")}
           value={billingForm.datevDebitorNumber}
           onChange={(e) => setBillingForm((f) => ({ ...f, datevDebitorNumber: e.target.value.replace(/\D/g, "") }))}
         />
         <div className="flex gap-2">
           <input
             className="input w-24"
-            placeholder={t("peppolScheme")}
+            placeholder={t("peppolScheme")} aria-label={t("peppolScheme")}
             value={billingForm.peppolScheme}
             onChange={(e) => setBillingForm((f) => ({ ...f, peppolScheme: e.target.value }))}
           />
           <input
             className="input flex-1"
-            placeholder={t("peppolParticipantId")}
+            placeholder={t("peppolParticipantId")} aria-label={t("peppolParticipantId")}
             value={billingForm.peppolParticipantId}
             onChange={(e) => setBillingForm((f) => ({ ...f, peppolParticipantId: e.target.value }))}
           />

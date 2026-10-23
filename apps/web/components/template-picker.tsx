@@ -33,12 +33,13 @@ export function TemplatePicker({
   onSelect: (selection: TemplateSelection) => void;
 }) {
   const t = useTranslations("checklistTemplates");
+  const ta = useTranslations("a11y");
   const { data: templates = [] } = useApi<Template[]>(`/checklist-templates?type=${type}`);
 
   if (templates.length === 0) return null;
 
   return (
-    <select
+    <select aria-label={ta("template")}
       className="input"
       value=""
       onChange={(e) => {

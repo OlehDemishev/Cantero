@@ -60,6 +60,7 @@ export function EstimateChangeOrdersPanel({
   const t = useTranslations("estimates");
   const confirm = useConfirm();
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
   const { data: me } = useMe();
 
   const [changeOrders, setChangeOrders] = useState<ChangeOrder[] | null>(null);
@@ -251,7 +252,7 @@ export function EstimateChangeOrdersPanel({
 
                 {co.status === "draft" && (
                   <div className="mt-3 flex items-end gap-2 border-t border-gray-100 dark:border-gray-700 pt-3">
-                    <select
+                    <select aria-label={t("rateItem")}
                       className="input"
                       value={line.rateCatalogItemId}
                       onChange={(e) =>
@@ -264,7 +265,7 @@ export function EstimateChangeOrdersPanel({
                         </option>
                       ))}
                     </select>
-                    <input
+                    <input aria-label={t("quantity")}
                       type="number"
                       step="0.01"
                       className="input w-24"
@@ -286,7 +287,7 @@ export function EstimateChangeOrdersPanel({
                   <div className="mt-2 flex items-end gap-2">
                     <input
                       type="number"
-                      placeholder={t("scheduleImpactPlaceholder")}
+                      placeholder={t("scheduleImpactPlaceholder")} aria-label={t("scheduleImpactPlaceholder")}
                       className="input w-40"
                       value={coScheduleImpactForm[co.id] ?? (co.scheduleImpactDays ?? "")}
                       onChange={(e) => setCoScheduleImpactForm((m) => ({ ...m, [co.id]: e.target.value }))}
@@ -337,7 +338,7 @@ export function EstimateChangeOrdersPanel({
                 {co.sentAt && can("estimates.manage") && (
                   <div className="mt-3 border-t border-gray-100 dark:border-gray-700 pt-3">
                     <div className="flex items-center gap-2">
-                      {coClientLinks[co.id] && <input readOnly className="input flex-1 text-xs" value={coClientLinks[co.id]} />}
+                      {coClientLinks[co.id] && <input aria-label={ta("shareLink")} readOnly className="input flex-1 text-xs" value={coClientLinks[co.id]} />}
                       <button
                         type="button"
                         onClick={() => copyChangeOrderLink(co)}
@@ -397,7 +398,7 @@ export function EstimateChangeOrdersPanel({
       <ChangeOrderProfitabilityPanel estimateId={estimateId} currency={currency} />
 
       <form onSubmit={createChangeOrder} className="flex flex-col gap-2 sm:flex-row sm:items-end">
-        <input
+        <input aria-label={ta("title")}
           required
           placeholder={t("changeOrderTitlePlaceholder")}
           className="input"
@@ -405,7 +406,7 @@ export function EstimateChangeOrdersPanel({
           onChange={(e) => setCoForm((f) => ({ ...f, title: e.target.value }))}
         />
         <input
-          placeholder={t("changeOrderDescriptionPlaceholder")}
+          placeholder={t("changeOrderDescriptionPlaceholder")} aria-label={t("changeOrderDescriptionPlaceholder")}
           className="input"
           value={coForm.description}
           onChange={(e) => setCoForm((f) => ({ ...f, description: e.target.value }))}

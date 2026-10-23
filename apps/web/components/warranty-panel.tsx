@@ -53,6 +53,7 @@ export function WarrantyPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("warranty");
   const tc = useTranslations("common");
   const tb = useTranslations("bulk");
+  const ta = useTranslations("a11y");
   const bulk = useBulkSelection();
 
   const [project, setProject] = useState<Project | null>(null);
@@ -308,7 +309,7 @@ export function WarrantyPanel({ projectId }: { projectId: string }) {
             return (
               <li key={claim.id} className="card">
                 <div className="flex w-full items-start gap-3">
-                  <input type="checkbox" className="mt-1" checked={bulk.selected.has(claim.id)} onChange={() => bulk.toggle(claim.id)} />
+                  <input aria-label={ta("selectItem", { name: claim.title })} type="checkbox" className="mt-1" checked={bulk.selected.has(claim.id)} onChange={() => bulk.toggle(claim.id)} />
                   <button
                     onClick={() => {
                       setExpandedId(expanded ? null : claim.id);
@@ -377,7 +378,7 @@ export function WarrantyPanel({ projectId }: { projectId: string }) {
                         <textarea
                           rows={2}
                           className="input"
-                          placeholder={t("resolutionNotesPlaceholder")}
+                          placeholder={t("resolutionNotesPlaceholder")} aria-label={t("resolutionNotesPlaceholder")}
                           value={resolutionNotes}
                           onChange={(e) => setResolutionNotes(e.target.value)}
                         />
@@ -386,7 +387,7 @@ export function WarrantyPanel({ projectId }: { projectId: string }) {
                           min="0"
                           step="0.01"
                           className="input w-40"
-                          placeholder={t("repairCostPlaceholder")}
+                          placeholder={t("repairCostPlaceholder")} aria-label={t("repairCostPlaceholder")}
                           value={repairCost}
                           onChange={(e) => setRepairCost(e.target.value)}
                         />
@@ -396,7 +397,7 @@ export function WarrantyPanel({ projectId }: { projectId: string }) {
                         <textarea
                           rows={2}
                           className="input"
-                          placeholder={t("denialReasonPlaceholder")}
+                          placeholder={t("denialReasonPlaceholder")} aria-label={t("denialReasonPlaceholder")}
                           value={denyReason}
                           onChange={(e) => setDenyReason(e.target.value)}
                         />

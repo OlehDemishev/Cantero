@@ -61,6 +61,7 @@ const emptyForm = {
 export default function InsuranceClaimsPage() {
   const t = useTranslations("insuranceClaims");
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
   const searchParams = useSearchParams();
@@ -191,7 +192,7 @@ export default function InsuranceClaimsPage() {
       {creating && (
         <form onSubmit={submitClaim} className="card mt-4 flex flex-col gap-2">
           <div className="flex flex-wrap gap-2">
-            <select
+            <select aria-label={ta("type")}
               className="input w-auto"
               value={form.claimType}
               onChange={(e) => setForm((f) => ({ ...f, claimType: e.target.value as InsuranceClaimType }))}
@@ -202,7 +203,7 @@ export default function InsuranceClaimsPage() {
                 </option>
               ))}
             </select>
-            <select className="input w-auto" value={form.projectId} onChange={(e) => setForm((f) => ({ ...f, projectId: e.target.value }))}>
+            <select aria-label={ta("project")} className="input w-auto" value={form.projectId} onChange={(e) => setForm((f) => ({ ...f, projectId: e.target.value }))}>
               <option value="">{t("noProject")}</option>
               {projects.map((p) => (
                 <option key={p.id} value={p.id}>
@@ -210,7 +211,7 @@ export default function InsuranceClaimsPage() {
                 </option>
               ))}
             </select>
-            <input
+            <input aria-label={ta("dateFiled")}
               type="date"
               required
               className="input w-auto"
@@ -222,19 +223,19 @@ export default function InsuranceClaimsPage() {
             <input
               required
               className="input flex-1"
-              placeholder={t("insurerName")}
+              placeholder={t("insurerName")} aria-label={t("insurerName")}
               value={form.insurerName}
               onChange={(e) => setForm((f) => ({ ...f, insurerName: e.target.value }))}
             />
             <input
               className="input w-40"
-              placeholder={t("policyNumber")}
+              placeholder={t("policyNumber")} aria-label={t("policyNumber")}
               value={form.policyNumber}
               onChange={(e) => setForm((f) => ({ ...f, policyNumber: e.target.value }))}
             />
             <input
               className="input w-40"
-              placeholder={t("claimNumber")}
+              placeholder={t("claimNumber")} aria-label={t("claimNumber")}
               value={form.claimNumber}
               onChange={(e) => setForm((f) => ({ ...f, claimNumber: e.target.value }))}
             />
@@ -243,7 +244,7 @@ export default function InsuranceClaimsPage() {
               min="0"
               step="0.01"
               className="input w-32"
-              placeholder={t("claimAmount")}
+              placeholder={t("claimAmount")} aria-label={t("claimAmount")}
               value={form.claimAmount}
               onChange={(e) => setForm((f) => ({ ...f, claimAmount: e.target.value }))}
             />
@@ -252,20 +253,20 @@ export default function InsuranceClaimsPage() {
             required
             rows={2}
             className="input"
-            placeholder={t("description")}
+            placeholder={t("description")} aria-label={t("description")}
             value={form.description}
             onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
           />
           <div className="flex gap-2">
             <input
               className="input flex-1"
-              placeholder={t("adjusterName")}
+              placeholder={t("adjusterName")} aria-label={t("adjusterName")}
               value={form.adjusterName}
               onChange={(e) => setForm((f) => ({ ...f, adjusterName: e.target.value }))}
             />
             <input
               className="input flex-1"
-              placeholder={t("adjusterContact")}
+              placeholder={t("adjusterContact")} aria-label={t("adjusterContact")}
               value={form.adjusterContact}
               onChange={(e) => setForm((f) => ({ ...f, adjusterContact: e.target.value }))}
             />
@@ -282,7 +283,7 @@ export default function InsuranceClaimsPage() {
       )}
 
       <div className="mt-4 flex flex-wrap gap-2">
-        <select
+        <select aria-label={ta("project")}
           className="input w-auto"
           value={filters.projectId}
           onChange={(e) => setFilters((f) => ({ ...f, projectId: e.target.value }))}
@@ -294,7 +295,7 @@ export default function InsuranceClaimsPage() {
             </option>
           ))}
         </select>
-        <select className="input w-auto" value={filters.status} onChange={(e) => setFilters((f) => ({ ...f, status: e.target.value }))}>
+        <select aria-label={tc("status")} className="input w-auto" value={filters.status} onChange={(e) => setFilters((f) => ({ ...f, status: e.target.value }))}>
           <option value="">{t("allStatuses")}</option>
           {INSURANCE_CLAIM_STATUSES.map((s) => (
             <option key={s} value={s}>

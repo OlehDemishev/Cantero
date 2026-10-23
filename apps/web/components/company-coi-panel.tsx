@@ -24,6 +24,7 @@ interface Company {
 
 export function CompanyCoiPanel({ canManage }: { canManage: boolean }) {
   const t = useTranslations("companyCoi");
+  const ta = useTranslations("a11y");
   const confirm = useConfirm();
 
   const { data: company = null, reload: reloadCompany } = useApi<Company>("/company");
@@ -117,7 +118,7 @@ export function CompanyCoiPanel({ canManage }: { canManage: boolean }) {
       {canManage && (
         <>
           <form onSubmit={addDocument} className="flex flex-wrap items-end gap-2">
-            <select
+            <select aria-label={ta("documentType")}
               className="input w-auto"
               value={docForm.type}
               onChange={(e) => setDocForm((f) => ({ ...f, type: e.target.value as CompanyDocumentType }))}
@@ -130,12 +131,12 @@ export function CompanyCoiPanel({ canManage }: { canManage: boolean }) {
             </select>
             <input
               required
-              placeholder={t("documentNamePlaceholder")}
+              placeholder={t("documentNamePlaceholder")} aria-label={t("documentNamePlaceholder")}
               className="input w-auto"
               value={docForm.name}
               onChange={(e) => setDocForm((f) => ({ ...f, name: e.target.value }))}
             />
-            <input
+            <input aria-label={ta("expiryDate")}
               required
               type="date"
               className="input w-auto"
@@ -159,7 +160,7 @@ export function CompanyCoiPanel({ canManage }: { canManage: boolean }) {
             </label>
             {company?.coiPubliclyShared && company.coiPublicToken && (
               <div className="mt-2 flex items-center gap-2">
-                <input readOnly className="input flex-1 text-xs" value={`${window.location.origin}/company-coi/${company.coiPublicToken}`} />
+                <input aria-label={ta("shareLink")} readOnly className="input flex-1 text-xs" value={`${window.location.origin}/company-coi/${company.coiPublicToken}`} />
                 <button onClick={copyLink} className="btn-secondary shrink-0 px-3 py-1.5 text-xs">
                   {copied ? t("copied") : t("copyLink")}
                 </button>

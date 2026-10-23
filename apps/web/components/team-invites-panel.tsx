@@ -75,12 +75,12 @@ export function TeamInvitesPanel() {
         <input
           required
           type="email"
-          placeholder={t("inviteEmail")}
+          placeholder={t("inviteEmail")} aria-label={t("inviteEmail")}
           className="input w-auto"
           value={inviteForm.email}
           onChange={(e) => setInviteForm((f) => ({ ...f, email: e.target.value }))}
         />
-        <select
+        <select aria-label={t("role")}
           className="input w-auto"
           value={inviteForm.role}
           onChange={(e) => setInviteForm((f) => ({ ...f, role: e.target.value }))}

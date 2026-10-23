@@ -171,7 +171,7 @@ export function TimeTrackingPanel({ projectId }: { projectId: string }) {
                   </td>
                   <td className="text-right">
                     {editingId === entry.id ? (
-                      <input
+                      <input aria-label={t("hours")}
                         type="number"
                         step="0.25"
                         min="0.25"
@@ -231,7 +231,7 @@ export function TimeTrackingPanel({ projectId }: { projectId: string }) {
           onSubmit={logTime}
           className="mt-4 flex flex-wrap items-end gap-2"
         >
-          <select
+          <select aria-label={t("worker")}
             className="input w-auto"
             value={form.workerId}
             disabled={!crew}
@@ -245,7 +245,7 @@ export function TimeTrackingPanel({ projectId }: { projectId: string }) {
               </option>
             ))}
           </select>
-          <select
+          <select aria-label={t("task")}
             className="input w-auto"
             value={form.taskId}
             onChange={(e) => setForm((f) => ({ ...f, taskId: e.target.value }))}
@@ -257,7 +257,7 @@ export function TimeTrackingPanel({ projectId }: { projectId: string }) {
               </option>
             ))}
           </select>
-          <input
+          <input aria-label={t("hours")}
             type="number"
             step="0.25"
             min="0.25"
@@ -266,7 +266,7 @@ export function TimeTrackingPanel({ projectId }: { projectId: string }) {
             value={form.hours}
             onChange={(e) => setForm((f) => ({ ...f, hours: e.target.value }))}
           />
-          <input
+          <input aria-label={t("date")}
             type="date"
             className="input w-auto"
             value={form.date}

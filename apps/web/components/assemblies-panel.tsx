@@ -35,6 +35,7 @@ export function AssembliesPanel() {
   const confirm = useConfirm();
   const td = useTranslations("dialog");
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
 
   const { data: assemblies = null, error: assembliesError, reload: reloadAssemblies } = useApi<Assembly[]>("/assemblies");
   const [rateItems, setRateItems] = useState<RateCatalogItem[]>([]);
@@ -106,21 +107,21 @@ export function AssembliesPanel() {
           <form onSubmit={handleSubmit} className="flex flex-col gap-3">
             <input
               required
-              placeholder={t("code")}
+              placeholder={t("code")} aria-label={t("code")}
               className="input"
               value={form.code}
               onChange={(e) => setForm((f) => ({ ...f, code: e.target.value }))}
             />
             <input
               required
-              placeholder={tc("name")}
+              placeholder={tc("name")} aria-label={tc("name")}
               className="input"
               value={form.name}
               onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
             />
             <input
               required
-              placeholder={t("unit")}
+              placeholder={t("unit")} aria-label={t("unit")}
               className="input"
               value={form.unit}
               onChange={(e) => setForm((f) => ({ ...f, unit: e.target.value }))}
@@ -128,7 +129,7 @@ export function AssembliesPanel() {
             <p className="text-xs font-semibold uppercase tracking-wide text-fg-subtle">{t("items")}</p>
             {draftLines.map((line, i) => (
               <div key={i} className="flex items-center gap-2">
-                <select
+                <select aria-label={ta("rateItem")}
                   className="input"
                   value={line.rateCatalogItemId}
                   onChange={(e) =>
@@ -141,7 +142,7 @@ export function AssembliesPanel() {
                     </option>
                   ))}
                 </select>
-                <input
+                <input aria-label={ta("quantity")}
                   type="number"
                   step="0.01"
                   className="input w-20"

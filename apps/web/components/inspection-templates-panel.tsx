@@ -85,14 +85,14 @@ export function InspectionTemplatesPanel() {
           <form onSubmit={handleSubmit} className="flex flex-col gap-3">
             <input
               required
-              placeholder={tc("name")}
+              placeholder={tc("name")} aria-label={tc("name")}
               className="input"
               value={form.name}
               onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
             />
             <input
               required
-              placeholder={t("trade")}
+              placeholder={t("trade")} aria-label={t("trade")}
               className="input"
               value={form.trade}
               onChange={(e) => setForm((f) => ({ ...f, trade: e.target.value }))}
@@ -102,7 +102,7 @@ export function InspectionTemplatesPanel() {
               <div key={i} className="flex items-center gap-2">
                 <input
                   className="input flex-1"
-                  placeholder={t("checklistItemPlaceholder")}
+                  placeholder={t("checklistItemPlaceholder")} aria-label={t("checklistItemPlaceholder")}
                   value={value}
                   onChange={(e) => updateItem(i, e.target.value)}
                 />

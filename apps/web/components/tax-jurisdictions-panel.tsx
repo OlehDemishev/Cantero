@@ -24,6 +24,7 @@ interface TaxJurisdiction {
 
 export function TaxJurisdictionsPanel() {
   const t = useTranslations("tax");
+  const ta = useTranslations("a11y");
 
   const { data: jurisdictions = null, reload: reloadJurisdictions, error: jurisdictionsError } = useApi<TaxJurisdiction[]>("/tax/jurisdictions");
   const [form, setForm] = useState({ name: "", country: "", region: "" });
@@ -74,7 +75,7 @@ export function TaxJurisdictionsPanel() {
       <form onSubmit={createJurisdiction} className="mb-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-end">
         <input
           required
-          placeholder={t("jurisdictionNamePlaceholder")}
+          placeholder={t("jurisdictionNamePlaceholder")} aria-label={t("jurisdictionNamePlaceholder")}
           className="input"
           value={form.name}
           onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
@@ -82,13 +83,13 @@ export function TaxJurisdictionsPanel() {
         <input
           required
           maxLength={2}
-          placeholder={t("countryPlaceholder")}
+          placeholder={t("countryPlaceholder")} aria-label={t("countryPlaceholder")}
           className="input w-24"
           value={form.country}
           onChange={(e) => setForm((f) => ({ ...f, country: e.target.value }))}
         />
         <input
-          placeholder={t("regionPlaceholder")}
+          placeholder={t("regionPlaceholder")} aria-label={t("regionPlaceholder")}
           className="input"
           value={form.region}
           onChange={(e) => setForm((f) => ({ ...f, region: e.target.value }))}
@@ -120,12 +121,12 @@ export function TaxJurisdictionsPanel() {
                     step="0.001"
                     min="0"
                     max="100"
-                    placeholder={t("ratePercentPlaceholder")}
+                    placeholder={t("ratePercentPlaceholder")} aria-label={t("ratePercentPlaceholder")}
                     className="input w-28"
                     value={rateForms[j.id]?.ratePercent ?? ""}
                     onChange={(e) => setRateForms((f) => ({ ...f, [j.id]: { ratePercent: e.target.value, effectiveFrom: f[j.id]?.effectiveFrom ?? "" } }))}
                   />
-                  <input
+                  <input aria-label={ta("effectiveFrom")}
                     type="date"
                     className="input w-auto"
                     value={rateForms[j.id]?.effectiveFrom ?? ""}

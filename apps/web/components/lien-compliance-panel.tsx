@@ -44,6 +44,7 @@ interface MechanicsLienFiling {
 export function LienCompliancePanel({ projectId }: { projectId: string }) {
   const t = useTranslations("lienCompliance");
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
 
@@ -144,14 +145,14 @@ export function LienCompliancePanel({ projectId }: { projectId: string }) {
 
       {addingNotice && (
         <form onSubmit={createNotice} className="card mb-3 flex flex-wrap items-end gap-2">
-          <select className="input" value={noticeForm.direction} onChange={(e) => setNoticeForm((f) => ({ ...f, direction: e.target.value as LienNoticeDirection }))}>
+          <select aria-label={ta("direction")} className="input" value={noticeForm.direction} onChange={(e) => setNoticeForm((f) => ({ ...f, direction: e.target.value as LienNoticeDirection }))}>
             {LIEN_NOTICE_DIRECTIONS.map((d) => (
               <option key={d} value={d}>
                 {t(`direction_${d}`)}
               </option>
             ))}
           </select>
-          <select className="input" value={noticeForm.type} onChange={(e) => setNoticeForm((f) => ({ ...f, type: e.target.value as LienNoticeType }))}>
+          <select aria-label={ta("type")} className="input" value={noticeForm.type} onChange={(e) => setNoticeForm((f) => ({ ...f, type: e.target.value as LienNoticeType }))}>
             {LIEN_NOTICE_TYPES.map((type) => (
               <option key={type} value={type}>
                 {t(`type_${type}`)}
@@ -160,7 +161,7 @@ export function LienCompliancePanel({ projectId }: { projectId: string }) {
           </select>
           <input
             required
-            placeholder={t("relatedPartyNamePlaceholder")}
+            placeholder={t("relatedPartyNamePlaceholder")} aria-label={t("relatedPartyNamePlaceholder")}
             className="input flex-1"
             value={noticeForm.relatedPartyName}
             onChange={(e) => setNoticeForm((f) => ({ ...f, relatedPartyName: e.target.value }))}
@@ -169,7 +170,7 @@ export function LienCompliancePanel({ projectId }: { projectId: string }) {
             <input type="date" className="input" value={noticeForm.deadlineDate} onChange={(e) => setNoticeForm((f) => ({ ...f, deadlineDate: e.target.value }))} />
           </Field>
           <input
-            placeholder={t("methodOfServicePlaceholder")}
+            placeholder={t("methodOfServicePlaceholder")} aria-label={t("methodOfServicePlaceholder")}
             className="input w-40"
             value={noticeForm.methodOfService}
             onChange={(e) => setNoticeForm((f) => ({ ...f, methodOfService: e.target.value }))}
@@ -226,7 +227,7 @@ export function LienCompliancePanel({ projectId }: { projectId: string }) {
         <form onSubmit={createFiling} className="card mb-3 flex flex-wrap items-end gap-2">
           <input
             required
-            placeholder={t("filedByPlaceholder")}
+            placeholder={t("filedByPlaceholder")} aria-label={t("filedByPlaceholder")}
             className="input"
             value={filingForm.filedByName}
             onChange={(e) => setFilingForm((f) => ({ ...f, filedByName: e.target.value }))}
@@ -236,7 +237,7 @@ export function LienCompliancePanel({ projectId }: { projectId: string }) {
             type="number"
             step="0.01"
             min="0"
-            placeholder={t("amountPlaceholder", { currency })}
+            placeholder={t("amountPlaceholder", { currency })} aria-label={t("amountPlaceholder", { currency })}
             className="input w-40"
             value={filingForm.amount}
             onChange={(e) => setFilingForm((f) => ({ ...f, amount: e.target.value }))}

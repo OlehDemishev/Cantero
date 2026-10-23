@@ -322,7 +322,7 @@ export default function SubcontractorPortalDashboardPage() {
 
           {assignments && assignments.length > 0 && (
             <form onSubmit={submitCost} className="flex flex-wrap items-end gap-2 border-t border-gray-100 dark:border-gray-700 pt-4">
-              <select
+              <select aria-label={t("selectProject")}
                 className="input w-auto"
                 value={form.projectId}
                 onChange={(e) => setForm((f) => ({ ...f, projectId: e.target.value }))}
@@ -335,7 +335,7 @@ export default function SubcontractorPortalDashboardPage() {
               </select>
               <input
                 required
-                placeholder={t("descriptionPlaceholder")}
+                placeholder={t("descriptionPlaceholder")} aria-label={t("descriptionPlaceholder")}
                 className="input w-auto"
                 value={form.description}
                 onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
@@ -344,7 +344,7 @@ export default function SubcontractorPortalDashboardPage() {
                 required
                 type="number"
                 step="0.01"
-                placeholder={t("amount")}
+                placeholder={t("amount")} aria-label={t("amount")}
                 className="input w-28"
                 value={form.amount}
                 onChange={(e) => setForm((f) => ({ ...f, amount: e.target.value }))}

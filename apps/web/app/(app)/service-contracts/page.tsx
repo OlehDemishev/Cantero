@@ -34,6 +34,7 @@ interface ServiceContract {
 export default function ServiceContractsPage() {
   const t = useTranslations("serviceContracts");
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
 
   const { data: contracts = null, reload: reloadContracts, error: contractsError } = useApi<ServiceContract[]>("/service-contracts");
   const { data: projects = [] } = useApi<Project[]>("/projects");
@@ -96,12 +97,12 @@ export default function ServiceContractsPage() {
             <input
               required
               autoFocus
-              placeholder={tc("name")}
+              placeholder={tc("name")} aria-label={tc("name")}
               className="input"
               value={form.title}
               onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
             />
-            <select
+            <select aria-label={ta("project")}
               required
               className="input"
               value={form.projectId}
@@ -114,7 +115,7 @@ export default function ServiceContractsPage() {
                 </option>
               ))}
             </select>
-            <select
+            <select aria-label={ta("client")}
               required
               className="input"
               value={form.clientId}

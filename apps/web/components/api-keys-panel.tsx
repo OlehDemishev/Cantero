@@ -136,7 +136,7 @@ export function ApiKeysPanel() {
 
       <form onSubmit={createApiKey} className="mt-4 flex flex-col gap-2">
         <div className="flex flex-wrap items-end gap-2">
-          <input
+          <input aria-label={tc("name")}
             required
             placeholder={t("apiKeyNamePlaceholder")}
             className="input"

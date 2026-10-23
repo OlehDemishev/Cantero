@@ -50,7 +50,7 @@ export default function HelpPage() {
         <input
           type="search"
           className="input"
-          placeholder={t("searchPlaceholder")}
+          placeholder={t("searchPlaceholder")} aria-label={t("searchPlaceholder")}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />

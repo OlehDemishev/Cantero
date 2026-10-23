@@ -45,6 +45,7 @@ interface CommissioningSystem {
 export function CommissioningPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("commissioning");
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
 
   const { data: systems = null, reload: reloadSystems, error: systemsError } = useApi<CommissioningSystem[]>(`/projects/${projectId}/commissioning-systems`);
   const [adding, setAdding] = useState(false);
@@ -162,8 +163,8 @@ export function CommissioningPanel({ projectId }: { projectId: string }) {
 
       {adding && (
         <form onSubmit={createSystem} className="card mb-3 flex flex-wrap items-end gap-2">
-          <input required placeholder={t("namePlaceholder")} className="input flex-1" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
-          <input placeholder={t("categoryPlaceholder")} className="input w-40" value={form.category} onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))} />
+          <input required placeholder={t("namePlaceholder")} aria-label={t("namePlaceholder")} className="input flex-1" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
+          <input placeholder={t("categoryPlaceholder")} aria-label={t("categoryPlaceholder")} className="input w-40" value={form.category} onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))} />
           <button type="submit" disabled={busy} className="btn-primary">
             {tc("save")}
           </button>
@@ -198,16 +199,18 @@ export function CommissioningPanel({ projectId }: { projectId: string }) {
                       {sys.checklistItems.length > 0 && (
                         <ul className="mb-2 flex flex-col gap-1">
                           {sys.checklistItems.map((item) => (
-                            <li key={item.id} className="flex items-center gap-2 text-sm">
-                              <input type="checkbox" checked={item.done} onChange={() => toggleChecklistItem(item.id)} />
-                              <span className={item.done ? "text-fg-subtle line-through" : "text-fg-muted"}>{item.description}</span>
+                            <li key={item.id} className=" text-sm">
+                              <label className="flex items-center gap-2">
+                                <input type="checkbox" checked={item.done} onChange={() => toggleChecklistItem(item.id)} />
+                                <span className={item.done ? "text-fg-subtle line-through" : "text-fg-muted"}>{item.description}</span>
+                              </label>
                             </li>
                           ))}
                         </ul>
                       )}
                       <div className="flex gap-2">
                         <input
-                          placeholder={t("checklistItemPlaceholder")}
+                          placeholder={t("checklistItemPlaceholder")} aria-label={t("checklistItemPlaceholder")}
                           className="input flex-1"
                           value={checklistText}
                           onChange={(e) => setChecklistText(e.target.value)}
@@ -232,17 +235,17 @@ export function CommissioningPanel({ projectId }: { projectId: string }) {
                       )}
                       <div className="flex flex-wrap gap-2">
                         <input
-                          placeholder={t("procedurePlaceholder")}
+                          placeholder={t("procedurePlaceholder")} aria-label={t("procedurePlaceholder")}
                           className="input flex-1"
                           value={testForm.procedure}
                           onChange={(e) => setTestForm((f) => ({ ...f, procedure: e.target.value }))}
                         />
-                        <select className="input" value={testForm.result} onChange={(e) => setTestForm((f) => ({ ...f, result: e.target.value as FunctionalTestResult }))}>
+                        <select aria-label={ta("result")} className="input" value={testForm.result} onChange={(e) => setTestForm((f) => ({ ...f, result: e.target.value as FunctionalTestResult }))}>
                           <option value="pass">{t("result_pass")}</option>
                           <option value="fail">{t("result_fail")}</option>
                         </select>
                         <input
-                          placeholder={t("testedByPlaceholder")}
+                          placeholder={t("testedByPlaceholder")} aria-label={t("testedByPlaceholder")}
                           className="input w-32"
                           value={testForm.testedByName}
                           onChange={(e) => setTestForm((f) => ({ ...f, testedByName: e.target.value }))}
@@ -270,7 +273,7 @@ export function CommissioningPanel({ projectId }: { projectId: string }) {
                                   <span className="flex items-center gap-1.5">
                                     <input
                                       className="input w-32 py-0.5 text-xs"
-                                      placeholder={t("ownerSignerPlaceholder")}
+                                      placeholder={t("ownerSignerPlaceholder")} aria-label={t("ownerSignerPlaceholder")}
                                       value={signerName}
                                       onChange={(e) => setSignerName(e.target.value)}
                                     />
@@ -290,19 +293,19 @@ export function CommissioningPanel({ projectId }: { projectId: string }) {
                       )}
                       <div className="flex flex-wrap gap-2">
                         <input
-                          placeholder={t("trainerNamePlaceholder")}
+                          placeholder={t("trainerNamePlaceholder")} aria-label={t("trainerNamePlaceholder")}
                           className="input"
                           value={trainingForm.trainerName}
                           onChange={(e) => setTrainingForm((f) => ({ ...f, trainerName: e.target.value }))}
                         />
-                        <input
+                        <input aria-label={ta("date")}
                           type="date"
                           className="input"
                           value={trainingForm.trainingDate}
                           onChange={(e) => setTrainingForm((f) => ({ ...f, trainingDate: e.target.value }))}
                         />
                         <input
-                          placeholder={t("attendeeNamesPlaceholder")}
+                          placeholder={t("attendeeNamesPlaceholder")} aria-label={t("attendeeNamesPlaceholder")}
                           className="input flex-1"
                           value={trainingForm.attendeeNames}
                           onChange={(e) => setTrainingForm((f) => ({ ...f, attendeeNames: e.target.value }))}

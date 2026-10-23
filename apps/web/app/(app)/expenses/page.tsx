@@ -47,6 +47,7 @@ const EXPENSES_PAGE_SIZE = 100;
 export default function ExpensesPage() {
   const t = useTranslations("expenses");
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
   const { data: me } = useMe();
   const can = useCan();
   const canApprove = can("finance.manage");
@@ -148,7 +149,7 @@ export default function ExpensesPage() {
       )}
 
       <div className="mt-4 flex flex-wrap items-center gap-2">
-        <select
+        <select aria-label={ta("project")}
           className="input w-auto"
           value={filters.projectId}
           onChange={(e) =>
@@ -162,7 +163,7 @@ export default function ExpensesPage() {
             </option>
           ))}
         </select>
-        <select
+        <select aria-label={tc("status")}
           className="input w-auto"
           value={filters.status}
           onChange={(e) =>
@@ -276,7 +277,7 @@ export default function ExpensesPage() {
                     <div className="mt-2 flex flex-wrap items-center gap-2 border-t border-gray-100 dark:border-gray-700 pt-2">
                       <input
                         className="input flex-1"
-                        placeholder={t("rejectReasonPlaceholder")}
+                        placeholder={t("rejectReasonPlaceholder")} aria-label={t("rejectReasonPlaceholder")}
                         value={rejectReason}
                         onChange={(ev) => setRejectReason(ev.target.value)}
                       />

@@ -44,6 +44,7 @@ interface CandidateDetail extends Candidate {
 export default function RecruitingPage() {
   const t = useTranslations("recruiting");
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
 
   const { data: postings = null, error: postingsError, reload: reloadPostings } = useApi<JobPosting[]>("/recruiting/job-postings");
   const [postingForm, setPostingForm] = useState({ title: "", trade: "", location: "" });
@@ -234,19 +235,19 @@ export default function RecruitingPage() {
               <input
                 required
                 autoFocus
-                placeholder={t("postingTitlePlaceholder")}
+                placeholder={t("postingTitlePlaceholder")} aria-label={t("postingTitlePlaceholder")}
                 className="input"
                 value={postingForm.title}
                 onChange={(e) => setPostingForm((f) => ({ ...f, title: e.target.value }))}
               />
               <input
-                placeholder={t("tradePlaceholder")}
+                placeholder={t("tradePlaceholder")} aria-label={t("tradePlaceholder")}
                 className="input"
                 value={postingForm.trade}
                 onChange={(e) => setPostingForm((f) => ({ ...f, trade: e.target.value }))}
               />
               <input
-                placeholder={t("locationPlaceholder")}
+                placeholder={t("locationPlaceholder")} aria-label={t("locationPlaceholder")}
                 className="input"
                 value={postingForm.location}
                 onChange={(e) => setPostingForm((f) => ({ ...f, location: e.target.value }))}
@@ -272,25 +273,25 @@ export default function RecruitingPage() {
               <form onSubmit={createCandidate} className="card mb-4 flex flex-wrap items-end gap-2">
                 <input
                   required
-                  placeholder={t("candidateNamePlaceholder")}
+                  placeholder={t("candidateNamePlaceholder")} aria-label={t("candidateNamePlaceholder")}
                   className="input"
                   value={candidateForm.name}
                   onChange={(e) => setCandidateForm((f) => ({ ...f, name: e.target.value }))}
                 />
                 <input
-                  placeholder={t("emailPlaceholder")}
+                  placeholder={t("emailPlaceholder")} aria-label={t("emailPlaceholder")}
                   className="input"
                   value={candidateForm.email}
                   onChange={(e) => setCandidateForm((f) => ({ ...f, email: e.target.value }))}
                 />
                 <input
-                  placeholder={t("phonePlaceholder")}
+                  placeholder={t("phonePlaceholder")} aria-label={t("phonePlaceholder")}
                   className="input"
                   value={candidateForm.phone}
                   onChange={(e) => setCandidateForm((f) => ({ ...f, phone: e.target.value }))}
                 />
                 <input
-                  placeholder={t("sourcePlaceholder")}
+                  placeholder={t("sourcePlaceholder")} aria-label={t("sourcePlaceholder")}
                   className="input"
                   value={candidateForm.source}
                   onChange={(e) => setCandidateForm((f) => ({ ...f, source: e.target.value }))}
@@ -348,12 +349,12 @@ export default function RecruitingPage() {
                               {c.stage !== "hired" && c.stage !== "rejected" && (
                                 <div className="flex flex-wrap gap-2">
                                   <input
-                                    placeholder={t("interviewerPlaceholder")}
+                                    placeholder={t("interviewerPlaceholder")} aria-label={t("interviewerPlaceholder")}
                                     className="input w-auto"
                                     value={interviewForm.interviewerName}
                                     onChange={(e) => setInterviewForm((f) => ({ ...f, interviewerName: e.target.value }))}
                                   />
-                                  <input
+                                  <input aria-label={ta("rating")}
                                     type="number"
                                     min="1"
                                     max="5"
@@ -363,7 +364,7 @@ export default function RecruitingPage() {
                                     onChange={(e) => setInterviewForm((f) => ({ ...f, rating: e.target.value }))}
                                   />
                                   <input
-                                    placeholder={t("interviewNotesPlaceholder")}
+                                    placeholder={t("interviewNotesPlaceholder")} aria-label={t("interviewNotesPlaceholder")}
                                     className="input flex-1"
                                     value={interviewForm.notes}
                                     onChange={(e) => setInterviewForm((f) => ({ ...f, notes: e.target.value }))}
@@ -386,7 +387,7 @@ export default function RecruitingPage() {
                               c.stage !== "rejected" && (
                                 <div className="flex flex-wrap items-end gap-2 border-t border-gray-100 dark:border-gray-700 pt-3">
                                   <input
-                                    placeholder={t("rolePlaceholder")}
+                                    placeholder={t("rolePlaceholder")} aria-label={t("rolePlaceholder")}
                                     className="input w-auto"
                                     value={convertForm.role}
                                     onChange={(e) => setConvertForm((f) => ({ ...f, role: e.target.value }))}
@@ -394,7 +395,7 @@ export default function RecruitingPage() {
                                   <input
                                     type="number"
                                     step="0.01"
-                                    placeholder={t("hourlyCostPlaceholder")}
+                                    placeholder={t("hourlyCostPlaceholder")} aria-label={t("hourlyCostPlaceholder")}
                                     className="input w-32"
                                     value={convertForm.hourlyCost}
                                     onChange={(e) => setConvertForm((f) => ({ ...f, hourlyCost: e.target.value }))}

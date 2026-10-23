@@ -24,6 +24,7 @@ export function TeamMembersPanel({ isManager }: { isManager: boolean }) {
   const t = useTranslations("settings");
   const confirm = useConfirm();
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
   const { data: members = null, reload: reloadMembers, error: membersError } = useApi<Member[]>("/company/members");
   const { data: customRoles = [], reload: reloadCustomRoles } = useApi<CustomRole[]>("/company/custom-roles");
   const { roles: assignableRoles, mayTouchAdmin } = useAssignableRoles();
@@ -79,7 +80,7 @@ export function TeamMembersPanel({ isManager }: { isManager: boolean }) {
                 <td>{m.user.email}</td>
                 <td>
                   {editable(m) ? (
-                    <select
+                    <select aria-label={ta("fieldOf", { field: t("role"), item: m.user.name })}
                       className="input w-auto"
                       value={m.role}
                       onChange={(e) => updateMemberRole(m.userId, e.target.value)}
@@ -96,7 +97,7 @@ export function TeamMembersPanel({ isManager }: { isManager: boolean }) {
                 </td>
                 <td>
                   {editable(m) ? (
-                    <select
+                    <select aria-label={ta("fieldOf", { field: t("customRole"), item: m.user.name })}
                       className="input w-auto"
                       value={m.customRole?.id ?? ""}
                       onChange={(e) => assignCustomRole(m.userId, e.target.value)}

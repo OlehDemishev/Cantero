@@ -49,6 +49,7 @@ export function SchedulingPanel({ projectId }: { projectId: string }) {
   const confirm = useConfirm();
   const td = useTranslations("dialog");
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
 
   const { data: tasks = null, reload: reloadTasks } = useApi<Task[]>(`/tasks?projectId=${projectId}`);
   const { data: milestones = null, reload: reloadMilestones } = useApi<Milestone[]>(`/milestones?projectId=${projectId}`);
@@ -226,7 +227,7 @@ export function SchedulingPanel({ projectId }: { projectId: string }) {
 
                   {depEditorTaskId === task.id && (
                     <div className="mt-2 flex flex-col gap-1.5 border-t border-gray-100 dark:border-gray-700 pt-2">
-                      <select
+                      <select aria-label={ta("predecessor")}
                         className="input py-1 text-xs"
                         value={depForm.predecessorId}
                         onChange={(e) => setDepForm((f) => ({ ...f, predecessorId: e.target.value }))}
@@ -241,7 +242,7 @@ export function SchedulingPanel({ projectId }: { projectId: string }) {
                           ))}
                       </select>
                       <div className="flex gap-1.5">
-                        <select
+                        <select aria-label={ta("dependencyType")}
                           className="input py-1 text-xs"
                           value={depForm.type}
                           onChange={(e) => setDepForm((f) => ({ ...f, type: e.target.value as TaskDependencyType }))}
@@ -252,7 +253,7 @@ export function SchedulingPanel({ projectId }: { projectId: string }) {
                             </option>
                           ))}
                         </select>
-                        <input
+                        <input aria-label={ta("lagDays")}
                           type="number"
                           className="input w-16 py-1 text-xs"
                           value={depForm.lagDays}
@@ -333,12 +334,12 @@ export function SchedulingPanel({ projectId }: { projectId: string }) {
       <form onSubmit={createMilestone} className="mt-3 flex flex-wrap items-end gap-2">
         <input
           required
-          placeholder={tc("name")}
+          placeholder={tc("name")} aria-label={tc("name")}
           className="input w-auto"
           value={milestoneForm.name}
           onChange={(e) => setMilestoneForm((f) => ({ ...f, name: e.target.value }))}
         />
-        <input
+        <input aria-label={t("dueDate")}
           type="date"
           className="input w-auto"
           value={milestoneForm.dueDate}

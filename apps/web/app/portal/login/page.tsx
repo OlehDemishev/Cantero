@@ -11,6 +11,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api";
 
 export default function PortalLoginPage() {
   const t = useTranslations("portal");
+  const ta = useTranslations("a11y");
   const [email, setEmail] = useState("");
   const [busy, setBusy] = useState(false);
   const [sent, setSent] = useState(false);
@@ -68,7 +69,7 @@ export default function PortalLoginPage() {
             </Alert>
           ) : (
             <form onSubmit={requestLink} className="mt-4 flex flex-col gap-3">
-              <input
+              <input aria-label={ta("email")}
                 required
                 type="email"
                 placeholder={t("emailPlaceholder")}

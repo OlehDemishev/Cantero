@@ -111,6 +111,7 @@ export function SubcontractorListItem({
   const t = useTranslations("subcontractorCompliance");
   const confirm = useConfirm();
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
 
   const [expanded, setExpanded] = useState(false);
   // The details below are loaded once the row is opened.
@@ -414,7 +415,7 @@ export function SubcontractorListItem({
           </div>
 
           <form onSubmit={addDocument} className="flex flex-wrap items-end gap-2">
-            <select
+            <select aria-label={ta("documentType")}
               className="input w-auto"
               value={docForm.type}
               onChange={(e) => setDocForm((f) => ({ ...f, type: e.target.value as SubcontractorDocumentType }))}
@@ -427,12 +428,12 @@ export function SubcontractorListItem({
             </select>
             <input
               required
-              placeholder={t("documentNamePlaceholder")}
+              placeholder={t("documentNamePlaceholder")} aria-label={t("documentNamePlaceholder")}
               className="input w-auto"
               value={docForm.name}
               onChange={(e) => setDocForm((f) => ({ ...f, name: e.target.value }))}
             />
-            <input
+            <input aria-label={ta("expiryDate")}
               required
               type="date"
               className="input w-auto"
@@ -498,21 +499,21 @@ export function SubcontractorListItem({
             <p className="mb-2 text-xs text-fg-subtle">{t("prequalificationHint")}</p>
             <form onSubmit={saveProfile} className="flex flex-col gap-2">
               <input
-                placeholder={t("specializationPlaceholder")}
+                placeholder={t("specializationPlaceholder")} aria-label={t("specializationPlaceholder")}
                 className="input"
                 value={profileForm.specialization}
                 onChange={(e) => setProfileForm((f) => ({ ...f, specialization: e.target.value }))}
               />
               <textarea
                 rows={2}
-                placeholder={t("bioPlaceholder")}
+                placeholder={t("bioPlaceholder")} aria-label={t("bioPlaceholder")}
                 className="input"
                 value={profileForm.bio}
                 onChange={(e) => setProfileForm((f) => ({ ...f, bio: e.target.value }))}
               />
               <div className="flex flex-wrap gap-2">
                 <input
-                  placeholder={t("licenseNumberPlaceholder")}
+                  placeholder={t("licenseNumberPlaceholder")} aria-label={t("licenseNumberPlaceholder")}
                   className="input"
                   value={profileForm.licenseNumber}
                   onChange={(e) => setProfileForm((f) => ({ ...f, licenseNumber: e.target.value }))}
@@ -521,7 +522,7 @@ export function SubcontractorListItem({
                   type="number"
                   min="0"
                   step="0.01"
-                  placeholder={t("bondingCapacityPlaceholder")}
+                  placeholder={t("bondingCapacityPlaceholder")} aria-label={t("bondingCapacityPlaceholder")}
                   className="input w-40"
                   value={profileForm.bondingCapacity}
                   onChange={(e) => setProfileForm((f) => ({ ...f, bondingCapacity: e.target.value }))}
@@ -529,7 +530,7 @@ export function SubcontractorListItem({
               </div>
               <textarea
                 rows={2}
-                placeholder={t("safetyProgramPlaceholder")}
+                placeholder={t("safetyProgramPlaceholder")} aria-label={t("safetyProgramPlaceholder")}
                 className="input"
                 value={profileForm.safetyProgramSummary}
                 onChange={(e) => setProfileForm((f) => ({ ...f, safetyProgramSummary: e.target.value }))}
@@ -674,7 +675,7 @@ export function SubcontractorListItem({
                 />
               </Field>
               <input
-                placeholder={t("reviewCommentsPlaceholder")}
+                placeholder={t("reviewCommentsPlaceholder")} aria-label={t("reviewCommentsPlaceholder")}
                 className="input"
                 value={reviewForm.comments}
                 onChange={(e) => setReviewForm((f) => ({ ...f, comments: e.target.value }))}
@@ -690,7 +691,7 @@ export function SubcontractorListItem({
             <p className="mb-2 text-xs text-fg-subtle">{t("datevKreditorNumberHint")}</p>
             <form onSubmit={saveTaxProfile} className="flex flex-col gap-2">
               <input
-                placeholder={t("datevKreditorNumber")}
+                placeholder={t("datevKreditorNumber")} aria-label={t("datevKreditorNumber")}
                 className="input"
                 value={taxForm.datevKreditorNumber}
                 onChange={(e) => setTaxForm((f) => ({ ...f, datevKreditorNumber: e.target.value.replace(/\D/g, "") }))}
@@ -707,20 +708,20 @@ export function SubcontractorListItem({
               <p className="mb-2 text-xs text-fg-subtle">{t("taxProfileHint")}</p>
               <form onSubmit={saveTaxProfile} className="flex flex-col gap-2">
                 <input
-                  placeholder={t("taxIdPlaceholder")}
+                  placeholder={t("taxIdPlaceholder")} aria-label={t("taxIdPlaceholder")}
                   className="input"
                   value={taxForm.taxId}
                   onChange={(e) => setTaxForm((f) => ({ ...f, taxId: e.target.value }))}
                 />
                 <input
-                  placeholder={t("legalBusinessNamePlaceholder")}
+                  placeholder={t("legalBusinessNamePlaceholder")} aria-label={t("legalBusinessNamePlaceholder")}
                   className="input"
                   value={taxForm.legalBusinessName}
                   onChange={(e) => setTaxForm((f) => ({ ...f, legalBusinessName: e.target.value }))}
                 />
                 <textarea
                   rows={2}
-                  placeholder={t("mailingAddressPlaceholder")}
+                  placeholder={t("mailingAddressPlaceholder")} aria-label={t("mailingAddressPlaceholder")}
                   className="input"
                   value={taxForm.mailingAddress}
                   onChange={(e) => setTaxForm((f) => ({ ...f, mailingAddress: e.target.value }))}
@@ -753,19 +754,19 @@ export function SubcontractorListItem({
                   required
                   type="number"
                   step="0.01"
-                  placeholder={t("amount")}
+                  placeholder={t("amount")} aria-label={t("amount")}
                   className="input w-28"
                   value={paymentForm.amount}
                   onChange={(e) => setPaymentForm((f) => ({ ...f, amount: e.target.value }))}
                 />
-                <input
+                <input aria-label={ta("paymentDate")}
                   type="date"
                   className="input w-auto"
                   value={paymentForm.paidAt}
                   onChange={(e) => setPaymentForm((f) => ({ ...f, paidAt: e.target.value }))}
                 />
                 <input
-                  placeholder={t("paymentNotePlaceholder")}
+                  placeholder={t("paymentNotePlaceholder")} aria-label={t("paymentNotePlaceholder")}
                   className="input"
                   value={paymentForm.note}
                   onChange={(e) => setPaymentForm((f) => ({ ...f, note: e.target.value }))}

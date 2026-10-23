@@ -41,6 +41,7 @@ export default function ServiceContractDetailPage({ params }: { params: Promise<
   const { id } = use(params);
   const t = useTranslations("serviceContracts");
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
   const router = useRouter();
 
   const { data: contract = null, error: loadError, reload: reloadContract } = useApi<ServiceContract>(`/service-contracts/${id}`);
@@ -118,7 +119,7 @@ export default function ServiceContractDetailPage({ params }: { params: Promise<
                 onChange={(e) => setVisitForm((f) => ({ ...f, scheduledDate: e.target.value }))}
               />
             </Field>
-            <select
+            <select aria-label={ta("technician")}
               className="input"
               value={visitForm.technicianWorkerId}
               onChange={(e) => setVisitForm((f) => ({ ...f, technicianWorkerId: e.target.value }))}

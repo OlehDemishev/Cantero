@@ -139,11 +139,11 @@ export function ClientDealPanel({
           type="number"
           min="0"
           className="input"
-          placeholder={t("estimatedValue")}
+          placeholder={t("estimatedValue")} aria-label={t("estimatedValue")}
           value={dealForm.estimatedValue}
           onChange={(e) => setDealForm((f) => ({ ...f, estimatedValue: e.target.value }))}
         />
-        <select
+        <select aria-label={t("owner")}
           className="input"
           value={dealForm.ownerWorkerId}
           onChange={(e) => setDealForm((f) => ({ ...f, ownerWorkerId: e.target.value }))}

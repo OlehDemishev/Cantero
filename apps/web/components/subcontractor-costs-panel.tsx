@@ -36,6 +36,7 @@ interface SubcontractorCost {
 export function SubcontractorCostsPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("subcontractors");
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
 
@@ -181,7 +182,7 @@ export function SubcontractorCostsPanel({ projectId }: { projectId: string }) {
       )}
 
       <form onSubmit={handleSubmit} className="mt-4 flex flex-wrap items-end gap-2">
-        <select
+        <select aria-label={ta("subcontractor")}
           className="input w-auto"
           value={form.subcontractorId}
           onChange={(e) => setForm((f) => ({ ...f, subcontractorId: e.target.value }))}
@@ -196,7 +197,7 @@ export function SubcontractorCostsPanel({ projectId }: { projectId: string }) {
         {form.subcontractorId === NEW_SUBCONTRACTOR && (
           <input
             required
-            placeholder={tc("name")}
+            placeholder={tc("name")} aria-label={tc("name")}
             className="input w-auto"
             value={form.newSubcontractorName}
             onChange={(e) => setForm((f) => ({ ...f, newSubcontractorName: e.target.value }))}
@@ -204,7 +205,7 @@ export function SubcontractorCostsPanel({ projectId }: { projectId: string }) {
         )}
         <input
           required
-          placeholder={t("description")}
+          placeholder={t("description")} aria-label={t("description")}
           className="input w-auto"
           value={form.description}
           onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
@@ -213,19 +214,19 @@ export function SubcontractorCostsPanel({ projectId }: { projectId: string }) {
           required
           type="number"
           step="0.01"
-          placeholder={t("amount")}
+          placeholder={t("amount")} aria-label={t("amount")}
           className="input w-24"
           value={form.amount}
           onChange={(e) => setForm((f) => ({ ...f, amount: e.target.value }))}
         />
-        <input
+        <input aria-label={ta("dueDate")}
           type="date"
           className="input w-auto"
           value={form.dueDate}
           onChange={(e) => setForm((f) => ({ ...f, dueDate: e.target.value }))}
         />
         {costCodes.length > 0 && (
-          <select
+          <select aria-label={ta("costCode")}
             className="input w-auto"
             value={form.costCodeId}
             onChange={(e) => setForm((f) => ({ ...f, costCodeId: e.target.value }))}

@@ -199,15 +199,14 @@ export default function PortalChangeOrderPage({ params }: { params: Promise<{ id
                 <textarea rows={2} className="input" value={note} onChange={(e) => setNote(e.target.value)} />
               </Field>
 
-              <div className="mt-4 flex flex-col gap-1.5 text-sm">
-                <span className="font-medium text-fg-muted">{te("signerNameLabel")}</span>
+              <Field label={te("signerNameLabel")} className="mt-4">
                 <input
                   className="input"
                   placeholder={te("signerNamePlaceholder")}
                   value={signerName}
                   onChange={(e) => setSignerName(e.target.value)}
                 />
-              </div>
+              </Field>
               <div className="mt-3 flex flex-col gap-1.5 text-sm">
                 <span className="font-medium text-fg-muted">{te("signHere")}</span>
                 <SignaturePad onChange={setSignatureDataUrl} clearLabel={te("clearSignature")} />

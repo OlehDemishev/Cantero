@@ -148,7 +148,7 @@ export function ConcreteQcPanel({ projectId }: { projectId: string }) {
           <div className="flex flex-wrap gap-2">
             <input
               required
-              placeholder={t("locationPlaceholder")}
+              placeholder={t("locationPlaceholder")} aria-label={t("locationPlaceholder")}
               className="input flex-1"
               value={form.location}
               onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))}
@@ -159,7 +159,7 @@ export function ConcreteQcPanel({ projectId }: { projectId: string }) {
           </div>
           <div className="flex flex-wrap gap-2">
             <input
-              placeholder={t("mixDesignPlaceholder")}
+              placeholder={t("mixDesignPlaceholder")} aria-label={t("mixDesignPlaceholder")}
               className="input flex-1"
               value={form.mixDesign}
               onChange={(e) => setForm((f) => ({ ...f, mixDesign: e.target.value }))}
@@ -167,13 +167,13 @@ export function ConcreteQcPanel({ projectId }: { projectId: string }) {
             <input
               type="number"
               step="0.01"
-              placeholder={t("volumePlaceholder")}
+              placeholder={t("volumePlaceholder")} aria-label={t("volumePlaceholder")}
               className="input w-32"
               value={form.volume}
               onChange={(e) => setForm((f) => ({ ...f, volume: e.target.value }))}
             />
             <input
-              placeholder={t("supplierPlaceholder")}
+              placeholder={t("supplierPlaceholder")} aria-label={t("supplierPlaceholder")}
               className="input flex-1"
               value={form.supplierName}
               onChange={(e) => setForm((f) => ({ ...f, supplierName: e.target.value }))}
@@ -183,7 +183,7 @@ export function ConcreteQcPanel({ projectId }: { projectId: string }) {
             <input
               type="number"
               step="0.01"
-              placeholder={t("specifiedStrengthPlaceholder")}
+              placeholder={t("specifiedStrengthPlaceholder")} aria-label={t("specifiedStrengthPlaceholder")}
               className="input w-40"
               value={form.specifiedStrength}
               onChange={(e) => setForm((f) => ({ ...f, specifiedStrength: e.target.value }))}
@@ -191,7 +191,7 @@ export function ConcreteQcPanel({ projectId }: { projectId: string }) {
             <input
               type="number"
               step="0.01"
-              placeholder={t("specifiedSlumpPlaceholder")}
+              placeholder={t("specifiedSlumpPlaceholder")} aria-label={t("specifiedSlumpPlaceholder")}
               className="input w-40"
               value={form.specifiedSlump}
               onChange={(e) => setForm((f) => ({ ...f, specifiedSlump: e.target.value }))}
@@ -252,7 +252,7 @@ export function ConcreteQcPanel({ projectId }: { projectId: string }) {
                         <input
                           type="number"
                           step="0.01"
-                          placeholder={t("slumpValuePlaceholder")}
+                          placeholder={t("slumpValuePlaceholder")} aria-label={t("slumpValuePlaceholder")}
                           className="input w-32"
                           value={slumpForm.slumpValue}
                           onChange={(e) => setSlumpForm((f) => ({ ...f, slumpValue: e.target.value }))}
@@ -262,7 +262,7 @@ export function ConcreteQcPanel({ projectId }: { projectId: string }) {
                           {t("withinSpec")}
                         </label>
                         <input
-                          placeholder={t("testedByPlaceholder")}
+                          placeholder={t("testedByPlaceholder")} aria-label={t("testedByPlaceholder")}
                           className="input w-32"
                           value={slumpForm.testedByName}
                           onChange={(e) => setSlumpForm((f) => ({ ...f, testedByName: e.target.value }))}
@@ -293,13 +293,13 @@ export function ConcreteQcPanel({ projectId }: { projectId: string }) {
                                     <input
                                       type="number"
                                       step="0.01"
-                                      placeholder={t("breakStrengthPlaceholder")}
+                                      placeholder={t("breakStrengthPlaceholder")} aria-label={t("breakStrengthPlaceholder")}
                                       className="input w-28 py-0.5 text-xs"
                                       value={resultDraft[cb.id]?.breakStrength ?? ""}
                                       onChange={(e) => setResultDraft((d) => ({ ...d, [cb.id]: { breakStrength: e.target.value, testedByName: d[cb.id]?.testedByName ?? "" } }))}
                                     />
                                     <input
-                                      placeholder={t("testedByPlaceholder")}
+                                      placeholder={t("testedByPlaceholder")} aria-label={t("testedByPlaceholder")}
                                       className="input w-24 py-0.5 text-xs"
                                       value={resultDraft[cb.id]?.testedByName ?? ""}
                                       onChange={(e) => setResultDraft((d) => ({ ...d, [cb.id]: { breakStrength: d[cb.id]?.breakStrength ?? "", testedByName: e.target.value } }))}
@@ -318,14 +318,14 @@ export function ConcreteQcPanel({ projectId }: { projectId: string }) {
                       )}
                       <div className="flex flex-wrap items-end gap-2">
                         <input
-                          placeholder={t("cylinderLabelPlaceholder")}
+                          placeholder={t("cylinderLabelPlaceholder")} aria-label={t("cylinderLabelPlaceholder")}
                           className="input w-32"
                           value={cylForm.cylinderLabel}
                           onChange={(e) => setCylForm((f) => ({ ...f, cylinderLabel: e.target.value }))}
                         />
                         <input
                           type="number"
-                          placeholder={t("breakAgeDaysPlaceholder")}
+                          placeholder={t("breakAgeDaysPlaceholder")} aria-label={t("breakAgeDaysPlaceholder")}
                           className="input w-24"
                           value={cylForm.breakAgeDays}
                           onChange={(e) => setCylForm((f) => ({ ...f, breakAgeDays: e.target.value }))}

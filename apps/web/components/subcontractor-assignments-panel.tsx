@@ -26,6 +26,7 @@ export function SubcontractorAssignmentsPanel({ projectId }: { projectId: string
   const t = useTranslations("subcontractors");
   const confirm = useConfirm();
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
 
   const [subcontractors, setSubcontractors] = useState<Subcontractor[]>([]);
   const [assignmentsBySubcontractor, setAssignmentsBySubcontractor] = useState<Record<string, Assignment[]> | null>(null);
@@ -142,7 +143,7 @@ export function SubcontractorAssignmentsPanel({ projectId }: { projectId: string
       )}
 
       <form onSubmit={assign} className="flex flex-wrap items-end gap-2">
-        <select className="input w-auto" value={selectedId} onChange={(e) => setSelectedId(e.target.value)}>
+        <select aria-label={ta("subcontractor")} className="input w-auto" value={selectedId} onChange={(e) => setSelectedId(e.target.value)}>
           {subcontractors.map((s) => (
             <option key={s.id} value={s.id}>
               {s.name}
@@ -154,14 +155,14 @@ export function SubcontractorAssignmentsPanel({ projectId }: { projectId: string
           <>
             <input
               required
-              placeholder={tc("name")}
+              placeholder={tc("name")} aria-label={tc("name")}
               className="input w-auto"
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
             />
             <input
               type="email"
-              placeholder={tc("email")}
+              placeholder={tc("email")} aria-label={tc("email")}
               className="input w-auto"
               value={newEmail}
               onChange={(e) => setNewEmail(e.target.value)}

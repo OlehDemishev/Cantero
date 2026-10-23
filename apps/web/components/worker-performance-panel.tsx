@@ -25,6 +25,7 @@ interface PerformanceReview {
 
 export function WorkerPerformancePanel({ workerId }: { workerId: string }) {
   const tp = useTranslations("performance");
+  const ta = useTranslations("a11y");
   const { data: performanceGoals = null, reload: reloadPerformanceGoals, error: performanceGoalsError } = useApi<PerformanceGoal[]>(`/performance/workers/${workerId}/goals`);
   const { data: performanceReviews = null, reload: reloadPerformanceReviews } = useApi<PerformanceReview[]>(`/performance/workers/${workerId}/reviews`);
   const [goalForm, setGoalForm] = useState({ title: "", targetDate: "" });
@@ -79,7 +80,7 @@ export function WorkerPerformancePanel({ workerId }: { workerId: string }) {
                 <span className={goal.completedAt ? "text-fg-subtle line-through" : "text-fg"}>{goal.title}</span>
                 <span className="text-xs text-fg-subtle">{goal.progressPercent}%</span>
               </div>
-              <input
+              <input aria-label={ta("fieldOf", { field: ta("progress"), item: goal.title })}
                 type="range"
                 min="0"
                 max="100"
@@ -96,13 +97,13 @@ export function WorkerPerformancePanel({ workerId }: { workerId: string }) {
       <form onSubmit={addGoal} className="flex max-w-md flex-col gap-2">
         <input
           required
-          placeholder={tp("goalTitlePlaceholder")}
+          placeholder={tp("goalTitlePlaceholder")} aria-label={tp("goalTitlePlaceholder")}
           className="input"
           value={goalForm.title}
           onChange={(e) => setGoalForm((f) => ({ ...f, title: e.target.value }))}
         />
         <div className="flex gap-2">
-          <input
+          <input aria-label={ta("targetDate")}
             type="date"
             className="input"
             value={goalForm.targetDate}

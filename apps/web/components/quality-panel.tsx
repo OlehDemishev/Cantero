@@ -60,6 +60,7 @@ const EMPTY_CHECKLIST_FORM = { name: "", trade: "", phase: "", templateId: "", i
 export function QualityPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("quality");
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
 
   const { data: checklists = null, reload: reloadChecklists, error: checklistsError } = useApi<Checklist[]>(`/inspection-checklists?projectId=${projectId}`);
   const { data: deficiencies = null, reload: reloadDeficiencies, error: deficienciesError } = useApi<Deficiency[]>(`/deficiencies?projectId=${projectId}`);
@@ -177,12 +178,12 @@ export function QualityPanel({ projectId }: { projectId: string }) {
           <div className="flex flex-wrap gap-3">
             <input
               required
-              placeholder={tc("name")}
+              placeholder={tc("name")} aria-label={tc("name")}
               className="input"
               value={checklistForm.name}
               onChange={(e) => setChecklistForm((f) => ({ ...f, name: e.target.value }))}
             />
-            <select
+            <select aria-label={ta("template")}
               className="input"
               value={checklistForm.templateId}
               onChange={(e) => setChecklistForm((f) => ({ ...f, templateId: e.target.value }))}
@@ -197,19 +198,19 @@ export function QualityPanel({ projectId }: { projectId: string }) {
             {!checklistForm.templateId && (
               <input
                 required
-                placeholder={t("trade")}
+                placeholder={t("trade")} aria-label={t("trade")}
                 className="input"
                 value={checklistForm.trade}
                 onChange={(e) => setChecklistForm((f) => ({ ...f, trade: e.target.value }))}
               />
             )}
             <input
-              placeholder={t("phase")}
+              placeholder={t("phase")} aria-label={t("phase")}
               className="input"
               value={checklistForm.phase}
               onChange={(e) => setChecklistForm((f) => ({ ...f, phase: e.target.value }))}
             />
-            <select
+            <select aria-label={t("inspector")}
               className="input"
               value={checklistForm.inspectorWorkerId}
               onChange={(e) => setChecklistForm((f) => ({ ...f, inspectorWorkerId: e.target.value }))}
@@ -227,7 +228,7 @@ export function QualityPanel({ projectId }: { projectId: string }) {
               required
               rows={3}
               className="input"
-              placeholder={t("adHocItemsPlaceholder")}
+              placeholder={t("adHocItemsPlaceholder")} aria-label={t("adHocItemsPlaceholder")}
               value={checklistForm.adHocItems}
               onChange={(e) => setChecklistForm((f) => ({ ...f, adHocItems: e.target.value }))}
             />
@@ -266,7 +267,7 @@ export function QualityPanel({ projectId }: { projectId: string }) {
                   <li key={item.id} className="flex flex-wrap items-center gap-2 text-sm">
                     <span className="flex-1">{item.description}</span>
                     {cl.status === "open" ? (
-                      <select
+                      <select aria-label={ta("fieldOf", { field: ta("result"), item: item.description })}
                         className="input w-auto py-0.5 text-xs"
                         value={item.result}
                         onChange={(e) => recordResult(cl.id, item.id, e.target.value as InspectionItemResult)}
@@ -291,14 +292,14 @@ export function QualityPanel({ projectId }: { projectId: string }) {
 
               {deficiencyDraft?.checklistId === cl.id && (
                 <div className="mt-2 flex flex-col gap-1.5 border-t border-gray-100 dark:border-gray-700 pt-2">
-                  <textarea
+                  <textarea aria-label={tc("description")}
                     rows={2}
                     className="input text-xs"
                     value={deficiencyForm.description}
                     onChange={(e) => setDeficiencyForm((f) => ({ ...f, description: e.target.value }))}
                   />
                   <div className="flex flex-wrap gap-1.5">
-                    <select
+                    <select aria-label={ta("severity")}
                       className="input w-auto py-0.5 text-xs"
                       value={deficiencyForm.severity}
                       onChange={(e) => setDeficiencyForm((f) => ({ ...f, severity: e.target.value as DeficiencySeverity }))}
@@ -309,7 +310,7 @@ export function QualityPanel({ projectId }: { projectId: string }) {
                         </option>
                       ))}
                     </select>
-                    <select
+                    <select aria-label={t("assignee")}
                       className="input w-auto py-0.5 text-xs"
                       value={deficiencyForm.assigneeWorkerId}
                       onChange={(e) => setDeficiencyForm((f) => ({ ...f, assigneeWorkerId: e.target.value }))}
@@ -321,14 +322,14 @@ export function QualityPanel({ projectId }: { projectId: string }) {
                         </option>
                       ))}
                     </select>
-                    <input
+                    <input aria-label={ta("dueDate")}
                       type="date"
                       className="input w-auto py-0.5 text-xs"
                       value={deficiencyForm.dueDate}
                       onChange={(e) => setDeficiencyForm((f) => ({ ...f, dueDate: e.target.value }))}
                     />
                     <input
-                      placeholder={t("locationPlaceholder")}
+                      placeholder={t("locationPlaceholder")} aria-label={t("locationPlaceholder")}
                       className="input w-auto py-0.5 text-xs"
                       value={deficiencyForm.location}
                       onChange={(e) => setDeficiencyForm((f) => ({ ...f, location: e.target.value }))}

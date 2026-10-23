@@ -8,7 +8,7 @@ import { useCompanyLocale } from "@/components/public-locale";
 import { SignaturePad } from "@/components/signature-pad";
 import { formatDateTime } from "@/lib/format-date";
 import { Alert } from "@/components/ui/alert";
-import { FormError } from "@/components/ui/field";
+import { Field, FormError } from "@/components/ui/field";
 
 type ContractStatus = "draft" | "sent" | "signed" | "void";
 interface PublicContract {
@@ -88,10 +88,9 @@ export default function PublicContractPage({ params }: { params: Promise<{ token
 
           {contract.status === "sent" ? (
             <div className="mt-6 border-t border-gray-100 dark:border-gray-700 pt-4">
-              <div className="flex flex-col gap-1.5 text-sm">
-                <span className="font-medium text-fg-muted">{t("signerNameLabel")}</span>
+              <Field label={t("signerNameLabel")}>
                 <input className="input" placeholder={t("signerNamePlaceholder")} value={signerName} onChange={(e) => setSignerName(e.target.value)} />
-              </div>
+              </Field>
               <div className="mt-3 flex flex-col gap-1.5 text-sm">
                 <span className="font-medium text-fg-muted">{t("signHere")}</span>
                 <SignaturePad onChange={setSignatureDataUrl} clearLabel={t("clearSignature")} />
