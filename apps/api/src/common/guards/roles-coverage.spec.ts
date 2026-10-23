@@ -81,6 +81,7 @@ describe("every internal route says which roles may call it", () => {
       "SsoController.getConfig",
       "SsoController.spMetadata",
       "SsoController.updateConfig",
+      "SsoController.verifyDomain",
     ];
     expect(routes.filter((r) => r.roles?.length).map((r) => r.where).sort()).toEqual(fixed);
   });
