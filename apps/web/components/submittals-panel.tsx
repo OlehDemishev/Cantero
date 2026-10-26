@@ -3,11 +3,17 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { SUBMITTAL_REVIEW_DECISIONS, type BulkActionResult, type SubmittalReviewDecision, type SubmittalStatus } from "@cantero/shared";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, notifyApiError } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useBulkSelection } from "@/components/bulk-select";
 import { useDeepLinkedRow, buildItemDeepLink } from "@/lib/use-deep-linked-row";
 import { CopyLinkButton } from "@/components/ui/copy-link-button";
 import { formatDate } from "@/lib/format-date";
+import { Badge } from "@/components/ui/badge";
+import { statusTone } from "@/lib/status-tone";
+import { Field } from "@/components/ui/field";
 
 interface SubmittalHistoryEntry {
   id: string;
@@ -29,27 +35,19 @@ interface Submittal {
   escalatedAt: string | null;
 }
 
-const STATUS_STYLES: Record<SubmittalStatus, string> = {
-  draft: "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300",
-  submitted: "bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-400",
-  approved: "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500",
-  approved_as_noted: "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500",
-  revise_and_resubmit: "bg-warning-50 dark:bg-warning-500/15 text-warning-700 dark:text-warning-500",
-  rejected: "bg-error-50 dark:bg-error-500/15 text-error-700 dark:text-error-500",
-};
-
 const EMPTY_FORM = { title: "", specSection: "", dueDate: "" };
 
 export function SubmittalsPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("submittals");
   const tc = useTranslations("common");
   const tb = useTranslations("bulk");
+  const ta = useTranslations("a11y");
   const bulk = useBulkSelection();
 
   const deepLinkedId = useDeepLinkedRow("submittal");
   const rowRefs = useRef<Record<string, HTMLLIElement | null>>({});
 
-  const [items, setItems] = useState<Submittal[] | null>(null);
+  const { data: items = null, reload: reloadItems, error: itemsError } = useApi<Submittal[]>(`/submittals?projectId=${projectId}`);
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [expandedId, setExpandedId] = useState<string | null>(deepLinkedId);
@@ -59,15 +57,12 @@ export function SubmittalsPanel({ projectId }: { projectId: string }) {
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<Submittal[]>(`/submittals?projectId=${projectId}`).then(setItems);
+    void reloadItems();
   }
-
-  useEffect(load, [projectId]);
 
   useEffect(() => {
     if (!deepLinkedId || !items) return;
     rowRefs.current[deepLinkedId]?.scrollIntoView({ behavior: "smooth", block: "center" });
-     
   }, [items, deepLinkedId]);
 
   async function submit(e: React.FormEvent) {
@@ -126,7 +121,7 @@ export function SubmittalsPanel({ projectId }: { projectId: string }) {
   return (
     <div className="mt-10">
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
+        <h2 className="text-sm font-semibold text-fg-muted">{t("title")}</h2>
         {!creating && (
           <button onClick={() => setCreating(true)} className="btn-secondary px-3 py-1 text-xs">
             {t("newSubmittal")}
@@ -136,8 +131,7 @@ export function SubmittalsPanel({ projectId }: { projectId: string }) {
 
       {creating && (
         <form onSubmit={submit} className="card mb-4 flex flex-col gap-3">
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700 dark:text-gray-200">{t("submittalTitle")}</span>
+          <Field label={t("submittalTitle")}>
             <input
               required
               className="input"
@@ -145,26 +139,24 @@ export function SubmittalsPanel({ projectId }: { projectId: string }) {
               value={form.title}
               onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
             />
-          </label>
+          </Field>
           <div className="flex gap-3">
-            <label className="flex flex-1 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700 dark:text-gray-200">{t("specSection")}</span>
+            <Field label={t("specSection")} className="flex-1">
               <input
                 className="input"
                 placeholder="09 30 00"
                 value={form.specSection}
                 onChange={(e) => setForm((f) => ({ ...f, specSection: e.target.value }))}
               />
-            </label>
-            <label className="flex flex-1 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700 dark:text-gray-200">{t("dueDate")}</span>
+            </Field>
+            <Field label={t("dueDate")} className="flex-1">
               <input
                 type="date"
                 className="input"
                 value={form.dueDate}
                 onChange={(e) => setForm((f) => ({ ...f, dueDate: e.target.value }))}
               />
-            </label>
+            </Field>
           </div>
           <div className="flex gap-2">
             <button type="submit" disabled={busy} className="btn-primary">
@@ -180,19 +172,19 @@ export function SubmittalsPanel({ projectId }: { projectId: string }) {
       {bulk.result && (
         <div className="mb-3 flex items-center justify-between rounded-md bg-gray-50 dark:bg-gray-700 px-3 py-2 text-xs text-gray-600 dark:text-gray-300">
           <span>{tb("resultSummary", { succeeded: bulk.result.succeeded, failed: bulk.result.failed.length })}</span>
-          <button onClick={bulk.dismissResult} className="text-gray-400 dark:text-gray-500 hover:text-gray-600">
+          <button aria-label={ta("dismiss")} onClick={bulk.dismissResult} className="text-fg-subtle hover:text-fg-muted">
             ×
           </button>
         </div>
       )}
 
       {items === null ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
+        itemsError ? <ErrorState error={itemsError} onRetry={reloadItems} compact /> : <Skeleton lines={3} />
       ) : items.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noItems")}</p>
+        <p className="text-sm text-fg-subtle">{t("noItems")}</p>
       ) : (
         <>
-          <div className="mb-2 flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
+          <div className="mb-2 flex items-center gap-3 text-xs text-fg-subtle">
             <label className="flex items-center gap-1.5">
               <input
                 type="checkbox"
@@ -220,7 +212,7 @@ export function SubmittalsPanel({ projectId }: { projectId: string }) {
                 className={`card ${deepLinkedId === item.id ? "ring-2 ring-brand-300" : ""}`}
               >
                 <div className="flex w-full items-start gap-3">
-                  <input type="checkbox" className="mt-1" checked={bulk.selected.has(item.id)} onChange={() => bulk.toggle(item.id)} />
+                  <input aria-label={ta("selectItem", { name: item.title })} type="checkbox" className="mt-1" checked={bulk.selected.has(item.id)} onChange={() => bulk.toggle(item.id)} />
                   <CopyLinkButton url={buildItemDeepLink(projectId, "quality", "submittal", item.id)} />
                   <button
                     onClick={() => {
@@ -229,27 +221,27 @@ export function SubmittalsPanel({ projectId }: { projectId: string }) {
                       if (!expanded && !historyById[item.id]) {
                         apiFetch<{ history: SubmittalHistoryEntry[] }>(`/submittals/${item.id}`).then((detail) =>
                           setHistoryById((h) => ({ ...h, [item.id]: detail.history })),
-                        );
+                        ).catch(notifyApiError);
                       }
                     }}
                     className="flex flex-1 items-start justify-between gap-3 text-left"
                   >
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-mono text-gray-400 dark:text-gray-500">
+                        <span className="text-xs font-mono text-fg-subtle">
                           {item.number}
                           {item.revision > 0 ? ` rev.${item.revision}` : ""}
                         </span>
-                        <span className="text-sm font-medium text-gray-900 dark:text-gray-50">{item.title}</span>
+                        <span className="text-sm font-medium text-fg">{item.title}</span>
                       </div>
                       <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                        <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[item.status]}`}>
+                        <Badge tone={statusTone(item.status)}>
                           {t(item.status)}
-                        </span>
-                        {item.specSection && <span className="text-xs text-gray-500 dark:text-gray-400">{item.specSection}</span>}
-                        {item.dueDate && <span className="text-xs text-gray-500 dark:text-gray-400">{formatDate(new Date(item.dueDate))}</span>}
+                        </Badge>
+                        {item.specSection && <span className="text-xs text-fg-subtle">{item.specSection}</span>}
+                        {item.dueDate && <span className="text-xs text-fg-subtle">{formatDate(new Date(item.dueDate))}</span>}
                         {item.escalatedAt && (
-                          <span className="rounded-full bg-error-50 dark:bg-error-500/15 px-2 py-0.5 text-xs font-medium text-error-700 dark:text-error-500">{t("escalated")}</span>
+                          <Badge tone="danger">{t("escalated")}</Badge>
                         )}
                       </div>
                     </div>
@@ -259,15 +251,15 @@ export function SubmittalsPanel({ projectId }: { projectId: string }) {
                 {expanded && (
                   <div className="mt-3 flex flex-col gap-2 border-t border-gray-100 dark:border-gray-700 pt-3 text-sm">
                     {(historyById[item.id]?.length ?? 0) > 1 && (
-                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                      <p className="text-xs text-fg-subtle">
                         {t("history")}: {historyById[item.id].map((h) => `rev.${h.revision} — ${t(h.status)}`).join(", ")}
                       </p>
                     )}
                     {item.reviewComments && (
                       <p>
-                        <span className="font-medium text-gray-700 dark:text-gray-200">{t("reviewComments")}: </span>
+                        <span className="font-medium text-fg-muted">{t("reviewComments")}: </span>
                         {item.reviewComments}
-                        {item.reviewedByName && <span className="text-xs text-gray-400 dark:text-gray-500"> — {item.reviewedByName}</span>}
+                        {item.reviewedByName && <span className="text-xs text-fg-subtle"> — {item.reviewedByName}</span>}
                       </p>
                     )}
 
@@ -279,7 +271,7 @@ export function SubmittalsPanel({ projectId }: { projectId: string }) {
 
                     {item.status === "submitted" && (
                       <div className="flex flex-col gap-2">
-                        <select
+                        <select aria-label={ta("decision")}
                           className="input w-fit"
                           value={reviewDecision}
                           onChange={(e) => setReviewDecision(e.target.value as SubmittalReviewDecision)}
@@ -293,7 +285,7 @@ export function SubmittalsPanel({ projectId }: { projectId: string }) {
                         <textarea
                           rows={2}
                           className="input"
-                          placeholder={t("reviewCommentsPlaceholder")}
+                          placeholder={t("reviewCommentsPlaceholder")} aria-label={t("reviewCommentsPlaceholder")}
                           value={reviewComments}
                           onChange={(e) => setReviewComments(e.target.value)}
                         />

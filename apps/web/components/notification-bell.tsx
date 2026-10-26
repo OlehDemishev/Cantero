@@ -4,6 +4,9 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { BellIcon } from "@/components/nav-icons";
+import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type NotificationType =
   | "low_stock"
@@ -47,19 +50,16 @@ const POLL_INTERVAL_MS = 60_000;
 
 export function NotificationBell() {
   const t = useTranslations("notifications");
-  const [data, setData] = useState<NotificationsResponse | null>(null);
+  const ta = useTranslations("a11y");
+  const { data = null, error, setData, reload } = useApi<NotificationsResponse>("/notifications");
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
-  function load() {
-    apiFetch<NotificationsResponse>("/notifications").then(setData);
-  }
-
+  // Polled in the background: a failed poll keeps the last answer and just tries again next time.
   useEffect(() => {
-    load();
-    const interval = setInterval(load, POLL_INTERVAL_MS);
+    const interval = setInterval(() => void reload(), POLL_INTERVAL_MS);
     return () => clearInterval(interval);
-  }, []);
+  }, [reload]);
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -106,12 +106,13 @@ export function NotificationBell() {
     <div className="relative" ref={ref}>
       <button
         onClick={toggleOpen}
-        aria-label={t("title")}
-        className="relative flex h-10 w-10 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/5"
+        aria-label={unread > 0 ? ta("fieldOf", { field: t("title"), item: ta("unreadCount", { count: unread }) }) : t("title")}
+        aria-expanded={open}
+        className="relative flex h-10 w-10 items-center justify-center rounded-lg text-fg-subtle hover:bg-gray-100 dark:hover:bg-white/5"
       >
         <BellIcon />
         {unread > 0 && (
-          <span className="absolute right-1.5 top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-error-500 px-1 text-[10px] font-semibold text-white">
+          <span aria-hidden="true" className="absolute right-1.5 top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-error-500 px-1 text-2xs font-semibold text-white">
             {unread > 9 ? "9+" : unread}
           </span>
         )}
@@ -120,7 +121,7 @@ export function NotificationBell() {
       {open && (
         <div className="absolute right-0 mt-2 w-80 max-h-96 overflow-y-auto rounded-xl border border-gray-200 bg-white p-2 shadow-theme-md dark:border-gray-800 dark:bg-gray-900">
           <div className="flex items-center justify-between px-2 py-1.5">
-            <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">{t("title")}</span>
+            <span className="text-sm font-semibold text-fg-muted">{t("title")}</span>
             {data && data.notifications.some((n) => !n.read) && (
               <button onClick={markAllRead} className="text-xs text-brand-700 dark:text-brand-400 hover:underline">
                 {t("markAllRead")}
@@ -128,37 +129,48 @@ export function NotificationBell() {
             )}
           </div>
           {!data ? (
-            <p className="px-2 py-3 text-sm text-gray-400 dark:text-gray-500">{t("loading")}</p>
+            error ? (
+              <ErrorState error={error} onRetry={reload} compact className="px-2 py-3" />
+            ) : (
+              <Skeleton className="px-2 py-3" lines={3} />
+            )
           ) : data.notifications.length === 0 ? (
-            <p className="px-2 py-3 text-sm text-gray-400 dark:text-gray-500">{t("empty")}</p>
+            <p className="px-2 py-3 text-sm text-fg-subtle">{t("empty")}</p>
           ) : (
             <div className="flex flex-col gap-2">
               {grouped.map((g) => (
                 <div key={g.type}>
-                  <div className="px-2 pb-0.5 text-[10px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
+                  <div className="px-2 pb-0.5 text-2xs font-semibold uppercase tracking-wide text-fg-subtle">
                     {t(`type_${g.type}`)}
                   </div>
                   <ul className="flex flex-col gap-0.5">
                     {g.items.map((n) => (
-                      <li key={n.key} className={`flex items-start gap-1 rounded-lg px-1 hover:bg-gray-100 dark:hover:bg-white/5 ${n.read ? "opacity-50" : ""}`}>
+                      // Read or not is told by weight and by text, not by fading (which also failed contrast).
+                      <li key={n.key} className="flex items-start gap-1 rounded-lg px-1 hover:bg-gray-100 dark:hover:bg-white/5">
                         <a href={n.link} onClick={() => setOpen(false)} className="block flex-1 px-1 py-2">
                           <div className="flex items-start gap-2">
                             <span
+                              aria-hidden="true"
                               className={`mt-1 h-2 w-2 flex-shrink-0 rounded-full ${
                                 n.severity === "critical" ? "bg-error-500" : "bg-warning-500"
                               }`}
                             />
                             <div>
-                              <div className="text-sm font-medium text-gray-800 dark:text-white/90">{n.title}</div>
-                              <div className="text-xs text-gray-500 dark:text-gray-400">{n.body}</div>
+                              <span className="sr-only">
+                                {ta(n.severity === "critical" ? "severityCritical" : "severityWarning")}, {ta(n.read ? "read" : "unread")}:{" "}
+                              </span>
+                              <div className={`text-sm ${n.read ? "font-normal text-fg-muted" : "font-semibold text-fg"}`}>{n.title}</div>
+                              <div className="text-xs text-fg-subtle">{n.body}</div>
                             </div>
                           </div>
                         </a>
                         {!n.read && (
                           <button
+                            type="button"
                             onClick={() => markRead(n.key)}
+                            aria-label={t("markRead")}
                             title={t("markRead")}
-                            className="mt-2 flex-shrink-0 text-xs text-gray-400 dark:text-gray-500 hover:text-brand-700"
+                            className="mt-2 flex-shrink-0 text-xs text-fg-subtle hover:text-brand-700"
                           >
                             ✓
                           </button>

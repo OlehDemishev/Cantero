@@ -1,9 +1,14 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch, apiUpload } from "@/lib/api-client";
+import { apiUpload } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { formatDate } from "@/lib/format-date";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
+import { FormError } from "@/components/ui/field";
 
 interface DrawingSheetVersion {
   id: string;
@@ -16,19 +21,14 @@ interface DrawingSheetVersion {
 export function DrawingRevisionsPanel({ sheetId, onSuperseded }: { sheetId: string; onSuperseded: (newSheetId: string) => void }) {
   const t = useTranslations("drawings");
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
 
-  const [versions, setVersions] = useState<DrawingSheetVersion[] | null>(null);
+  const { data: versions = null, error: versionsError, reload: reloadVersions } = useApi<DrawingSheetVersion[]>(`/drawing-sheets/${sheetId}/versions`);
   const [revision, setRevision] = useState("");
   const [revisionDate, setRevisionDate] = useState("");
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  function load() {
-    apiFetch<DrawingSheetVersion[]>(`/drawing-sheets/${sheetId}/versions`).then(setVersions);
-  }
-
-  useEffect(load, [sheetId]);
 
   async function uploadRevision(e: React.FormEvent) {
     e.preventDefault();
@@ -52,21 +52,21 @@ export function DrawingRevisionsPanel({ sheetId, onSuperseded }: { sheetId: stri
     }
   }
 
-  if (versions === null) return null;
+  if (versions === null) return versionsError ? <ErrorState error={versionsError} onRetry={reloadVersions} compact /> : <Skeleton lines={3} />;
 
   return (
     <div className="mt-6 border-t border-gray-100 pt-4 dark:border-gray-800">
-      <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("revisionHistory")}</h3>
+      <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-fg-subtle">{t("revisionHistory")}</h3>
       {versions.length <= 1 ? (
-        <p className="mb-3 text-xs text-gray-400 dark:text-gray-500">{t("noPriorRevisions")}</p>
+        <p className="mb-3 text-xs text-fg-subtle">{t("noPriorRevisions")}</p>
       ) : (
         <ul className="mb-3 flex flex-col gap-1">
           {versions.map((v, i) => (
-            <li key={v.id} className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+            <li key={v.id} className="flex items-center gap-2 text-xs text-fg-subtle">
               {i === 0 ? (
-                <span className="rounded-full bg-success-50 dark:bg-success-500/15 px-2 py-0.5 font-medium text-success-700 dark:text-success-500">{t("current")}</span>
+                <Badge tone="success">{t("current")}</Badge>
               ) : (
-                <span className="rounded-full bg-gray-100 dark:bg-gray-700 px-2 py-0.5 text-gray-500 dark:text-gray-400">{t("superseded")}</span>
+                <Badge tone="neutral">{t("superseded")}</Badge>
               )}
               <span>{t("revisionLabel", { n: v.version })}</span>
               {v.revision && <span>· {v.revision}</span>}
@@ -77,8 +77,8 @@ export function DrawingRevisionsPanel({ sheetId, onSuperseded }: { sheetId: stri
       )}
 
       <form onSubmit={uploadRevision} className="flex flex-wrap items-end gap-2">
-        <input placeholder={t("revisionPlaceholder")} className="input w-24" value={revision} onChange={(e) => setRevision(e.target.value)} />
-        <input type="date" className="input" value={revisionDate} onChange={(e) => setRevisionDate(e.target.value)} />
+        <input placeholder={t("revisionPlaceholder")} aria-label={t("revisionPlaceholder")} className="input w-24" value={revision} onChange={(e) => setRevision(e.target.value)} />
+        <input aria-label={ta("revisionDate")} type="date" className="input" value={revisionDate} onChange={(e) => setRevisionDate(e.target.value)} />
         <input ref={fileInputRef} type="file" accept="application/pdf,image/*" className="hidden" />
         <button type="button" onClick={() => fileInputRef.current?.click()} className="btn-secondary shrink-0">
           {tc("chooseFile")}
@@ -87,7 +87,7 @@ export function DrawingRevisionsPanel({ sheetId, onSuperseded }: { sheetId: stri
           {t("uploadRevision")}
         </button>
       </form>
-      {error && <p className="mt-2 text-xs text-error-600">{error}</p>}
+      {error && <FormError className="mt-2">{error}</FormError>}
     </div>
   );
 }

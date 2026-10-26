@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 
 interface Company {
   referralCode: string | null;
@@ -13,14 +13,10 @@ interface ReferralStats {
 
 export function ReferralProgramPanel() {
   const t = useTranslations("referrals");
-  const [company, setCompany] = useState<Company | null>(null);
-  const [stats, setStats] = useState<ReferralStats | null>(null);
+  const ta = useTranslations("a11y");
+  const { data: company = null } = useApi<Company>("/company");
+  const { data: stats = null } = useApi<ReferralStats>("/company/referral");
   const [copied, setCopied] = useState(false);
-
-  useEffect(() => {
-    apiFetch<Company>("/company").then(setCompany);
-    apiFetch<ReferralStats>("/company/referral").then(setStats);
-  }, []);
 
   if (!company?.referralCode) return null;
 
@@ -34,11 +30,11 @@ export function ReferralProgramPanel() {
 
   return (
     <section className="card">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
-      <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">{t("hint")}</p>
+      <h2 className="mb-1 text-sm font-semibold text-fg-muted">{t("title")}</h2>
+      <p className="mb-4 text-xs text-fg-subtle">{t("hint")}</p>
 
       <div className="flex items-center gap-2">
-        <input readOnly className="input flex-1 text-xs" value={link} />
+        <input aria-label={ta("shareLink")} readOnly className="input flex-1 text-xs" value={link} />
         <button onClick={copyLink} className="btn-secondary shrink-0 px-3 py-1.5 text-xs">
           {copied ? t("copied") : t("copyLink")}
         </button>

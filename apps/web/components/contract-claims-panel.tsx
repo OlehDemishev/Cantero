@@ -1,11 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { CONTRACT_CLAIM_TYPES, type ContractClaimStatus, type ContractClaimType } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useMe } from "@/lib/use-me";
 import { formatDate } from "@/lib/format-date";
+import { formatCurrency } from "@/lib/format-currency";
+import { Badge } from "@/components/ui/badge";
+import { statusTone } from "@/lib/status-tone";
+import { Field } from "@/components/ui/field";
 
 interface ContractClaim {
   id: string;
@@ -29,22 +36,16 @@ interface ClaimDetail extends ContractClaim {
   events: ClaimEvent[];
 }
 
-const STATUS_STYLES: Record<ContractClaimStatus, string> = {
-  notice_given: "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300",
-  submitted: "bg-warning-50 dark:bg-warning-500/15 text-warning-700 dark:text-warning-500",
-  negotiating: "bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-400",
-  resolved: "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500",
-  rejected: "bg-error-50 dark:bg-error-500/15 text-error-700 dark:text-error-500",
-};
 const OPEN_STATUSES: ContractClaimStatus[] = ["notice_given", "submitted", "negotiating"];
 
 export function ContractClaimsPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("contractClaims");
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
 
-  const [claims, setClaims] = useState<ContractClaim[] | null>(null);
+  const { data: claims = null, reload: reloadClaims, error: claimsError } = useApi<ContractClaim[]>(`/projects/${projectId}/contract-claims`);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [detail, setDetail] = useState<ClaimDetail | null>(null);
   const [adding, setAdding] = useState(false);
@@ -55,9 +56,8 @@ export function ContractClaimsPanel({ projectId }: { projectId: string }) {
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<ContractClaim[]>(`/projects/${projectId}/contract-claims`).then(setClaims);
+    void reloadClaims();
   }
-  useEffect(load, [projectId]);
 
   async function toggleExpand(id: string) {
     if (expandedId === id) {
@@ -139,19 +139,19 @@ export function ContractClaimsPanel({ projectId }: { projectId: string }) {
   return (
     <div className="mt-10">
       <div className="mb-1 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
+        <h2 className="text-sm font-semibold text-fg-muted">{t("title")}</h2>
         {!adding && (
           <button onClick={() => setAdding(true)} className="btn-secondary px-2.5 py-1 text-xs">
             {t("fileClaim")}
           </button>
         )}
       </div>
-      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("hint")}</p>
+      <p className="mb-3 text-xs text-fg-subtle">{t("hint")}</p>
 
       {adding && (
         <form onSubmit={createClaim} className="card mb-3 flex flex-col gap-2">
           <div className="flex flex-wrap gap-2">
-            <select className="input" value={form.type} onChange={(e) => setForm((f) => ({ ...f, type: e.target.value as ContractClaimType }))}>
+            <select aria-label={ta("type")} className="input" value={form.type} onChange={(e) => setForm((f) => ({ ...f, type: e.target.value as ContractClaimType }))}>
               {CONTRACT_CLAIM_TYPES.map((type) => (
                 <option key={type} value={type}>
                   {t(`type_${type}`)}
@@ -160,22 +160,21 @@ export function ContractClaimsPanel({ projectId }: { projectId: string }) {
             </select>
             <input
               required
-              placeholder={t("titlePlaceholder")}
+              placeholder={t("titlePlaceholder")} aria-label={t("titlePlaceholder")}
               className="input flex-1"
               value={form.title}
               onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
             />
           </div>
           <textarea
-            placeholder={t("descriptionPlaceholder")}
+            placeholder={t("descriptionPlaceholder")} aria-label={t("descriptionPlaceholder")}
             className="input"
             rows={2}
             value={form.description}
             onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
           />
           <div className="flex flex-wrap items-end gap-2">
-            <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
-              {t("noticeDate")}
+            <Field label={t("noticeDate")} size="sm">
               <input
                 required
                 type="date"
@@ -183,12 +182,12 @@ export function ContractClaimsPanel({ projectId }: { projectId: string }) {
                 value={form.noticeDate}
                 onChange={(e) => setForm((f) => ({ ...f, noticeDate: e.target.value }))}
               />
-            </label>
+            </Field>
             <input
               type="number"
               step="0.01"
               min="0"
-              placeholder={t("requestedAmountPlaceholder", { currency })}
+              placeholder={t("requestedAmountPlaceholder", { currency })} aria-label={t("requestedAmountPlaceholder", { currency })}
               className="input w-40"
               value={form.requestedAmount}
               onChange={(e) => setForm((f) => ({ ...f, requestedAmount: e.target.value }))}
@@ -196,7 +195,7 @@ export function ContractClaimsPanel({ projectId }: { projectId: string }) {
             <input
               type="number"
               min="0"
-              placeholder={t("requestedDaysPlaceholder")}
+              placeholder={t("requestedDaysPlaceholder")} aria-label={t("requestedDaysPlaceholder")}
               className="input w-32"
               value={form.requestedDays}
               onChange={(e) => setForm((f) => ({ ...f, requestedDays: e.target.value }))}
@@ -214,9 +213,9 @@ export function ContractClaimsPanel({ projectId }: { projectId: string }) {
       )}
 
       {!claims ? (
-        <p className="text-sm text-gray-500 dark:text-gray-400">{tc("loading")}</p>
+        claimsError ? <ErrorState error={claimsError} onRetry={reloadClaims} compact /> : <Skeleton lines={3} />
       ) : claims.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noClaims")}</p>
+        <p className="text-sm text-fg-subtle">{t("noClaims")}</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {claims.map((claim) => {
@@ -224,14 +223,14 @@ export function ContractClaimsPanel({ projectId }: { projectId: string }) {
             return (
               <li key={claim.id} className="card">
                 <button onClick={() => toggleExpand(claim.id)} className="flex w-full items-center justify-between text-left">
-                  <span className="text-sm font-medium text-gray-900 dark:text-gray-50">
+                  <span className="text-sm font-medium text-fg">
                     {t(`type_${claim.type}`)} · {claim.title}
                   </span>
-                  <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[claim.status]}`}>{t(`status_${claim.status}`)}</span>
+                  <Badge tone={statusTone(claim.status)}>{t(`status_${claim.status}`)}</Badge>
                 </button>
-                <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
+                <p className="mt-1 text-xs text-fg-subtle">
                   {t("noticeDate")}: {formatDate(new Date(claim.noticeDate))}
-                  {claim.requestedAmount && ` · ${claim.requestedAmount} ${currency}`}
+                  {claim.requestedAmount && ` · ${formatCurrency(claim.requestedAmount, currency)}`}
                   {claim.requestedDays && ` · ${t("requestedDaysAbbr", { days: claim.requestedDays })}`}
                 </p>
 
@@ -246,14 +245,14 @@ export function ContractClaimsPanel({ projectId }: { projectId: string }) {
                             {t(`moveTo_${s}`)}
                           </button>
                         ))}
-                        <button onClick={() => updateStatus(claim.id, "rejected")} disabled={busy} className="text-xs text-error-700 dark:text-error-500 hover:underline">
+                        <button onClick={() => updateStatus(claim.id, "rejected")} disabled={busy} className="text-xs text-danger-fg hover:underline">
                           {t("rejectClaim")}
                         </button>
                       </div>
                     )}
 
                     {claim.status === "resolved" ? (
-                      <p className="text-sm text-success-700 dark:text-success-500">
+                      <p className="text-sm text-success-fg">
                         {t("resolution")}: {claim.resolution}
                       </p>
                     ) : (
@@ -266,7 +265,7 @@ export function ContractClaimsPanel({ projectId }: { projectId: string }) {
                           ) : (
                             <div className="flex flex-wrap gap-2">
                               <input
-                                placeholder={t("resolutionPlaceholder")}
+                                placeholder={t("resolutionPlaceholder")} aria-label={t("resolutionPlaceholder")}
                                 className="input flex-1"
                                 value={resolutionText}
                                 onChange={(e) => setResolutionText(e.target.value)}
@@ -281,18 +280,18 @@ export function ContractClaimsPanel({ projectId }: { projectId: string }) {
                     )}
 
                     <div>
-                      <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("timeline")}</h3>
+                      <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-fg-subtle">{t("timeline")}</h3>
                       <ul className="mb-2 flex flex-col gap-1.5">
                         {detail.events.map((ev) => (
                           <li key={ev.id} className="text-xs">
-                            <span className="text-gray-400 dark:text-gray-500">{formatDate(new Date(ev.occurredAt))}</span> — {ev.description}
-                            <span className="text-gray-400 dark:text-gray-500"> ({ev.createdByName})</span>
+                            <span className="text-fg-subtle">{formatDate(new Date(ev.occurredAt))}</span> — {ev.description}
+                            <span className="text-fg-subtle"> ({ev.createdByName})</span>
                           </li>
                         ))}
                       </ul>
                       <div className="flex gap-2">
                         <input
-                          placeholder={t("eventPlaceholder")}
+                          placeholder={t("eventPlaceholder")} aria-label={t("eventPlaceholder")}
                           className="input flex-1"
                           value={eventText}
                           onChange={(e) => setEventText(e.target.value)}

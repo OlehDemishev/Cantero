@@ -3,13 +3,22 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
-import { SUPPORTED_CURRENCIES } from "@cantero/shared";
-import { AuthenticatedShell } from "@/components/authenticated-shell";
+import { SUPPORTED_CURRENCIES, recordPaymentSchema } from "@cantero/shared";
 import { DocumentsPanel } from "@/components/documents-panel";
 import { apiFetch, downloadBlob, ApiError } from "@/lib/api-client";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useMe } from "@/lib/use-me";
 import { formatCurrency } from "@/lib/format-currency";
 import { formatDate } from "@/lib/format-date";
+import { useConfirm } from "@/components/ui/confirm-dialog";
+import { Badge } from "@/components/ui/badge";
+import { statusTone } from "@/lib/status-tone";
+import { Alert } from "@/components/ui/alert";
+import { Field, FormError } from "@/components/ui/field";
+import { PageHeader } from "@/components/ui/page-header";
+import { Button } from "@/components/ui/button";
+import { optionalNumber, useFormValidation } from "@/lib/form-validation";
 
 const PAYMENT_METHODS = ["bank_transfer", "card", "cash", "other"] as const;
 
@@ -59,10 +68,14 @@ interface Invoice {
 
 export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
   const t = useTranslations("invoices");
+  const confirm = useConfirm();
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
   const { data: me } = useMe();
   const [invoice, setInvoice] = useState<Invoice | null>(null);
+  const [loadError, setLoadError] = useState<Error | null>(null);
   const [paymentForm, setPaymentForm] = useState({ amount: "", method: "bank_transfer" as (typeof PAYMENT_METHODS)[number] });
+  const { errors: paymentErrors, validate: validatePayment, clearError: clearPaymentError, formRef: paymentFormRef } = useFormValidation(recordPaymentSchema);
   const [foreignPayment, setForeignPayment] = useState(false);
   const [foreignPaymentForm, setForeignPaymentForm] = useState<{
     currency: (typeof SUPPORTED_CURRENCIES)[number];
@@ -84,10 +97,13 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
   const [voidError, setVoidError] = useState<string | null>(null);
 
   function load() {
-    apiFetch<Invoice>(`/invoices/${invoiceId}`).then((inv) => {
-      setInvoice(inv);
-      setDueDateInput(inv.dueDate ? inv.dueDate.slice(0, 10) : "");
-    });
+    apiFetch<Invoice>(`/invoices/${invoiceId}`)
+      .then((inv) => {
+        setLoadError(null);
+        setInvoice(inv);
+        setDueDateInput(inv.dueDate ? inv.dueDate.slice(0, 10) : "");
+      })
+      .catch(setLoadError);
   }
 
   useEffect(load, [invoiceId]);
@@ -155,7 +171,7 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
   }
 
   async function voidInvoice() {
-    const reason = window.prompt(t("voidReasonPrompt"));
+    const reason = await confirm({ title: t("voidInvoice"), tone: "danger", verb: "void", reason: { label: t("voidReasonPrompt"), required: true } });
     if (!reason) return;
     setVoidError(null);
     setBusy(true);
@@ -214,23 +230,22 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
 
   async function recordPayment(e: React.FormEvent) {
     e.preventDefault();
+    const body = validatePayment(
+      foreignPayment
+        ? {
+            method: paymentForm.method,
+            foreignPayment: {
+              currency: foreignPaymentForm.currency,
+              foreignAmount: optionalNumber(foreignPaymentForm.foreignAmount),
+              exchangeRate: optionalNumber(foreignPaymentForm.exchangeRate),
+            },
+          }
+        : { amount: optionalNumber(paymentForm.amount), method: paymentForm.method },
+    );
+    if (!body) return;
     setBusy(true);
     try {
-      await apiFetch(`/invoices/${invoiceId}/payments`, {
-        method: "POST",
-        body: JSON.stringify(
-          foreignPayment
-            ? {
-                method: paymentForm.method,
-                foreignPayment: {
-                  currency: foreignPaymentForm.currency,
-                  foreignAmount: Number(foreignPaymentForm.foreignAmount),
-                  exchangeRate: Number(foreignPaymentForm.exchangeRate),
-                },
-              }
-            : { amount: Number(paymentForm.amount), method: paymentForm.method },
-        ),
-      });
+      await apiFetch(`/invoices/${invoiceId}/payments`, { method: "POST", body: JSON.stringify(body) });
       setPaymentForm({ amount: "", method: "bank_transfer" });
       setForeignPaymentForm({ currency: SUPPORTED_CURRENCIES[0], foreignAmount: "", exchangeRate: "" });
       setForeignPayment(false);
@@ -251,16 +266,11 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
   }
 
   if (!invoice) {
-    return (
-      <AuthenticatedShell>
-        <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
-      </AuthenticatedShell>
-    );
+    return loadError ? <ErrorState error={loadError} onRetry={load} backHref="/invoices" /> : <Skeleton variant="block" height="h-64" />;
   }
 
   const currency = invoice.currency ?? me?.company.currency ?? "";
-  const locale = me?.company.locale;
-  const money = (amount: number | string | null | undefined) => formatCurrency(amount, currency, locale);
+  const money = (amount: number | string | null | undefined) => formatCurrency(amount, currency);
   const paidTotal = invoice.payments.reduce((sum, p) => sum + Number(p.amount), 0);
   const balanceDue = Number(invoice.total) - paidTotal;
 
@@ -275,44 +285,33 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
     { rows: [] as ((typeof invoice.installments)[number] & { fulfilled: boolean; partial: boolean })[], cumulative: 0 },
   ).rows;
 
-  const statusColor =
-    invoice.status === "paid"
-      ? "bg-green-100 dark:bg-green-500/15 text-green-800 dark:text-green-400"
-      : invoice.status === "sent"
-        ? "bg-amber-100 dark:bg-amber-500/15 text-amber-800 dark:text-amber-400"
-        : invoice.status === "void"
-          ? "bg-red-100 dark:bg-red-500/15 text-red-800 dark:text-red-400"
-          : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300";
-
   return (
-    <AuthenticatedShell>
-      <a href={`/projects/${invoice.project.id}`} className="text-sm text-gray-500 dark:text-gray-400 hover:underline">
-        ← {invoice.project.name}
-      </a>
-      <div className="mt-2 flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">{invoice.number}</h1>
-        <span className={`rounded-full px-3 py-1 text-xs font-medium ${statusColor}`}>{t(invoice.status)}</span>
-      </div>
-      <p className="text-sm text-gray-500 dark:text-gray-400">
+    <>
+      <PageHeader
+        back={{ href: `/projects/${invoice.project.id}`, label: invoice.project.name }}
+        title={invoice.number}
+        actions={<Badge tone={statusTone(invoice.status)}>{t(invoice.status)}</Badge>}
+      />
+      <p className="text-sm text-fg-subtle">
         <Link href={`/clients/${invoice.client.id}`} className="hover:underline">
           {invoice.client.name}
         </Link>
       </p>
       {invoice.status === "void" && invoice.voidReason && (
-        <p className="mt-1 text-xs text-error-600">
+        <p className="mt-1 text-xs text-danger-fg">
           {t("voidReasonLabel")}: {invoice.voidReason}
         </p>
       )}
-      {invoice.correctsInvoiceId && <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{t("isCorrectionNote")}</p>}
+      {invoice.correctsInvoiceId && <p className="mt-1 text-xs text-fg-subtle">{t("isCorrectionNote")}</p>}
 
       <div className="mt-6 grid grid-cols-1 gap-8 lg:grid-cols-3">
         <div className="lg:col-span-2">
-          <div className="overflow-x-auto">
+          <div tabIndex={0} className="overflow-x-auto">
           <table className="w-full border-collapse text-sm">
             <thead>
-              <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
-                <th className="py-2">{tc("name")}</th>
-                <th>{tc("actions")}</th>
+              <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
+                <th scope="col" className="py-2">{tc("name")}</th>
+                <th scope="col">{tc("actions")}</th>
               </tr>
             </thead>
             <tbody>
@@ -326,31 +325,31 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
           </table>
           </div>
 
-          <h2 className="mb-3 mt-8 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("paymentPlan")}</h2>
+          <h2 className="mb-3 mt-8 text-sm font-semibold text-fg-muted">{t("paymentPlan")}</h2>
           {installmentRows.length === 0 ? (
-            <p className="text-sm text-gray-400 dark:text-gray-500">{t("noInstallments")}</p>
+            <p className="text-sm text-fg-subtle">{t("noInstallments")}</p>
           ) : (
-            <div className="overflow-x-auto">
+            <div tabIndex={0} className="overflow-x-auto">
             <table className="w-full border-collapse text-sm">
+              <thead>
+                <tr className="border-b border-gray-200 text-left text-xs text-fg-subtle dark:border-gray-700">
+                  <th scope="col" className="py-1.5 font-medium">{ta("installment")}</th>
+                  <th scope="col" className="font-medium">{ta("dueDate")}</th>
+                  <th scope="col" className="font-medium">{ta("status")}</th>
+                  <th scope="col" className="text-right font-medium">{ta("amount")}</th>
+                </tr>
+              </thead>
               <tbody>
                 {installmentRows.map((inst) => (
                   <tr key={inst.id} className="border-b border-gray-100 dark:border-gray-700">
                     <td className="py-1.5">{inst.label}</td>
-                    <td className="text-gray-500 dark:text-gray-400">
+                    <td className="text-fg-subtle">
                       {inst.dueDate ? formatDate(new Date(inst.dueDate)) : "—"}
                     </td>
                     <td>
-                      <span
-                        className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                          inst.fulfilled
-                            ? "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500"
-                            : inst.partial
-                              ? "bg-warning-50 dark:bg-warning-500/15 text-warning-700 dark:text-warning-500"
-                              : "bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400"
-                        }`}
-                      >
+                      <Badge tone={inst.fulfilled ? "success" : inst.partial ? "warning" : "neutral"}>
                         {inst.fulfilled ? t("fulfilled") : inst.partial ? t("partial") : t("pending")}
-                      </span>
+                      </Badge>
                     </td>
                     <td className="text-right font-medium">{money(inst.amount)}</td>
                   </tr>
@@ -363,7 +362,7 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
             <form onSubmit={addInstallment} className="mt-3 flex flex-wrap items-end gap-2">
               <input
                 required
-                placeholder={t("installmentLabel")}
+                placeholder={t("installmentLabel")} aria-label={t("installmentLabel")}
                 className="input w-auto"
                 value={installmentForm.label}
                 onChange={(e) => setInstallmentForm((f) => ({ ...f, label: e.target.value }))}
@@ -372,12 +371,12 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
                 required
                 type="number"
                 step="0.01"
-                placeholder={t("amount")}
+                placeholder={t("amount")} aria-label={t("amount")}
                 className="input w-28"
                 value={installmentForm.amount}
                 onChange={(e) => setInstallmentForm((f) => ({ ...f, amount: e.target.value }))}
               />
-              <input
+              <input aria-label={t("dueDate")}
                 type="date"
                 className="input w-auto"
                 value={installmentForm.dueDate}
@@ -389,12 +388,20 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
             </form>
           )}
 
-          <h2 className="mb-3 mt-8 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("payments")}</h2>
+          <h2 className="mb-3 mt-8 text-sm font-semibold text-fg-muted">{t("payments")}</h2>
           {invoice.payments.length === 0 ? (
-            <p className="text-sm text-gray-400 dark:text-gray-500">{t("noPayments")}</p>
+            <p className="text-sm text-fg-subtle">{t("noPayments")}</p>
           ) : (
-            <div className="overflow-x-auto">
+            <div tabIndex={0} className="overflow-x-auto">
             <table className="w-full border-collapse text-sm">
+              <thead>
+                <tr className="border-b border-gray-200 text-left text-xs text-fg-subtle dark:border-gray-700">
+                  <th scope="col" className="py-1.5 font-medium">{ta("date")}</th>
+                  <th scope="col" className="font-medium">{ta("paymentMethod")}</th>
+                  <th scope="col" className="text-right font-medium">{ta("amount")}</th>
+                  <th scope="col" className="text-right font-medium">{ta("fxGainLoss")}</th>
+                </tr>
+              </thead>
               <tbody>
                 {invoice.payments.map((p) => (
                   <tr key={p.id} className="border-b border-gray-100 dark:border-gray-700">
@@ -403,13 +410,13 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
                     <td className="text-right">
                       {money(p.amount)}
                       {p.currency && (
-                        <span className="ml-1.5 text-xs text-gray-400 dark:text-gray-500">
-                          ({p.foreignAmount} {p.currency} @ {p.exchangeRate})
+                        <span className="ml-1.5 text-xs text-fg-subtle">
+                          ({formatCurrency(p.foreignAmount, p.currency)} @ {p.exchangeRate})
                         </span>
                       )}
                     </td>
                     {p.fxGainLoss !== null && (
-                      <td className={`pl-2 text-right text-xs font-medium ${Number(p.fxGainLoss) < 0 ? "text-error-600" : "text-success-700 dark:text-success-500"}`}>
+                      <td className={`pl-2 text-right text-xs font-medium ${Number(p.fxGainLoss) < 0 ? "text-danger-fg" : "text-success-fg"}`}>
                         {t("fxGainLoss")}: {Number(p.fxGainLoss) > 0 ? "+" : ""}
                         {money(p.fxGainLoss)}
                       </td>
@@ -422,69 +429,88 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
           )}
 
           {(invoice.status === "sent" || invoice.status === "paid") && balanceDue > 0 && (
-            <form onSubmit={recordPayment} className="mt-4 flex flex-col gap-2">
-              <div className="flex flex-wrap items-end gap-2">
+            <form ref={paymentFormRef} onSubmit={recordPayment} noValidate className="mt-4 flex flex-col gap-2">
+              <div className="flex flex-wrap items-start gap-2">
                 {!foreignPayment && (
-                  <input
-                    required
-                    type="number"
-                    step="0.01"
-                    placeholder={t("amount")}
-                    className="input w-32"
-                    value={paymentForm.amount}
-                    onChange={(e) => setPaymentForm((f) => ({ ...f, amount: e.target.value }))}
-                  />
+                  <Field label={t("amount")} size="sm" error={paymentErrors.amount}>
+                    <input
+                      required
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      className="input w-32"
+                      value={paymentForm.amount}
+                      onChange={(e) => {
+                        setPaymentForm((f) => ({ ...f, amount: e.target.value }));
+                        clearPaymentError("amount");
+                      }}
+                    />
+                  </Field>
                 )}
-                <select
-                  className="input w-auto"
-                  value={paymentForm.method}
-                  onChange={(e) => setPaymentForm((f) => ({ ...f, method: e.target.value as (typeof PAYMENT_METHODS)[number] }))}
-                >
-                  {PAYMENT_METHODS.map((m) => (
-                    <option key={m} value={m}>
-                      {t(m)}
-                    </option>
-                  ))}
-                </select>
-                <button type="submit" disabled={busy} className="btn-secondary">
+                <Field label={t("method")} size="sm">
+                  <select
+                    className="input w-auto"
+                    value={paymentForm.method}
+                    onChange={(e) => setPaymentForm((f) => ({ ...f, method: e.target.value as (typeof PAYMENT_METHODS)[number] }))}
+                  >
+                    {PAYMENT_METHODS.map((m) => (
+                      <option key={m} value={m}>
+                        {t(m)}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+                <Button type="submit" variant="secondary" loading={busy} className="self-end">
                   {t("recordPayment")}
-                </button>
+                </Button>
               </div>
-              <label className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+              <label className="flex items-center gap-1.5 text-xs text-fg-subtle">
                 <input type="checkbox" checked={foreignPayment} onChange={(e) => setForeignPayment(e.target.checked)} />
                 {t("paidInForeignCurrency")}
               </label>
               {foreignPayment && (
-                <div className="flex flex-wrap items-end gap-2">
-                  <select
-                    className="input w-auto"
-                    value={foreignPaymentForm.currency}
-                    onChange={(e) => setForeignPaymentForm((f) => ({ ...f, currency: e.target.value as (typeof SUPPORTED_CURRENCIES)[number] }))}
-                  >
-                    {SUPPORTED_CURRENCIES.map((c) => (
-                      <option key={c} value={c}>
-                        {c}
-                      </option>
-                    ))}
-                  </select>
-                  <input
-                    required
-                    type="number"
-                    step="0.01"
-                    placeholder={t("foreignAmount")}
-                    className="input w-32"
-                    value={foreignPaymentForm.foreignAmount}
-                    onChange={(e) => setForeignPaymentForm((f) => ({ ...f, foreignAmount: e.target.value }))}
-                  />
-                  <input
-                    required
-                    type="number"
-                    step="0.000001"
-                    placeholder={t("exchangeRateUsed")}
-                    className="input w-32"
-                    value={foreignPaymentForm.exchangeRate}
-                    onChange={(e) => setForeignPaymentForm((f) => ({ ...f, exchangeRate: e.target.value }))}
-                  />
+                <div className="flex flex-wrap items-start gap-2">
+                  <Field label={tc("currency")} size="sm">
+                    <select
+                      className="input w-auto"
+                      value={foreignPaymentForm.currency}
+                      onChange={(e) => setForeignPaymentForm((f) => ({ ...f, currency: e.target.value as (typeof SUPPORTED_CURRENCIES)[number] }))}
+                    >
+                      {SUPPORTED_CURRENCIES.map((c) => (
+                        <option key={c} value={c}>
+                          {c}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                  <Field label={t("foreignAmount")} size="sm" error={paymentErrors["foreignPayment.foreignAmount"]}>
+                    <input
+                      required
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      className="input w-32"
+                      value={foreignPaymentForm.foreignAmount}
+                      onChange={(e) => {
+                        setForeignPaymentForm((f) => ({ ...f, foreignAmount: e.target.value }));
+                        clearPaymentError("foreignPayment.foreignAmount");
+                      }}
+                    />
+                  </Field>
+                  <Field label={t("exchangeRateUsed")} size="sm" error={paymentErrors["foreignPayment.exchangeRate"]}>
+                    <input
+                      required
+                      type="number"
+                      step="0.000001"
+                      min="0"
+                      className="input w-32"
+                      value={foreignPaymentForm.exchangeRate}
+                      onChange={(e) => {
+                        setForeignPaymentForm((f) => ({ ...f, exchangeRate: e.target.value }));
+                        clearPaymentError("foreignPayment.exchangeRate");
+                      }}
+                    />
+                  </Field>
                 </div>
               )}
             </form>
@@ -506,26 +532,29 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
           )}
 
           {invoice.lateFeeAccrued > 0 && (
-            <div className="mt-3 flex items-center justify-between rounded-lg border border-warning-200 bg-warning-50 dark:bg-warning-500/15 px-3 py-2">
-              <span className="text-xs text-warning-700 dark:text-warning-500">
-                {t("lateFeeAccrued", { amount: invoice.lateFeeAccrued, currency })}
-              </span>
-              <button onClick={chargeLateFee} disabled={busy} className="btn-secondary px-2 py-1 text-xs">
-                {t("chargeLateFee")}
-              </button>
-            </div>
+            <Alert
+              tone="warning"
+              size="sm"
+              className="mt-3"
+              action={
+                <button onClick={chargeLateFee} disabled={busy} className="btn-secondary px-2 py-1 text-xs">
+                  {t("chargeLateFee")}
+                </button>
+              }
+            >
+              {t("lateFeeAccrued", { amount: money(invoice.lateFeeAccrued) })}
+            </Alert>
           )}
 
           <form onSubmit={saveDueDate} className="mt-4 flex items-end gap-2 border-t border-gray-100 dark:border-gray-700 pt-4">
-            <label className="flex flex-1 flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
-              {t("dueDate")}
+            <Field label={t("dueDate")} size="sm" className="flex-1">
               <input
                 type="date"
                 className="input"
                 value={dueDateInput}
                 onChange={(e) => setDueDateInput(e.target.value)}
               />
-            </label>
+            </Field>
             <button type="submit" disabled={busy} className="btn-secondary shrink-0">
               {tc("save")}
             </button>
@@ -548,27 +577,27 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
             <button onClick={downloadEInvoice} className="btn-secondary">
               {t("downloadEInvoice")}
             </button>
-            {eInvoiceError && <p className="text-xs text-error-600">{eInvoiceError}</p>}
+            {eInvoiceError && <FormError>{eInvoiceError}</FormError>}
             <button onClick={downloadZugferd} className="btn-secondary">
               {t("downloadZugferd")}
             </button>
-            {zugferdError && <p className="text-xs text-error-600">{zugferdError}</p>}
+            {zugferdError && <FormError>{zugferdError}</FormError>}
             <button onClick={downloadPeppol} className="btn-secondary">
               {t("downloadPeppol")}
             </button>
             <button onClick={sendPeppol} className="btn-secondary">
               {t("sendPeppolNetwork")}
             </button>
-            {peppolError && <p className="text-xs text-error-600">{peppolError}</p>}
-            {peppolSendMessage && <p className="text-xs text-success-700 dark:text-success-500">{peppolSendMessage}</p>}
+            {peppolError && <FormError>{peppolError}</FormError>}
+            {peppolSendMessage && <p className="text-xs text-success-fg">{peppolSendMessage}</p>}
             {(invoice.status === "sent" || invoice.status === "paid") && (
-              <button onClick={voidInvoice} disabled={busy} className="btn-secondary text-error-600">
+              <button onClick={voidInvoice} disabled={busy} className="btn-secondary text-danger-fg">
                 {t("voidInvoice")}
               </button>
             )}
-            {voidError && <p className="text-xs text-error-600">{voidError}</p>}
+            {voidError && <FormError>{voidError}</FormError>}
             {emailSentTo !== undefined && (
-              <p className="text-xs text-gray-500 dark:text-gray-400">
+              <p className="text-xs text-fg-subtle">
                 {emailSentTo ? tc("emailedTo", { email: emailSentTo }) : tc("noClientEmail")}
               </p>
             )}
@@ -577,14 +606,14 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
       </div>
 
       <DocumentsPanel invoiceId={invoice.id} />
-    </AuthenticatedShell>
+    </>
   );
 }
 
 function Row({ label, value, emphasize }: { label: string; value: string; emphasize?: boolean }) {
   return (
     <div className={`flex justify-between ${emphasize ? "border-t border-gray-200 dark:border-gray-700 pt-2 font-semibold" : ""}`}>
-      <dt className="text-gray-500 dark:text-gray-400">{label}</dt>
+      <dt className="text-fg-subtle">{label}</dt>
       <dd>{value}</dd>
     </div>
   );

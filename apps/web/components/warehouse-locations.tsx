@@ -1,8 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
+import { useConfirm } from "@/components/ui/confirm-dialog";
+import { Field, FormError } from "@/components/ui/field";
 
 interface WarehouseLocation {
   id: string;
@@ -32,11 +35,11 @@ function LocationNode({
   return (
     <>
       <li style={{ paddingLeft: `${depth * 1.25}rem` }} className="flex items-center gap-2 py-1 text-sm">
-        <span className="text-gray-400 dark:text-gray-500">{t(location.kind)}</span>
+        <span className="text-fg-subtle">{t(location.kind)}</span>
         <span className="font-medium">{location.code}</span>
         <button
           onClick={() => onDelete(location.id)}
-          className="ml-auto text-xs text-gray-400 hover:text-error-600"
+          className="ml-auto text-xs text-fg-subtle hover:text-danger-fg"
         >
           {t("deleteLocation")}
         </button>
@@ -50,16 +53,17 @@ function LocationNode({
 
 export function WarehouseLocations({ warehouseId }: { warehouseId: string }) {
   const t = useTranslations("warehouses");
-  const [locations, setLocations] = useState<WarehouseLocation[] | null>(null);
+  const confirm = useConfirm();
+  const td = useTranslations("dialog");
+  const ta = useTranslations("a11y");
+  const { data: locations = null, reload: reloadLocations } = useApi<WarehouseLocation[]>(`/materials/warehouse-locations?warehouseId=${warehouseId}`);
   const [form, setForm] = useState({ parentId: "", kind: "zone" as (typeof KINDS)[number], code: "" });
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<WarehouseLocation[]>(`/materials/warehouse-locations?warehouseId=${warehouseId}`).then(setLocations);
+    void reloadLocations();
   }
-
-  useEffect(load, [warehouseId]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -80,6 +84,7 @@ export function WarehouseLocations({ warehouseId }: { warehouseId: string }) {
   }
 
   async function handleDelete(id: string) {
+    if (!(await confirm({ message: td("deleteLocation"), tone: "danger", verb: "delete" }))) return;
     setError(null);
     try {
       await apiFetch(`/materials/warehouse-locations/${id}`, { method: "DELETE" });
@@ -93,11 +98,10 @@ export function WarehouseLocations({ warehouseId }: { warehouseId: string }) {
 
   return (
     <div className="mt-8">
-      <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("locations")}</h2>
+      <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("locations")}</h2>
 
       <form onSubmit={handleSubmit} className="flex flex-wrap items-end gap-2">
-        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
-          {t("parentLocation")}
+        <Field label={t("parentLocation")} size="sm">
           <select
             className="input w-auto"
             value={form.parentId}
@@ -110,8 +114,8 @@ export function WarehouseLocations({ warehouseId }: { warehouseId: string }) {
               </option>
             ))}
           </select>
-        </label>
-        <select
+        </Field>
+        <select aria-label={ta("locationType")}
           className="input w-auto"
           value={form.kind}
           onChange={(e) => setForm((f) => ({ ...f, kind: e.target.value as (typeof KINDS)[number] }))}
@@ -124,7 +128,7 @@ export function WarehouseLocations({ warehouseId }: { warehouseId: string }) {
         </select>
         <input
           required
-          placeholder={t("locationCode")}
+          placeholder={t("locationCode")} aria-label={t("locationCode")}
           className="input w-28"
           value={form.code}
           onChange={(e) => setForm((f) => ({ ...f, code: e.target.value }))}
@@ -133,7 +137,7 @@ export function WarehouseLocations({ warehouseId }: { warehouseId: string }) {
           {t("addLocation")}
         </button>
       </form>
-      {error && <p className="mt-2 text-xs text-error-600">{error}</p>}
+      {error && <FormError className="mt-2">{error}</FormError>}
 
       {locations && locations.length > 0 && (
         <ul className="mt-4">

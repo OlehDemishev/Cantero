@@ -82,8 +82,9 @@ export async function withStore<T>(storeName: string, mode: IDBTransactionMode, 
 }
 
 /**
- * Called when a different account signs in on this device (api-client.ts setToken): drops the
- * previous account's cached reads, keeps its unsent writes for when it signs in again.
+ * Called when a different account signs in on this device (api-client.ts setToken) and on sign-out
+ * (signOutSession): drops that account's cached reads, keeps its unsent writes for when it signs in
+ * again.
  */
 export async function forgetCachedReads(accountKey: string): Promise<void> {
   try {

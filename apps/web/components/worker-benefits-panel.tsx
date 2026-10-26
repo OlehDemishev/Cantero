@@ -1,9 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { EmptyState } from "@/components/ui/empty-state";
+import { useConfirm } from "@/components/ui/confirm-dialog";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 
 interface BenefitEnrollment {
   id: string;
@@ -15,18 +20,17 @@ interface BenefitEnrollment {
 
 export function WorkerBenefitsPanel({ workerId }: { workerId: string }) {
   const t = useTranslations("team");
+  const confirm = useConfirm();
   const tb = useTranslations("benefits");
-  const [benefitEnrollments, setBenefitEnrollments] = useState<BenefitEnrollment[] | null>(null);
+  const { data: benefitEnrollments = null, reload: reloadBenefitEnrollments, error: benefitEnrollmentsError } = useApi<BenefitEnrollment[]>(`/workers/${workerId}/benefit-enrollments`);
   const [benefitsBusy, setBenefitsBusy] = useState(false);
 
   function load() {
-    apiFetch<BenefitEnrollment[]>(`/workers/${workerId}/benefit-enrollments`).then(setBenefitEnrollments);
+    void reloadBenefitEnrollments();
   }
 
-  useEffect(load, [workerId]);
-
   async function updateEnrollmentStatus(enrollmentId: string, status: "waived" | "terminated") {
-    if (status === "terminated" && !window.confirm(t("confirmTerminateEnrollment"))) return;
+    if (status === "terminated" && !(await confirm({ message: t("confirmTerminateEnrollment"), tone: "danger", verb: "terminate" }))) return;
     setBenefitsBusy(true);
     try {
       await apiFetch(`/benefits/enrollments/${enrollmentId}/status`, { method: "POST", body: JSON.stringify({ status }) });
@@ -36,11 +40,11 @@ export function WorkerBenefitsPanel({ workerId }: { workerId: string }) {
     }
   }
 
-  if (benefitEnrollments === null) return null;
+  if (benefitEnrollments === null) return benefitEnrollmentsError ? <ErrorState error={benefitEnrollmentsError} onRetry={reloadBenefitEnrollments} compact /> : <Skeleton lines={3} />;
 
   return (
     <>
-      <h2 className="mb-3 mt-8 text-sm font-semibold text-gray-700 dark:text-gray-200">{tb("title")}</h2>
+      <h2 className="mb-3 mt-8 text-sm font-semibold text-fg-muted">{tb("title")}</h2>
       {benefitEnrollments.length === 0 ? (
         <EmptyState message={t("noBenefitEnrollments")} cta={{ label: t("enrollInBenefits"), href: "/benefits" }} />
       ) : (
@@ -49,22 +53,18 @@ export function WorkerBenefitsPanel({ workerId }: { workerId: string }) {
           <li key={en.id} className="card text-sm">
             <div className="flex items-center justify-between">
               <span>
-                {en.plan.name} <span className="text-xs text-gray-400 dark:text-gray-500">({en.tier.name})</span>
+                {en.plan.name} <span className="text-xs text-fg-subtle">({en.tier.name})</span>
               </span>
-              <span
-                className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                  en.status === "active" ? "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500" : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
-                }`}
-              >
+              <Badge tone={en.status === "active" ? "success" : "neutral"}>
                 {tb(`enrollmentStatus_${en.status}`)}
-              </span>
+              </Badge>
             </div>
             {en.status === "active" && (
               <div className="mt-1.5 flex gap-2">
-                <button onClick={() => updateEnrollmentStatus(en.id, "waived")} disabled={benefitsBusy} className="text-xs text-gray-500 dark:text-gray-400 hover:underline">
+                <button onClick={() => updateEnrollmentStatus(en.id, "waived")} disabled={benefitsBusy} className="text-xs text-fg-subtle hover:underline">
                   {tb("waive")}
                 </button>
-                <button onClick={() => updateEnrollmentStatus(en.id, "terminated")} disabled={benefitsBusy} className="text-xs text-error-700 dark:text-error-500 hover:underline">
+                <button onClick={() => updateEnrollmentStatus(en.id, "terminated")} disabled={benefitsBusy} className="text-xs text-danger-fg hover:underline">
                   {tb("terminate")}
                 </button>
               </div>

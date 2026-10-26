@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
+import { PanelErrorState } from "@/components/ui/error-state";
+import { Badge } from "@/components/ui/badge";
 
 interface CarbonRow {
   materialCatalogItemId: string;
@@ -23,41 +24,38 @@ interface CarbonReport {
 export function CarbonReportPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("sustainability");
 
-  const [report, setReport] = useState<CarbonReport | null>(null);
+  const { data: report = null, error: reportError, reload: reloadReport } = useApi<CarbonReport>(`/sustainability/carbon-report?projectId=${projectId}`);
 
-  useEffect(() => {
-    apiFetch<CarbonReport>(`/sustainability/carbon-report?projectId=${projectId}`).then(setReport);
-  }, [projectId]);
-
+  if (reportError && !report) return <PanelErrorState title={t("carbonReport")} error={reportError} onRetry={reloadReport} className="mt-8" />;
   if (!report || report.rows.length === 0) return null;
 
   return (
     <div className="mt-8">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("carbonReport")}</h2>
-      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("carbonReportHint")}</p>
+      <h2 className="mb-1 text-sm font-semibold text-fg-muted">{t("carbonReport")}</h2>
+      <p className="mb-3 text-xs text-fg-subtle">{t("carbonReportHint")}</p>
 
       <div className="grid grid-cols-3 gap-3">
         <div className="card">
-          <div className="text-xs text-gray-500 dark:text-gray-400">{t("totalCarbon")}</div>
-          <div className="mt-1 text-lg font-semibold text-gray-900 dark:text-gray-50">{report.totalKgCo2e} kg CO2e</div>
+          <div className="text-xs text-fg-subtle">{t("totalCarbon")}</div>
+          <div className="mt-1 text-lg font-semibold text-fg">{report.totalKgCo2e} kg CO2e</div>
         </div>
         <div className="card">
-          <div className="text-xs text-gray-500 dark:text-gray-400">{t("greenCertifiedPercent")}</div>
-          <div className="mt-1 text-lg font-semibold text-success-700 dark:text-success-500">{report.greenCertifiedPercent}%</div>
+          <div className="text-xs text-fg-subtle">{t("greenCertifiedPercent")}</div>
+          <div className="mt-1 text-lg font-semibold text-success-fg">{report.greenCertifiedPercent}%</div>
         </div>
         <div className="card">
-          <div className="text-xs text-gray-500 dark:text-gray-400">{t("untrackedMaterials")}</div>
-          <div className="mt-1 text-lg font-semibold text-gray-900 dark:text-gray-50">{report.untrackedMaterialCount}</div>
+          <div className="text-xs text-fg-subtle">{t("untrackedMaterials")}</div>
+          <div className="mt-1 text-lg font-semibold text-fg">{report.untrackedMaterialCount}</div>
         </div>
       </div>
 
-      <div className="overflow-x-auto">
+      <div tabIndex={0} className="overflow-x-auto">
       <table className="mt-4 w-full border-collapse text-sm">
         <thead>
-          <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
-            <th className="py-2">{t("material")}</th>
-            <th className="text-right">{t("quantityUsed")}</th>
-            <th className="text-right">{t("carbonFootprint")}</th>
+          <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
+            <th scope="col" className="py-2">{t("material")}</th>
+            <th scope="col" className="text-right">{t("quantityUsed")}</th>
+            <th scope="col" className="text-right">{t("carbonFootprint")}</th>
           </tr>
         </thead>
         <tbody>
@@ -65,7 +63,7 @@ export function CarbonReportPanel({ projectId }: { projectId: string }) {
             <tr key={r.materialCatalogItemId} className="border-b border-gray-100 dark:border-gray-700">
               <td className="py-2">
                 {r.name}
-                {r.greenCertified && <span className="ml-1 rounded-full bg-success-50 dark:bg-success-500/15 px-1.5 py-0.5 text-[10px] text-success-700 dark:text-success-500">{t("greenCertified")}</span>}
+                {r.greenCertified && <Badge tone="success" size="sm" className="ml-1">{t("greenCertified")}</Badge>}
               </td>
               <td className="text-right">
                 {r.quantity} {r.unit}

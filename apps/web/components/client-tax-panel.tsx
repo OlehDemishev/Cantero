@@ -2,7 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch, ApiError } from "@/lib/api-client";
+import { apiFetch, ApiError, notifyApiError } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate } from "@/lib/format-date";
 import { EmptyState } from "@/components/ui/empty-state";
 
@@ -23,23 +26,21 @@ interface Client {
 export function ClientTaxPanel({ clientId }: { clientId: string }) {
   const tt = useTranslations("tax");
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
 
-  const [taxJurisdictions, setTaxJurisdictions] = useState<TaxJurisdiction[]>([]);
+  const { data: taxJurisdictions = [] } = useApi<TaxJurisdiction[]>("/tax/jurisdictions");
   const [taxJurisdictionId, setTaxJurisdictionId] = useState("");
-  const [exemptionCertificates, setExemptionCertificates] = useState<TaxExemptionCertificate[] | null>(null);
+  const { data: exemptionCertificates = null, reload: reloadExemptionCertificates, error: exemptionCertificatesError } = useApi<TaxExemptionCertificate[]>(`/clients/${clientId}/tax-exemption-certificates`);
   const [certForm, setCertForm] = useState({ certificateNumber: "", reason: "", expiresAt: "" });
   const [taxBusy, setTaxBusy] = useState(false);
   const [taxSaveMessage, setTaxSaveMessage] = useState<{ error: boolean; text: string } | null>(null);
 
   function loadExemptionCertificates() {
-    apiFetch<TaxExemptionCertificate[]>(`/clients/${clientId}/tax-exemption-certificates`).then(setExemptionCertificates);
+    void reloadExemptionCertificates();
   }
 
   useEffect(() => {
-    apiFetch<Client>(`/clients/${clientId}`).then((c) => setTaxJurisdictionId(c.taxJurisdictionId ?? ""));
-    loadExemptionCertificates();
-    apiFetch<TaxJurisdiction[]>("/tax/jurisdictions").then(setTaxJurisdictions);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    apiFetch<Client>(`/clients/${clientId}`).then((c) => setTaxJurisdictionId(c.taxJurisdictionId ?? "")).catch(notifyApiError);
   }, [clientId]);
 
   async function saveTaxJurisdiction(e: React.FormEvent) {
@@ -81,9 +82,9 @@ export function ClientTaxPanel({ clientId }: { clientId: string }) {
 
   return (
     <div className="mt-6 card max-w-md">
-      <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{tt("clientTaxTitle")}</h2>
+      <h2 className="mb-3 text-sm font-semibold text-fg-muted">{tt("clientTaxTitle")}</h2>
       <form onSubmit={saveTaxJurisdiction} className="flex items-center gap-2">
-        <select className="input flex-1" value={taxJurisdictionId} onChange={(e) => setTaxJurisdictionId(e.target.value)}>
+        <select aria-label={ta("taxJurisdiction")} className="input flex-1" value={taxJurisdictionId} onChange={(e) => setTaxJurisdictionId(e.target.value)}>
           <option value="">{tt("noJurisdictionAssigned")}</option>
           {taxJurisdictions.map((j) => (
             <option key={j.id} value={j.id}>
@@ -96,7 +97,7 @@ export function ClientTaxPanel({ clientId }: { clientId: string }) {
         </button>
       </form>
       {taxSaveMessage && (
-        <p className={`mt-1.5 text-xs ${taxSaveMessage.error ? "text-error-700 dark:text-error-500" : "text-success-700 dark:text-success-500"}`}>{taxSaveMessage.text}</p>
+        <p className={`mt-1.5 text-xs ${taxSaveMessage.error ? "text-danger-fg" : "text-success-fg"}`}>{taxSaveMessage.text}</p>
       )}
       {taxJurisdictions.length === 0 && (
         <div className="mt-1.5">
@@ -104,29 +105,29 @@ export function ClientTaxPanel({ clientId }: { clientId: string }) {
         </div>
       )}
 
-      <h3 className="mb-2 mt-4 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{tt("exemptionCertificates")}</h3>
+      <h3 className="mb-2 mt-4 text-xs font-semibold uppercase tracking-wide text-fg-subtle">{tt("exemptionCertificates")}</h3>
       {exemptionCertificates === null ? (
-        <p className="text-xs text-gray-400 dark:text-gray-500">{tc("loading")}</p>
+        exemptionCertificatesError ? <ErrorState error={exemptionCertificatesError} onRetry={reloadExemptionCertificates} compact /> : <Skeleton lines={3} />
       ) : exemptionCertificates.length === 0 ? (
-        <p className="text-xs text-gray-400 dark:text-gray-500">{tt("noExemptionCertificates")}</p>
+        <p className="text-xs text-fg-subtle">{tt("noExemptionCertificates")}</p>
       ) : (
         <ul className="mb-2 flex flex-col gap-1">
           {exemptionCertificates.map((cert) => (
             <li key={cert.id} className="text-xs text-gray-600 dark:text-gray-300">
               {cert.certificateNumber}
-              {cert.expiresAt && <span className="text-gray-400 dark:text-gray-500"> — {tt("expiresOn", { date: formatDate(new Date(cert.expiresAt)) })}</span>}
+              {cert.expiresAt && <span className="text-fg-subtle"> — {tt("expiresOn", { date: formatDate(new Date(cert.expiresAt)) })}</span>}
             </li>
           ))}
         </ul>
       )}
       <form onSubmit={addExemptionCertificate} className="flex flex-wrap items-end gap-2">
         <input
-          placeholder={tt("certificateNumberPlaceholder")}
+          placeholder={tt("certificateNumberPlaceholder")} aria-label={tt("certificateNumberPlaceholder")}
           className="input w-auto"
           value={certForm.certificateNumber}
           onChange={(e) => setCertForm((f) => ({ ...f, certificateNumber: e.target.value }))}
         />
-        <input type="date" className="input w-auto" value={certForm.expiresAt} onChange={(e) => setCertForm((f) => ({ ...f, expiresAt: e.target.value }))} />
+        <input aria-label={ta("expiryDate")} type="date" className="input w-auto" value={certForm.expiresAt} onChange={(e) => setCertForm((f) => ({ ...f, expiresAt: e.target.value }))} />
         <button type="submit" disabled={taxBusy} className="btn-secondary shrink-0 px-2.5 py-1 text-xs">
           {tt("addCertificate")}
         </button>

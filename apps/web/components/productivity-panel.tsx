@@ -1,9 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate } from "@/lib/format-date";
+import { formatNumber } from "@/lib/format-currency";
+import { Field } from "@/components/ui/field";
 
 interface CostCode {
   id: string;
@@ -25,8 +30,8 @@ export function ProductivityPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("productivity");
   const tc = useTranslations("common");
 
-  const [logs, setLogs] = useState<ProductivityLog[] | null>(null);
-  const [costCodes, setCostCodes] = useState<CostCode[]>([]);
+  const { data: logs = null, reload: reloadLogs, error: logsError } = useApi<ProductivityLog[]>(`/projects/${projectId}/productivity-logs`);
+  const { data: costCodes = [] } = useApi<CostCode[]>("/cost-codes");
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState({
     costCodeId: "",
@@ -40,14 +45,8 @@ export function ProductivityPanel({ projectId }: { projectId: string }) {
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<ProductivityLog[]>(`/projects/${projectId}/productivity-logs`).then(setLogs);
+    void reloadLogs();
   }
-
-  useEffect(() => {
-    load();
-    apiFetch<CostCode[]>("/cost-codes").then(setCostCodes);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projectId]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -76,7 +75,7 @@ export function ProductivityPanel({ projectId }: { projectId: string }) {
   return (
     <div className="mt-10">
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
+        <h2 className="text-sm font-semibold text-fg-muted">{t("title")}</h2>
         {!creating && (
           <button onClick={() => setCreating(true)} className="btn-secondary px-3 py-1 text-xs">
             {t("newLog")}
@@ -87,8 +86,7 @@ export function ProductivityPanel({ projectId }: { projectId: string }) {
       {creating && (
         <form onSubmit={submit} className="card mb-4 flex flex-col gap-3">
           <div className="flex gap-3">
-            <label className="flex flex-1 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700 dark:text-gray-200">{t("costCode")}</span>
+            <Field label={t("costCode")} className="flex-1">
               <select
                 className="input"
                 value={form.costCodeId}
@@ -101,9 +99,8 @@ export function ProductivityPanel({ projectId }: { projectId: string }) {
                   </option>
                 ))}
               </select>
-            </label>
-            <label className="flex w-40 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700 dark:text-gray-200">{t("workDate")}</span>
+            </Field>
+            <Field label={t("workDate")} className="w-40">
               <input
                 required
                 type="date"
@@ -111,11 +108,10 @@ export function ProductivityPanel({ projectId }: { projectId: string }) {
                 value={form.workDate}
                 onChange={(e) => setForm((f) => ({ ...f, workDate: e.target.value }))}
               />
-            </label>
+            </Field>
           </div>
           <div className="flex gap-3">
-            <label className="flex flex-1 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700 dark:text-gray-200">{t("quantityCompleted")}</span>
+            <Field label={t("quantityCompleted")} className="flex-1">
               <input
                 required
                 type="number"
@@ -125,13 +121,11 @@ export function ProductivityPanel({ projectId }: { projectId: string }) {
                 value={form.quantityCompleted}
                 onChange={(e) => setForm((f) => ({ ...f, quantityCompleted: e.target.value }))}
               />
-            </label>
-            <label className="flex w-28 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700 dark:text-gray-200">{t("unit")}</span>
+            </Field>
+            <Field label={t("unit")} className="w-28">
               <input required className="input" value={form.unit} onChange={(e) => setForm((f) => ({ ...f, unit: e.target.value }))} />
-            </label>
-            <label className="flex w-32 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700 dark:text-gray-200">{t("laborHours")}</span>
+            </Field>
+            <Field label={t("laborHours")} className="w-32">
               <input
                 required
                 type="number"
@@ -141,16 +135,14 @@ export function ProductivityPanel({ projectId }: { projectId: string }) {
                 value={form.laborHours}
                 onChange={(e) => setForm((f) => ({ ...f, laborHours: e.target.value }))}
               />
-            </label>
+            </Field>
           </div>
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700 dark:text-gray-200">{t("crewName")}</span>
+          <Field label={t("crewName")}>
             <input className="input" value={form.crewName} onChange={(e) => setForm((f) => ({ ...f, crewName: e.target.value }))} />
-          </label>
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700 dark:text-gray-200">{t("notes")}</span>
+          </Field>
+          <Field label={t("notes")}>
             <textarea rows={2} className="input" value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} />
-          </label>
+          </Field>
           <div className="flex gap-2">
             <button type="submit" disabled={busy} className="btn-primary">
               {tc("save")}
@@ -163,9 +155,9 @@ export function ProductivityPanel({ projectId }: { projectId: string }) {
       )}
 
       {logs === null ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
+        logsError ? <ErrorState error={logsError} onRetry={reloadLogs} compact /> : <Skeleton lines={3} />
       ) : logs.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noLogs")}</p>
+        <p className="text-sm text-fg-subtle">{t("noLogs")}</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {logs.map((log) => {
@@ -175,20 +167,20 @@ export function ProductivityPanel({ projectId }: { projectId: string }) {
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-gray-900 dark:text-gray-50">
+                      <span className="text-sm font-medium text-fg">
                         {log.quantityCompleted} {log.unit}
                       </span>
-                      {log.costCode && <span className="text-xs text-gray-500 dark:text-gray-400">{log.costCode.code}</span>}
+                      {log.costCode && <span className="text-xs text-fg-subtle">{log.costCode.code}</span>}
                     </div>
-                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    <p className="mt-1 text-xs text-fg-subtle">
                       {t("logSummary", { hours: log.laborHours, date: formatDate(new Date(log.workDate)) })}
                       {log.crewName ? ` — ${log.crewName}` : ""}
                     </p>
-                    {log.notes && <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{log.notes}</p>}
+                    {log.notes && <p className="mt-1 text-xs text-fg-subtle">{log.notes}</p>}
                   </div>
                   {hoursPerUnit !== null && (
-                    <span className="shrink-0 text-xs font-medium tabular-nums text-gray-500 dark:text-gray-400">
-                      {t("hoursPerUnit", { rate: hoursPerUnit.toFixed(3), unit: log.unit })}
+                    <span className="shrink-0 text-xs font-medium tabular-nums text-fg-subtle">
+                      {t("hoursPerUnit", { rate: formatNumber(hoursPerUnit, { fractionDigits: 3 }), unit: log.unit })}
                     </span>
                   )}
                 </div>

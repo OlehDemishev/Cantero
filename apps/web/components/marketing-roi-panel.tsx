@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
+import { useCan } from "@/lib/permissions";
+import { PanelErrorState } from "@/components/ui/error-state";
 import { useMe } from "@/lib/use-me";
+import { formatCurrency } from "@/lib/format-currency";
 
 interface ChannelRoi {
   channel: string;
@@ -18,44 +20,44 @@ interface ChannelRoi {
 
 export function MarketingRoiPanel() {
   const t = useTranslations("marketing");
+  const tl = useTranslations("labels");
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
-  const [rows, setRows] = useState<ChannelRoi[] | null>(null);
+  const canSee = useCan()("finance.view");
+  const { data: rows = null, error, reload } = useApi<ChannelRoi[]>(canSee ? "/marketing/roi-by-channel" : null);
 
-  useEffect(() => {
-    apiFetch<ChannelRoi[]>("/marketing/roi-by-channel").then(setRows);
-  }, []);
-
+  if (!canSee) return null;
+  if (error && !rows) return <PanelErrorState title={t("roiTitle")} error={error} onRetry={reload} />;
   if (!rows || rows.length === 0) return null;
 
   return (
     <div className="mt-10">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("roiTitle")}</h2>
-      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("roiHint")}</p>
-      <div className="card overflow-x-auto">
+      <h2 className="mb-1 text-sm font-semibold text-fg-muted">{t("roiTitle")}</h2>
+      <p className="mb-3 text-xs text-fg-subtle">{t("roiHint")}</p>
+      <div tabIndex={0} className="card overflow-x-auto">
         <table className="w-full border-collapse text-sm">
           <thead>
-            <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
-              <th className="py-1.5">{t("channel")}</th>
-              <th>{t("leads")}</th>
-              <th>{t("won")}</th>
-              <th>{t("conversionRate")}</th>
-              <th>{t("costPerLead")}</th>
-              <th>{t("costPerWonDeal")}</th>
-              <th className="text-right">{t("wonValue")}</th>
+            <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
+              <th scope="col" className="py-1.5">{t("channel")}</th>
+              <th scope="col">{t("leads")}</th>
+              <th scope="col">{t("won")}</th>
+              <th scope="col">{t("conversionRate")}</th>
+              <th scope="col">{t("costPerLead")}</th>
+              <th scope="col">{t("costPerWonDeal")}</th>
+              <th scope="col" className="text-right">{t("wonValue")}</th>
             </tr>
           </thead>
           <tbody>
             {rows.map((r) => (
               <tr key={r.channel} className="border-b border-gray-100 dark:border-gray-700">
-                <td className="py-1.5 font-medium text-gray-900 dark:text-gray-50">{r.channel}</td>
+                <td className="py-1.5 font-medium text-fg">{r.channel === "unattributed" ? tl("channelUnattributed") : r.channel}</td>
                 <td>{r.leadCount}</td>
                 <td>{r.wonCount}</td>
                 <td>{r.conversionRatePercent}%</td>
-                <td>{r.costPerLead !== null ? `${r.costPerLead} ${currency}` : "—"}</td>
-                <td>{r.costPerWonDeal !== null ? `${r.costPerWonDeal} ${currency}` : "—"}</td>
+                <td>{r.costPerLead !== null ? `${formatCurrency(r.costPerLead, currency)}` : "—"}</td>
+                <td>{r.costPerWonDeal !== null ? `${formatCurrency(r.costPerWonDeal, currency)}` : "—"}</td>
                 <td className="text-right font-medium">
-                  {r.wonValue} {currency}
+                  {formatCurrency(r.wonValue, currency)}
                 </td>
               </tr>
             ))}

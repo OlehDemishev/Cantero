@@ -25,7 +25,9 @@ test("a client approves an estimate by signing the public review link", async ({
   const projectName = testProjectName();
   const projectId = await createProject(token, projectName);
   const estimateId = await createApprovedEstimate(token, projectId, `${projectName} estimate`);
-  const { clientAccessToken } = await api<{ clientAccessToken: string }>("POST", `/estimates/${estimateId}/send`, token);
+  await api("POST", `/estimates/${estimateId}/send`, token);
+  // Send no longer echoes the client's token; staff with estimates.manage fetch it explicitly.
+  const { token: clientAccessToken } = await api<{ token: string }>("GET", `/estimates/${estimateId}/client-link`, token);
 
   const context = await browser.newContext();
   const page = await context.newPage();

@@ -411,6 +411,15 @@ describe("EstimatesService — cross-tenant isolation", () => {
 
     expect(result).toEqual({ clientDecision: "rejected" });
   });
+
+  it("clientLink() reads only the token, scoped to the company, and refuses one not sent yet", async () => {
+    prisma.estimate.findFirst.mockResolvedValueOnce({ clientAccessToken: "tok" }).mockResolvedValueOnce({ clientAccessToken: null }).mockResolvedValueOnce(null);
+
+    await expect(service.clientLink(COMPANY_A, "estimate-1")).resolves.toEqual({ token: "tok" });
+    expect(prisma.estimate.findFirst).toHaveBeenCalledWith({ where: { id: "estimate-1", companyId: COMPANY_A }, select: { clientAccessToken: true } });
+    await expect(service.clientLink(COMPANY_A, "estimate-1")).rejects.toThrow(BadRequestException);
+    await expect(service.clientLink(COMPANY_A, "estimate-1")).rejects.toThrow(NotFoundException);
+  });
 });
 
 describe("EstimatesService — approval chains", () => {

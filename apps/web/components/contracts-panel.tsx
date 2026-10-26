@@ -1,8 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
+import { Badge } from "@/components/ui/badge";
+import { statusTone } from "@/lib/status-tone";
 
 interface ContractTemplate {
   id: string;
@@ -15,30 +18,19 @@ interface Contract {
   client: { id: string; name: string } | null;
 }
 
-const STATUS_STYLES: Record<Contract["status"], string> = {
-  draft: "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300",
-  sent: "bg-amber-100 dark:bg-amber-500/15 text-amber-800 dark:text-amber-400",
-  signed: "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500",
-  void: "bg-error-50 dark:bg-error-500/15 text-error-700 dark:text-error-500",
-};
-
 export function ContractsPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("contracts");
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
 
-  const [contracts, setContracts] = useState<Contract[] | null>(null);
-  const [templates, setTemplates] = useState<ContractTemplate[]>([]);
+  const { data: contracts = null, reload: reloadContracts } = useApi<Contract[]>(`/contracts?projectId=${projectId}`);
+  const { data: templates = [] } = useApi<ContractTemplate[]>("/contract-templates");
   const [form, setForm] = useState({ title: "", templateId: "", body: "" });
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<Contract[]>(`/contracts?projectId=${projectId}`).then(setContracts);
+    void reloadContracts();
   }
-
-  useEffect(load, [projectId]);
-  useEffect(() => {
-    apiFetch<ContractTemplate[]>("/contract-templates").then(setTemplates);
-  }, []);
 
   async function create(e: React.FormEvent) {
     e.preventDefault();
@@ -62,17 +54,17 @@ export function ContractsPanel({ projectId }: { projectId: string }) {
 
   return (
     <div className="mt-8">
-      <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
+      <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("title")}</h2>
       <div className="card">
         {!contracts || contracts.length === 0 ? (
-          <p className="text-sm text-gray-400 dark:text-gray-500">{t("noContracts")}</p>
+          <p className="text-sm text-fg-subtle">{t("noContracts")}</p>
         ) : (
           <ul className="mb-4 flex flex-col gap-1.5">
             {contracts.map((c) => (
               <li key={c.id}>
                 <a href={`/contracts/${c.id}`} className="flex items-center justify-between rounded-lg px-1 py-1.5 text-sm hover:bg-gray-50 dark:hover:bg-white/5">
-                  <span className="text-gray-700 dark:text-gray-300">{c.title}</span>
-                  <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[c.status]}`}>{t(c.status)}</span>
+                  <span className="text-fg-muted">{c.title}</span>
+                  <Badge tone={statusTone(c.status)}>{t(c.status)}</Badge>
                 </a>
               </li>
             ))}
@@ -83,12 +75,12 @@ export function ContractsPanel({ projectId }: { projectId: string }) {
           <div className="flex flex-wrap items-end gap-2">
             <input
               required
-              placeholder={t("titlePlaceholder")}
+              placeholder={t("titlePlaceholder")} aria-label={t("titlePlaceholder")}
               className="input"
               value={form.title}
               onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
             />
-            <select className="input w-auto" value={form.templateId} onChange={(e) => setForm((f) => ({ ...f, templateId: e.target.value }))}>
+            <select aria-label={ta("template")} className="input w-auto" value={form.templateId} onChange={(e) => setForm((f) => ({ ...f, templateId: e.target.value }))}>
               <option value="">{t("customBody")}</option>
               {templates.map((tpl) => (
                 <option key={tpl.id} value={tpl.id}>
@@ -104,7 +96,7 @@ export function ContractsPanel({ projectId }: { projectId: string }) {
             <textarea
               required
               rows={3}
-              placeholder={t("bodyPlaceholder")}
+              placeholder={t("bodyPlaceholder")} aria-label={t("bodyPlaceholder")}
               className="input"
               value={form.body}
               onChange={(e) => setForm((f) => ({ ...f, body: e.target.value }))}

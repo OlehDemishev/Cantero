@@ -48,6 +48,13 @@ export const createTimeEntrySchema = z.object({
 });
 export type CreateTimeEntryInput = z.infer<typeof createTimeEntrySchema>;
 
+/** A time entry logged on a shared kiosk device. The worker comes from `kioskToken` — the token
+ * POST /workers/:id/verify-clock-in-pin returns for a correct PIN — never from the body. */
+export const createKioskTimeEntrySchema = createTimeEntrySchema.omit({ workerId: true }).extend({
+  kioskToken: z.string().min(1),
+});
+export type CreateKioskTimeEntryInput = z.infer<typeof createKioskTimeEntrySchema>;
+
 export const updateTimeEntrySchema = z.object({
   hours: z.number().positive().max(24).optional(),
   date: z.string().datetime().optional(),

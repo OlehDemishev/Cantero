@@ -1,80 +1,47 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import dynamic from "next/dynamic";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { AuthenticatedShell } from "@/components/authenticated-shell";
-import { TabNav, type TabNavItem } from "@/components/ui/tab-nav";
+import { TabNav, TabPanel, type TabNavItem } from "@/components/ui/tab-nav";
 import { goBack } from "@/lib/back-navigation";
+import { useApi } from "@/lib/use-api";
+import { resetStateInEffect } from "@/lib/effect-reset";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { CommentsThread } from "@/components/comments-thread";
-import { SchedulingPanel } from "@/components/scheduling-panel";
-import { ScheduleBaselinePanel } from "@/components/schedule-baseline-panel";
-import { LookAheadPanel } from "@/components/look-ahead-panel";
-import { DailyLogsPanel } from "@/components/daily-logs-panel";
-import { CrewSmsBroadcastPanel } from "@/components/crew-sms-broadcast-panel";
-import { SiteSignInsPanel } from "@/components/site-sign-ins-panel";
-import { WeatherDelayReportPanel } from "@/components/weather-delay-report-panel";
-import { WeatherForecastPanel } from "@/components/weather-forecast-panel";
-import { GeofencePanel } from "@/components/geofence-panel";
-import { CertifiedPayrollPanel } from "@/components/certified-payroll-panel";
-import { PermitsPanel } from "@/components/permits-panel";
-import { SuretyBondsPanel } from "@/components/surety-bonds-panel";
-import { ContractClaimsPanel } from "@/components/contract-claims-panel";
-import { WarrantyRegistrationsPanel } from "@/components/warranty-registrations-panel";
-import { HazmatInventoryPanel } from "@/components/hazmat-inventory-panel";
-import { LienCompliancePanel } from "@/components/lien-compliance-panel";
-import { EnvironmentalPanel } from "@/components/environmental-panel";
-import { ScheduleScenariosPanel } from "@/components/schedule-scenarios-panel";
-import { CommissioningPanel } from "@/components/commissioning-panel";
-import { ProgressTrackingPanel } from "@/components/progress-tracking-panel";
-import { TransmittalsPanel } from "@/components/transmittals-panel";
-import { ConcreteQcPanel } from "@/components/concrete-qc-panel";
 import { ProjectMembersPanel } from "@/components/project-members-panel";
-import { ContractsPanel } from "@/components/contracts-panel";
-import { DrawRequestsPanel } from "@/components/draw-requests-panel";
-import { TakeoffPanel } from "@/components/takeoff-panel";
-import { DrawingSheetsPanel } from "@/components/drawing-sheets-panel";
-import { GreenCertificationsPanel } from "@/components/green-certifications-panel";
 import { PortalMessagesPanel } from "@/components/portal-messages-panel";
-import { CarbonReportPanel } from "@/components/carbon-report-panel";
-import { ProjectCashFlowPanel } from "@/components/project-cash-flow-panel";
 import { CustomFieldsValuesPanel } from "@/components/custom-fields-values-panel";
-import { PunchListPanel } from "@/components/punch-list-panel";
-import { RfiPanel } from "@/components/rfi-panel";
-import { CostImpactSummaryPanel } from "@/components/cost-impact-summary-panel";
-import { MeetingsPanel } from "@/components/meetings-panel";
-import { LongLeadItemsPanel } from "@/components/long-lead-items-panel";
-import { SafetyPanel } from "@/components/safety-panel";
-import { QualityPanel } from "@/components/quality-panel";
-import { SubmittalsPanel } from "@/components/submittals-panel";
-import { WarrantyPanel } from "@/components/warranty-panel";
-import { ProjectCloseoutPanel } from "@/components/project-closeout-panel";
-import { BudgetPanel } from "@/components/budget-panel";
-import { JobCostingPanel } from "@/components/job-costing-panel";
-import { TimeTrackingPanel } from "@/components/time-tracking-panel";
-import { SubcontractorCostsPanel } from "@/components/subcontractor-costs-panel";
-import { SubcontractorAssignmentsPanel } from "@/components/subcontractor-assignments-panel";
-import { BidRequestsPanel } from "@/components/bid-requests-panel";
-import { DocumentsPanel } from "@/components/documents-panel";
-import { GalleryPanel } from "@/components/gallery-panel";
-import { AllowancesPanel } from "@/components/allowances-panel";
-import { UnitPriceTmPanel } from "@/components/unit-price-tm-panel";
-import { ProductivityPanel } from "@/components/productivity-panel";
-import { SubcontractorClaimsPanel } from "@/components/subcontractor-claims-panel";
 import { ClientChangeRequestsPanel } from "@/components/client-change-requests-panel";
-import { SafetyObservationsPanel } from "@/components/safety-observations-panel";
 import { ProjectHealthBadge } from "@/components/project-health-badge";
-import { MsProjectSyncPanel } from "@/components/ms-project-sync-panel";
-import { ScheduleFilesPanel } from "@/components/schedule-files-panel";
-import { IntacctProjectPanel } from "@/components/intacct-project-panel";
-import { AutodeskSyncPanel } from "@/components/autodesk-sync-panel";
-import { BimModelPanel } from "@/components/bim-model-panel";
-import { SUPPORTED_CURRENCIES } from "@cantero/shared";
+import { SUPPORTED_CURRENCIES, createEstimateSchema } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import { useCan } from "@/lib/permissions";
 import type { Permission } from "@cantero/shared";
+import { formatCurrency } from "@/lib/format-currency";
+import { PageHeader } from "@/components/ui/page-header";
+import { Field, FormError } from "@/components/ui/field";
+import { Button } from "@/components/ui/button";
+import { optionalNumber, useFormValidation } from "@/lib/form-validation";
+
+// Only one tab shows at a time, so every tab but the default one is its own chunk, fetched when the
+// tab is first opened (the financials tab alone carries recharts). Each stands in with a skeleton.
+function TabLoading() {
+  return <Skeleton lines={4} className="mt-6" />;
+}
+const ScheduleTab = dynamic(() => import("@/components/project-tabs/schedule-tab").then((m) => m.ScheduleTab), { loading: TabLoading });
+const FinancialsTab = dynamic(() => import("@/components/project-tabs/financials-tab").then((m) => m.FinancialsTab), { loading: TabLoading });
+const FieldTab = dynamic(() => import("@/components/project-tabs/field-tab").then((m) => m.FieldTab), { loading: TabLoading });
+const QualityTab = dynamic(() => import("@/components/project-tabs/quality-tab").then((m) => m.QualityTab), { loading: TabLoading });
+const ComplianceTab = dynamic(() => import("@/components/project-tabs/compliance-tab").then((m) => m.ComplianceTab), { loading: TabLoading });
+const SubcontractorsTab = dynamic(() => import("@/components/project-tabs/subcontractors-tab").then((m) => m.SubcontractorsTab), {
+  loading: TabLoading,
+});
+const DocumentsTab = dynamic(() => import("@/components/project-tabs/documents-tab").then((m) => m.DocumentsTab), { loading: TabLoading });
 
 interface Project {
   id: string;
@@ -120,6 +87,8 @@ export const ITEM_TYPE_TO_TAB: Record<string, ProjectTabKey> = {
   submittal: "quality",
 };
 
+const NO_TEMPLATES: Template[] = [];
+
 export function ProjectDetail({ projectId }: { projectId: string }) {
   const t = useTranslations("estimates");
   const tp = useTranslations("projects");
@@ -131,8 +100,12 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
   const canEstimates = can("estimates.view");
 
   const [project, setProject] = useState<Project | null>(null);
-  const [estimates, setEstimates] = useState<Estimate[] | null>(null);
-  const [templates, setTemplates] = useState<Template[]>([]);
+  const [projectError, setProjectError] = useState<Error | null>(null);
+  const [projectAttempt, setProjectAttempt] = useState(0);
+  // Estimates carry prices: only fetched, and only shown, for someone who may see them.
+  const { data: allEstimates, error: estimatesError, reload: reloadEstimates } = useApi<Estimate[]>(canEstimates ? "/estimates" : null);
+  const estimates = useMemo(() => allEstimates?.filter((e) => e.project.id === projectId) ?? null, [allEstimates, projectId]);
+  const { data: templates = NO_TEMPLATES } = useApi<Template[]>(canEstimates ? "/estimates/templates" : null);
   const [form, setForm] = useState({
     name: "",
     laborRatePerHour: "35",
@@ -141,6 +114,8 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
     templateId: "",
   });
   const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const { errors, validate, clearError, formRef } = useFormValidation(createEstimateSchema);
   const [currencyBusy, setCurrencyBusy] = useState(false);
   const [budgetThresholdBusy, setBudgetThresholdBusy] = useState(false);
   const [budgetThresholdDraft, setBudgetThresholdDraft] = useState("");
@@ -170,19 +145,26 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
   }));
 
   useEffect(() => {
-    apiFetch<Project>(`/projects/${projectId}`).then((p) => {
-      setProject(p);
-      setBudgetThresholdDraft(p.budgetAlertThresholdPercent !== null ? String(p.budgetAlertThresholdPercent) : "");
-      setContingencyDraft(p.contingencyAmount !== null ? p.contingencyAmount : "");
+    // Another project: never show the previous one's name and settings while this one loads.
+    let current = true;
+    resetStateInEffect(() => {
+      setProject(null);
+      setProjectError(null);
     });
-  }, [projectId]);
-
-  // Estimates carry prices: only fetched, and only shown, for someone who may see them.
-  useEffect(() => {
-    if (!canEstimates) return;
-    apiFetch<Estimate[]>("/estimates").then((all) => setEstimates(all.filter((e) => e.project.id === projectId)));
-    apiFetch<Template[]>("/estimates/templates").then(setTemplates);
-  }, [projectId, canEstimates]);
+    apiFetch<Project>(`/projects/${projectId}`)
+      .then((p) => {
+        if (!current) return;
+        setProject(p);
+        setBudgetThresholdDraft(p.budgetAlertThresholdPercent !== null ? String(p.budgetAlertThresholdPercent) : "");
+        setContingencyDraft(p.contingencyAmount !== null ? p.contingencyAmount : "");
+      })
+      .catch((err: Error) => {
+        if (current) setProjectError(err);
+      });
+    return () => {
+      current = false;
+    };
+  }, [projectId, projectAttempt]);
 
   async function saveCurrency(value: string) {
     setCurrencyBusy(true);
@@ -225,297 +207,218 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
     }
   }
 
+  function updateEstimateField(field: keyof typeof form, value: string) {
+    setForm((f) => ({ ...f, [field]: value }));
+    clearError(field);
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    const input = validate({
+      projectId,
+      name: form.name.trim(),
+      laborRatePerHour: optionalNumber(form.laborRatePerHour),
+      markupPercent: optionalNumber(form.markupPercent),
+      taxPercent: optionalNumber(form.taxPercent),
+    });
+    if (!input) return;
     setSubmitting(true);
+    setSubmitError(null);
     try {
-      const body = JSON.stringify({
-        projectId,
-        name: form.name,
-        laborRatePerHour: Number(form.laborRatePerHour),
-        markupPercent: Number(form.markupPercent),
-        taxPercent: Number(form.taxPercent),
-      });
       const estimate = await apiFetch<{ id: string }>(
         form.templateId ? `/estimates/from-template/${form.templateId}` : "/estimates",
-        { method: "POST", body },
+        { method: "POST", body: JSON.stringify(input) },
       );
       router.push(`/estimates/${estimate.id}`);
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : tc("error"));
     } finally {
       setSubmitting(false);
     }
   }
 
+  if (projectError) return <ErrorState error={projectError} onRetry={() => setProjectAttempt((n) => n + 1)} backHref="/projects" />;
+
   return (
-    <AuthenticatedShell>
-      <button onClick={() => goBack(router, "/projects")} className="text-sm text-gray-500 dark:text-gray-400 hover:underline">
-        ← {tc("back")}
-      </button>
-      <div className="mt-2 flex items-center gap-3">
-        <h1 className="text-2xl font-semibold">{project?.name ?? tc("loading")}</h1>
-        {project && <ProjectHealthBadge projectId={projectId} />}
-      </div>
+    <>
+      <PageHeader
+        back={{ onClick: () => goBack(router, "/projects"), label: tc("back") }}
+        title={project?.name ?? tc("loading")}
+        actions={project && <ProjectHealthBadge projectId={projectId} />}
+      />
       {project?.client && (
         <Link href={`/clients/${project.client.id}`} className="text-sm text-brand-700 dark:text-brand-400 hover:underline">
           {project.client.name}
         </Link>
       )}
 
-      <TabNav tabs={TABS} active={activeTab} onChange={setTab} />
+      <TabNav id="project-tabs" tabs={TABS} active={activeTab} onChange={setTab} />
+      <TabPanel tabsId="project-tabs" active={activeTab}>
 
-      {activeTab === "overview" && (
-        <>
-          {project && can("projects.manage") && (
-            <label className="mt-4 flex w-fit items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-              {tp("billingCurrency")}
-              <select
-                className="input w-auto py-1"
-                value={project.currency ?? ""}
-                disabled={currencyBusy}
-                onChange={(e) => saveCurrency(e.target.value)}
-              >
-                <option value="">{tp("billingCurrencyDefault", { currency: me?.company.currency ?? "" })}</option>
-                {SUPPORTED_CURRENCIES.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
-              </select>
-            </label>
-          )}
-          {project && can("projects.manage") && (
-            <label className="mt-2 flex w-fit items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-              {tp("budgetAlertThreshold")}
-              <input
-                type="number"
-                min="1"
-                max="100"
-                className="input w-20 py-1"
-                placeholder={String(me?.company.budgetAlertThresholdPercent ?? 90)}
-                value={budgetThresholdDraft}
-                disabled={budgetThresholdBusy}
-                onChange={(e) => setBudgetThresholdDraft(e.target.value)}
-                onBlur={saveBudgetThreshold}
-              />
-              %
-            </label>
-          )}
-          {project && can("projects.manage") && (
-            <label className="mt-2 flex w-fit items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-              {tp("contingencyAmount")}
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                className="input w-28 py-1"
-                placeholder={tp("contingencyAmountPlaceholder")}
-                value={contingencyDraft}
-                disabled={contingencyBusy}
-                onChange={(e) => setContingencyDraft(e.target.value)}
-                onBlur={saveContingency}
-              />
-              {project.currency ?? me?.company.currency}
-            </label>
-          )}
-
-          <div className="mt-6">
-            <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{tp("projectChannel")}</h2>
-            <div className="card">
-              <CommentsThread param="projectId" entityId={projectId} />
-            </div>
-          </div>
-
-          {can("clients.view") && <PortalMessagesPanel projectId={projectId} />}
-          {can("estimates.view") && <ClientChangeRequestsPanel projectId={projectId} />}
-
-          {canEstimates && (
-          <div className="mt-6 grid grid-cols-1 gap-8 lg:grid-cols-3">
-            <div className="card lg:col-span-1">
-              <h2 className="mb-4 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("newEstimate")}</h2>
-              <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-                {templates.length > 0 && (
-                  <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
-                    {t("startFromTemplate")}
-                    <select
-                      className="input mt-1"
-                      value={form.templateId}
-                      onChange={(e) => setForm((f) => ({ ...f, templateId: e.target.value }))}
-                    >
-                      <option value="">{t("blankEstimate")}</option>
-                      {templates.map((tpl) => (
-                        <option key={tpl.id} value={tpl.id}>
-                          {tpl.name}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                )}
-                <input
-                  required
-                  placeholder={tc("name")}
-                  className="input"
-                  value={form.name}
-                  onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                />
-                <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
-                  {t("laborRate")} ({me?.company.currency})
-                  <input
-                    required
-                    type="number"
-                    step="0.01"
-                    className="input mt-1"
-                    value={form.laborRatePerHour}
-                    onChange={(e) => setForm((f) => ({ ...f, laborRatePerHour: e.target.value }))}
-                  />
-                </label>
-                <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
-                  {t("markup")}
-                  <input
-                    required
-                    type="number"
-                    step="0.1"
-                    className="input mt-1"
-                    value={form.markupPercent}
-                    onChange={(e) => setForm((f) => ({ ...f, markupPercent: e.target.value }))}
-                  />
-                </label>
-                <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
-                  {t("tax")}
-                  <input
-                    required
-                    type="number"
-                    step="0.1"
-                    className="input mt-1"
-                    value={form.taxPercent}
-                    onChange={(e) => setForm((f) => ({ ...f, taxPercent: e.target.value }))}
-                  />
-                </label>
-                <button type="submit" disabled={submitting} className="btn-primary">
-                  {tc("create")}
-                </button>
-              </form>
-            </div>
-
-            <div className="lg:col-span-2">
-              <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{tp("viewEstimates")}</h2>
-              {!estimates ? (
-                <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
-              ) : estimates.length === 0 ? (
-                <p className="text-gray-500 dark:text-gray-400">{t("noEstimatesForProject")}</p>
-              ) : (
-                <ul className="flex flex-col gap-2">
-                  {estimates.map((e) => (
-                    <li key={e.id}>
-                      <a href={`/estimates/${e.id}`} className="card flex items-center justify-between hover:border-gray-400">
-                        <span className="font-medium">{e.name}</span>
-                        <span className="text-sm text-gray-500 dark:text-gray-400">
-                          {e.status === "approved" ? t("approved") : t("draft")} · {e.grandTotal} {me?.company.currency}
-                        </span>
-                      </a>
-                    </li>
+        {activeTab === "overview" && (
+          <>
+            {project && can("projects.manage") && (
+              <label className="mt-4 flex w-fit items-center gap-2 text-xs text-fg-subtle">
+                {tp("billingCurrency")}
+                <select
+                  className="input w-auto py-1"
+                  value={project.currency ?? ""}
+                  disabled={currencyBusy}
+                  onChange={(e) => saveCurrency(e.target.value)}
+                >
+                  <option value="">{tp("billingCurrencyDefault", { currency: me?.company.currency ?? "" })}</option>
+                  {SUPPORTED_CURRENCIES.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
                   ))}
-                </ul>
-              )}
+                </select>
+              </label>
+            )}
+            {project && can("projects.manage") && (
+              <label className="mt-2 flex w-fit items-center gap-2 text-xs text-fg-subtle">
+                {tp("budgetAlertThreshold")}
+                <input
+                  type="number"
+                  min="1"
+                  max="100"
+                  className="input w-20 py-1"
+                  placeholder={String(me?.company.budgetAlertThresholdPercent ?? 90)}
+                  value={budgetThresholdDraft}
+                  disabled={budgetThresholdBusy}
+                  onChange={(e) => setBudgetThresholdDraft(e.target.value)}
+                  onBlur={saveBudgetThreshold}
+                />
+                %
+              </label>
+            )}
+            {project && can("projects.manage") && (
+              <label className="mt-2 flex w-fit items-center gap-2 text-xs text-fg-subtle">
+                {tp("contingencyAmount")}
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  className="input w-28 py-1"
+                  placeholder={tp("contingencyAmountPlaceholder")}
+                  value={contingencyDraft}
+                  disabled={contingencyBusy}
+                  onChange={(e) => setContingencyDraft(e.target.value)}
+                  onBlur={saveContingency}
+                />
+                {project.currency ?? me?.company.currency}
+              </label>
+            )}
+
+            <div className="mt-6">
+              <h2 className="mb-3 text-sm font-semibold text-fg-muted">{tp("projectChannel")}</h2>
+              <div className="card">
+                <CommentsThread param="projectId" entityId={projectId} />
+              </div>
             </div>
-          </div>
-          )}
 
-          {can("site.manage") && <ProjectMembersPanel projectId={projectId} />}
-          <CustomFieldsValuesPanel entityType="project" entityId={projectId} />
-        </>
-      )}
+            {can("clients.view") && <PortalMessagesPanel projectId={projectId} />}
+            {can("estimates.view") && <ClientChangeRequestsPanel projectId={projectId} />}
 
-      {activeTab === "schedule" && (
-        <>
-          <SchedulingPanel projectId={projectId} />
-          {can("site.manage") && <ScheduleBaselinePanel projectId={projectId} />}
-          {can("site.manage") && <ScheduleScenariosPanel projectId={projectId} />}
-          <LookAheadPanel projectId={projectId} />
-          {can("site.manage") && <ProgressTrackingPanel projectId={projectId} />}
-          {can("site.manage") && <CommissioningPanel projectId={projectId} />}
-          {can("site.manage") && <ScheduleFilesPanel projectId={projectId} />}
-          {can("site.manage") && <MsProjectSyncPanel projectId={projectId} />}
-        </>
-      )}
+            {canEstimates && (
+            <div className="mt-6 grid grid-cols-1 gap-8 lg:grid-cols-3">
+              <div className="card lg:col-span-1">
+                <h2 className="mb-4 text-sm font-semibold text-fg-muted">{t("newEstimate")}</h2>
+                <form ref={formRef} onSubmit={handleSubmit} noValidate className="flex flex-col gap-3">
+                  {templates.length > 0 && (
+                    <Field label={t("startFromTemplate")} size="sm">
+                      <select className="input" value={form.templateId} onChange={(e) => updateEstimateField("templateId", e.target.value)}>
+                        <option value="">{t("blankEstimate")}</option>
+                        {templates.map((tpl) => (
+                          <option key={tpl.id} value={tpl.id}>
+                            {tpl.name}
+                          </option>
+                        ))}
+                      </select>
+                    </Field>
+                  )}
+                  <Field label={tc("name")} size="sm" error={errors.name}>
+                    <input required className="input" value={form.name} onChange={(e) => updateEstimateField("name", e.target.value)} />
+                  </Field>
+                  <Field label={`${t("laborRate")} (${me?.company.currency ?? ""})`} size="sm" error={errors.laborRatePerHour}>
+                    <input
+                      required
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      className="input"
+                      value={form.laborRatePerHour}
+                      onChange={(e) => updateEstimateField("laborRatePerHour", e.target.value)}
+                    />
+                  </Field>
+                  <Field label={t("markup")} size="sm" error={errors.markupPercent}>
+                    <input
+                      required
+                      type="number"
+                      step="0.1"
+                      min="0"
+                      max="500"
+                      className="input"
+                      value={form.markupPercent}
+                      onChange={(e) => updateEstimateField("markupPercent", e.target.value)}
+                    />
+                  </Field>
+                  <Field label={t("tax")} size="sm" error={errors.taxPercent}>
+                    <input
+                      required
+                      type="number"
+                      step="0.1"
+                      min="0"
+                      max="100"
+                      className="input"
+                      value={form.taxPercent}
+                      onChange={(e) => updateEstimateField("taxPercent", e.target.value)}
+                    />
+                  </Field>
+                  <FormError>{submitError}</FormError>
+                  <Button type="submit" loading={submitting}>
+                    {tc("create")}
+                  </Button>
+                </form>
+              </div>
 
-      {activeTab === "financials" && (
-        <>
-          {can("finance.view") && <IntacctProjectPanel projectId={projectId} />}
-          {can("costing.view") && <BudgetPanel projectId={projectId} />}
-          {can("costing.view") && <AllowancesPanel projectId={projectId} />}
-          {can("estimates.view") && <UnitPriceTmPanel projectId={projectId} />}
-          {can("costing.view") && <JobCostingPanel projectId={projectId} />}
-          {can("finance.view") && <DrawRequestsPanel projectId={projectId} />}
-          <ProjectCashFlowPanel projectId={projectId} />
-          {can("contracts.view") && <ContractsPanel projectId={projectId} />}
-          {can("estimates.view") && <CostImpactSummaryPanel projectId={projectId} />}
-        </>
-      )}
+              <div className="lg:col-span-2">
+                <h2 className="mb-3 text-sm font-semibold text-fg-muted">{tp("viewEstimates")}</h2>
+                {!estimates ? (
+                  estimatesError ? <ErrorState error={estimatesError} onRetry={reloadEstimates} compact /> : <Skeleton lines={3} />
+                ) : estimates.length === 0 ? (
+                  <p className="text-fg-subtle">{t("noEstimatesForProject")}</p>
+                ) : (
+                  <ul className="flex flex-col gap-2">
+                    {estimates.map((e) => (
+                      <li key={e.id}>
+                        <a href={`/estimates/${e.id}`} className="card flex items-center justify-between hover:border-gray-400">
+                          <span className="font-medium">{e.name}</span>
+                          <span className="text-sm text-fg-subtle">
+                            {e.status === "approved" ? t("approved") : t("draft")} · {formatCurrency(e.grandTotal, me?.company.currency)}
+                          </span>
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
+            )}
 
-      {activeTab === "field" && (
-        <>
-          <DailyLogsPanel projectId={projectId} />
-          {can("site.manage") && <CrewSmsBroadcastPanel projectId={projectId} />}
-          <SiteSignInsPanel projectId={projectId} />
-          <WeatherForecastPanel projectId={projectId} />
-          {can("site.manage") && <WeatherDelayReportPanel projectId={projectId} />}
-          {can("projects.manage") && <GeofencePanel projectId={projectId} />}
-          <SafetyPanel projectId={projectId} />
-          <SafetyObservationsPanel projectId={projectId} />
-        </>
-      )}
+            {can("site.manage") && <ProjectMembersPanel projectId={projectId} />}
+            <CustomFieldsValuesPanel entityType="project" entityId={projectId} />
+          </>
+        )}
 
-      {activeTab === "quality" && (
-        <>
-          <PunchListPanel projectId={projectId} />
-          <RfiPanel projectId={projectId} />
-          {can("site.manage") && <MeetingsPanel projectId={projectId} />}
-          {can("site.manage") && <LongLeadItemsPanel projectId={projectId} />}
-          {can("site.manage") && <QualityPanel projectId={projectId} />}
-          {can("site.manage") && <ConcreteQcPanel projectId={projectId} />}
-          {can("site.manage") && <SubmittalsPanel projectId={projectId} />}
-          {can("site.manage") && <TransmittalsPanel projectId={projectId} />}
-          {can("site.manage") && <WarrantyPanel projectId={projectId} />}
-          {project && <AutodeskSyncPanel projectId={projectId} initialAutodeskProjectId={project.autodeskProjectId} />}
-        </>
-      )}
-
-      {activeTab === "compliance" && (
-        <>
-          {can("site.manage") && <PermitsPanel projectId={projectId} />}
-          {can("finance.view") && <SuretyBondsPanel projectId={projectId} />}
-          {can("contracts.view") && <ContractClaimsPanel projectId={projectId} />}
-          {can("site.manage") && <WarrantyRegistrationsPanel projectId={projectId} />}
-          {can("site.manage") && <HazmatInventoryPanel projectId={projectId} />}
-          {can("finance.view") && <LienCompliancePanel projectId={projectId} />}
-          {can("site.manage") && <EnvironmentalPanel projectId={projectId} />}
-          {can("hr.payroll") && <CertifiedPayrollPanel projectId={projectId} />}
-          {can("site.manage") && <GreenCertificationsPanel projectId={projectId} />}
-          {can("site.manage") && <CarbonReportPanel projectId={projectId} />}
-        </>
-      )}
-
-      {activeTab === "subcontractors" && (
-        <>
-          {can("estimates.view") && <BidRequestsPanel projectId={projectId} />}
-          {can("subcontractors.view") && <SubcontractorAssignmentsPanel projectId={projectId} />}
-          {can("finance.view") && <SubcontractorCostsPanel projectId={projectId} />}
-          {can("subcontractors.view") && <SubcontractorClaimsPanel projectId={projectId} />}
-        </>
-      )}
-
-      {activeTab === "documents" && (
-        <>
-          {can("estimates.view") && <TakeoffPanel projectId={projectId} />}
-          <DrawingSheetsPanel projectId={projectId} />
-          {project && <BimModelPanel projectId={projectId} canEdit={can("site.manage")} initial={project} />}
-          <TimeTrackingPanel projectId={projectId} />
-          {can("site.manage") && <ProductivityPanel projectId={projectId} />}
-          <DocumentsPanel projectId={projectId} />
-          <GalleryPanel projectId={projectId} />
-          {can("site.manage") && <ProjectCloseoutPanel projectId={projectId} />}
-        </>
-      )}
-    </AuthenticatedShell>
+        {activeTab === "schedule" && <ScheduleTab projectId={projectId} />}
+        {activeTab === "financials" && <FinancialsTab projectId={projectId} />}
+        {activeTab === "field" && <FieldTab projectId={projectId} />}
+        {activeTab === "quality" && <QualityTab projectId={projectId} project={project} />}
+        {activeTab === "compliance" && <ComplianceTab projectId={projectId} />}
+        {activeTab === "subcontractors" && <SubcontractorsTab projectId={projectId} />}
+        {activeTab === "documents" && <DocumentsTab projectId={projectId} project={project} />}
+      </TabPanel>
+    </>
   );
 }

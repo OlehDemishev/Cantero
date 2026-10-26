@@ -2,10 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch, downloadBlob } from "@/lib/api-client";
+import { apiFetch, downloadBlob, notifyApiError } from "@/lib/api-client";
+import { fetchClientLink } from "@/lib/client-link";
+import { useCan } from "@/lib/permissions";
 import { useMe } from "@/lib/use-me";
 import { formatDateTime } from "@/lib/format-date";
 import { ChangeOrderProfitabilityPanel } from "@/components/change-order-profitability-panel";
+import { useConfirm } from "@/components/ui/confirm-dialog";
+import { formatCurrency } from "@/lib/format-currency";
+import { Alert } from "@/components/ui/alert";
 
 interface RateCatalogItem {
   id: string;
@@ -33,7 +38,6 @@ interface ChangeOrder {
   status: "draft" | "pending_approval" | "approved";
   clientDecision: ClientDecision;
   sentAt: string | null;
-  clientAccessToken: string | null;
   grandTotal: string;
   lines: ChangeOrderLine[];
   signerName: string | null;
@@ -54,7 +58,9 @@ export function EstimateChangeOrdersPanel({
   currency: string;
 }) {
   const t = useTranslations("estimates");
+  const confirm = useConfirm();
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
   const { data: me } = useMe();
 
   const [changeOrders, setChangeOrders] = useState<ChangeOrder[] | null>(null);
@@ -63,6 +69,9 @@ export function EstimateChangeOrdersPanel({
   const [coScheduleImpactForm, setCoScheduleImpactForm] = useState<Record<string, string>>({});
   const [coEmailSentTo, setCoEmailSentTo] = useState<Record<string, string | null>>({});
   const [coLinkCopiedId, setCoLinkCopiedId] = useState<string | null>(null);
+  /** Fetched per change order on the first copy — list responses don't carry the client's token. */
+  const [coClientLinks, setCoClientLinks] = useState<Record<string, string>>({});
+  const can = useCan();
   const [coSignatureUrls, setCoSignatureUrls] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
 
@@ -73,10 +82,10 @@ export function EstimateChangeOrdersPanel({
         if (co.clientDecision === "approved" && co.signerName) {
           apiFetch<Blob>(`/estimates/${estimateId}/change-orders/${co.id}/signature`).then((blob) =>
             setCoSignatureUrls((prev) => ({ ...prev, [co.id]: URL.createObjectURL(blob) })),
-          );
+          ).catch(notifyApiError);
         }
       }
-    });
+    }).catch(notifyApiError);
   }
 
   useEffect(loadChangeOrders, [estimateId]);
@@ -149,6 +158,12 @@ export function EstimateChangeOrdersPanel({
         { method: "POST" },
       );
       setCoEmailSentTo((m) => ({ ...m, [coId]: result.emailSentTo }));
+      // A resend issues a new token, so a link copied before is stale.
+      setCoClientLinks((m) => {
+        const next = { ...m };
+        delete next[coId];
+        return next;
+      });
       loadChangeOrders();
     } finally {
       setBusy(false);
@@ -156,27 +171,29 @@ export function EstimateChangeOrdersPanel({
   }
 
   async function copyChangeOrderLink(co: ChangeOrder) {
-    if (!co.clientAccessToken) return;
-    await navigator.clipboard.writeText(`${window.location.origin}/change-order/${co.clientAccessToken}`);
+    const link = coClientLinks[co.id] ?? (await fetchClientLink(`/estimates/${estimateId}/change-orders/${co.id}/client-link`, "change-order"));
+    setCoClientLinks((m) => ({ ...m, [co.id]: link }));
+    await navigator.clipboard.writeText(link);
     setCoLinkCopiedId(co.id);
   }
 
   async function declineChangeOrderOnBehalfOfClient(co: ChangeOrder) {
-    const note = window.prompt(t("declineOnBehalfNotePrompt"));
-    if (!note || !note.trim()) return;
-    setBusy(true);
-    try {
-      await apiFetch(`/estimates/${estimateId}/change-orders/${co.id}/decline`, { method: "POST", body: JSON.stringify({ note: note.trim() }) });
-      loadChangeOrders();
-    } finally {
-      setBusy(false);
-    }
+    await confirm({
+      title: t("declineOnBehalfOfClient"),
+      tone: "danger",
+      verb: "decline",
+      reason: { label: t("declineOnBehalfNotePrompt"), required: true },
+      action: async (note) => {
+        await apiFetch(`/estimates/${estimateId}/change-orders/${co.id}/decline`, { method: "POST", body: JSON.stringify({ note }) });
+        loadChangeOrders();
+      },
+    });
   }
 
   return (
     <div className="mt-10">
-      <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("changeOrders")}</h2>
-      <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">{t("changeOrdersHint")}</p>
+      <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("changeOrders")}</h2>
+      <p className="mb-4 text-xs text-fg-subtle">{t("changeOrdersHint")}</p>
 
       {changeOrders && changeOrders.length > 0 && (
         <div className="mb-6 flex flex-col gap-4">
@@ -185,28 +202,35 @@ export function EstimateChangeOrdersPanel({
             return (
               <div key={co.id} className="rounded-lg border border-gray-200 dark:border-gray-700 p-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-gray-900 dark:text-gray-50">
+                  <span className="text-sm font-medium text-fg">
                     CO-{co.number} — {co.title}
                   </span>
-                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                  <span className="text-xs text-fg-subtle">
                     {co.status === "approved" ? t("approved") : co.status === "pending_approval" ? t("pendingApproval") : t("draft")}
                     {co.sentAt && ` · ${t(`clientDecision_${co.clientDecision}`)}`}
                   </span>
                 </div>
-                {co.description && <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{co.description}</p>}
+                {co.description && <p className="mt-1 text-xs text-fg-subtle">{co.description}</p>}
 
                 {co.status === "pending_approval" && me?.company.changeOrderRequiredApprovalCount && (
-                  <div className="mt-2 rounded-lg border border-warning-200 bg-warning-50 dark:bg-warning-500/15 px-3 py-2">
-                    <p className="text-xs text-warning-700 dark:text-warning-500">
+                  <Alert tone="warning" className="mt-2">
+                    <p className="text-xs text-warning-fg">
                       {t("approvalProgress", { count: co.approvals.length, required: me.company.changeOrderRequiredApprovalCount })}
                     </p>
-                    <p className="mt-0.5 text-xs text-warning-700 dark:text-warning-500">{co.approvals.map((a) => a.actorName).join(", ")}</p>
-                  </div>
+                    <p className="mt-0.5 text-xs text-warning-fg">{co.approvals.map((a) => a.actorName).join(", ")}</p>
+                  </Alert>
                 )}
 
                 {co.lines.length > 0 && (
-                  <div className="overflow-x-auto">
+                  <div tabIndex={0} className="overflow-x-auto">
                   <table className="mt-3 w-full border-collapse text-xs">
+                    <thead>
+                      <tr className="border-b border-gray-200 text-left text-xs text-fg-subtle dark:border-gray-700">
+                        <th scope="col" className="py-1.5 font-medium">{ta("rateItem")}</th>
+                        <th scope="col" className="font-medium">{ta("quantity")}</th>
+                        <th scope="col" className="text-right font-medium">{ta("total")}</th>
+                      </tr>
+                    </thead>
                     <tbody>
                       {co.lines.map((l) => (
                         <tr key={l.id} className="border-b border-gray-100 dark:border-gray-700">
@@ -215,7 +239,7 @@ export function EstimateChangeOrdersPanel({
                             {l.quantity} {l.rateCatalogItem.unit}
                           </td>
                           <td className="text-right">
-                            {l.lineTotal} {currency}
+                            {formatCurrency(l.lineTotal, currency)}
                           </td>
                         </tr>
                       ))}
@@ -224,10 +248,10 @@ export function EstimateChangeOrdersPanel({
                   </div>
                 )}
                 <p className="mt-2 text-right text-xs font-medium">
-                  {t("grandTotal")}: {co.grandTotal} {currency}
+                  {t("grandTotal")}: {formatCurrency(co.grandTotal, currency)}
                 </p>
                 {co.scheduleImpactDays !== null && (
-                  <p className="mt-1 text-right text-xs text-gray-500 dark:text-gray-400">
+                  <p className="mt-1 text-right text-xs text-fg-subtle">
                     {t("scheduleImpact")}: {co.scheduleImpactDays >= 0 ? "+" : ""}
                     {co.scheduleImpactDays} {t("days")}
                   </p>
@@ -235,7 +259,7 @@ export function EstimateChangeOrdersPanel({
 
                 {co.status === "draft" && (
                   <div className="mt-3 flex items-end gap-2 border-t border-gray-100 dark:border-gray-700 pt-3">
-                    <select
+                    <select aria-label={t("rateItem")}
                       className="input"
                       value={line.rateCatalogItemId}
                       onChange={(e) =>
@@ -248,7 +272,7 @@ export function EstimateChangeOrdersPanel({
                         </option>
                       ))}
                     </select>
-                    <input
+                    <input aria-label={t("quantity")}
                       type="number"
                       step="0.01"
                       className="input w-24"
@@ -270,7 +294,7 @@ export function EstimateChangeOrdersPanel({
                   <div className="mt-2 flex items-end gap-2">
                     <input
                       type="number"
-                      placeholder={t("scheduleImpactPlaceholder")}
+                      placeholder={t("scheduleImpactPlaceholder")} aria-label={t("scheduleImpactPlaceholder")}
                       className="input w-40"
                       value={coScheduleImpactForm[co.id] ?? (co.scheduleImpactDays ?? "")}
                       onChange={(e) => setCoScheduleImpactForm((m) => ({ ...m, [co.id]: e.target.value }))}
@@ -318,14 +342,10 @@ export function EstimateChangeOrdersPanel({
                   </button>
                 )}
 
-                {co.sentAt && co.clientAccessToken && (
+                {co.sentAt && can("estimates.manage") && (
                   <div className="mt-3 border-t border-gray-100 dark:border-gray-700 pt-3">
                     <div className="flex items-center gap-2">
-                      <input
-                        readOnly
-                        className="input flex-1 text-xs"
-                        value={`${typeof window !== "undefined" ? window.location.origin : ""}/change-order/${co.clientAccessToken}`}
-                      />
+                      {coClientLinks[co.id] && <input aria-label={ta("shareLink")} readOnly className="input flex-1 text-xs" value={coClientLinks[co.id]} />}
                       <button
                         type="button"
                         onClick={() => copyChangeOrderLink(co)}
@@ -335,7 +355,7 @@ export function EstimateChangeOrdersPanel({
                       </button>
                     </div>
                     {coEmailSentTo[co.id] !== undefined && (
-                      <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                      <p className="mt-2 text-xs text-fg-subtle">
                         {coEmailSentTo[co.id]
                           ? tc("emailedTo", { email: coEmailSentTo[co.id] as string })
                           : tc("noClientEmail")}
@@ -385,7 +405,7 @@ export function EstimateChangeOrdersPanel({
       <ChangeOrderProfitabilityPanel estimateId={estimateId} currency={currency} />
 
       <form onSubmit={createChangeOrder} className="flex flex-col gap-2 sm:flex-row sm:items-end">
-        <input
+        <input aria-label={ta("title")}
           required
           placeholder={t("changeOrderTitlePlaceholder")}
           className="input"
@@ -393,7 +413,7 @@ export function EstimateChangeOrdersPanel({
           onChange={(e) => setCoForm((f) => ({ ...f, title: e.target.value }))}
         />
         <input
-          placeholder={t("changeOrderDescriptionPlaceholder")}
+          placeholder={t("changeOrderDescriptionPlaceholder")} aria-label={t("changeOrderDescriptionPlaceholder")}
           className="input"
           value={coForm.description}
           onChange={(e) => setCoForm((f) => ({ ...f, description: e.target.value }))}

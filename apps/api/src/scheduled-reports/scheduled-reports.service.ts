@@ -1,14 +1,23 @@
-import { Injectable, Logger, NotFoundException, OnModuleInit } from "@nestjs/common";
+import { ForbiddenException, Injectable, Logger, NotFoundException, OnModuleInit } from "@nestjs/common";
 import { InjectQueue } from "@nestjs/bullmq";
 import type { Queue } from "bullmq";
 import { ConfigService } from "@nestjs/config";
-import type { CreateScheduledReportInput, ScheduledReportType, UpdateScheduledReportInput } from "@cantero/shared";
+import {
+  canViewReport,
+  SCHEDULED_REPORT_KEYS,
+  type AuthUser,
+  type CreateScheduledReportInput,
+  type ScheduledReportType,
+  type UpdateScheduledReportInput,
+} from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { MailService } from "../common/mail/mail.service";
 import { SCHEDULED_REPORTS_QUEUE } from "../common/queue/queue.module";
 import { advanceDate } from "../finance/recurring-invoice-schedule";
 import { ReportsService } from "../reports/reports.service";
 import { html } from "../common/mail/html";
+import { PermissionsService } from "../common/permissions/permissions.service";
+import type { ProjectViewer } from "../common/project-access/project-access.service";
 
 const SCHEDULED_REPORTS_CHECK_INTERVAL_MS = 60 * 60 * 1000;
 
@@ -21,6 +30,16 @@ const REPORT_TYPE_LABELS: Record<ScheduledReportType, string> = {
   cash_flow_forecast: "13-week cash flow forecast",
 };
 
+/**
+ * Who a report with no recorded author runs as: no such user, so no project membership, which
+ * leaves out every restricted project (and, if the company took "projects.all" away from the
+ * accountant role, every project). Rows created before authors were recorded get this until
+ * someone saves them again; owner-level numbers would be the unsafe default.
+ */
+export const NO_AUTHOR_VIEWER: Required<ProjectViewer> = { userId: "00000000-0000-0000-0000-000000000000", role: "accountant" };
+
+type ReportRow = { id: string; companyId: string; name: string; reportType: ScheduledReportType; recipientEmails: string[]; createdById: string | null };
+
 @Injectable()
 export class ScheduledReportsService implements OnModuleInit {
   private readonly logger = new Logger(ScheduledReportsService.name);
@@ -30,6 +49,7 @@ export class ScheduledReportsService implements OnModuleInit {
     private readonly mail: MailService,
     private readonly reports: ReportsService,
     private readonly config: ConfigService,
+    private readonly permissions: PermissionsService,
     @InjectQueue(SCHEDULED_REPORTS_QUEUE) private readonly queue: Queue,
   ) {}
 
@@ -46,10 +66,13 @@ export class ScheduledReportsService implements OnModuleInit {
     return this.prisma.scheduledReport.findMany({ where: { companyId }, orderBy: { createdAt: "desc" } });
   }
 
-  create(companyId: string, input: CreateScheduledReportInput) {
+  /** `author` becomes who the report runs as — so they must be able to open that report themselves. */
+  create(companyId: string, author: AuthUser, input: CreateScheduledReportInput) {
+    this.assertCanView(author, input.reportType);
     return this.prisma.scheduledReport.create({
       data: {
         companyId,
+        createdById: author.userId,
         name: input.name,
         reportType: input.reportType,
         frequency: input.frequency,
@@ -59,11 +82,15 @@ export class ScheduledReportsService implements OnModuleInit {
     });
   }
 
-  async update(companyId: string, id: string, input: UpdateScheduledReportInput) {
-    await this.findOrThrow(companyId, id);
+  /** Whoever changes a report takes it over: otherwise anyone with reports.custom could add their
+   * own address to a report an owner created and receive the owner's view of every project. */
+  async update(companyId: string, editor: AuthUser, id: string, input: UpdateScheduledReportInput) {
+    const report = await this.findOrThrow(companyId, id);
+    this.assertCanView(editor, report.reportType);
     return this.prisma.scheduledReport.update({
       where: { id },
       data: {
+        createdById: editor.userId,
         name: input.name,
         frequency: input.frequency,
         recipientEmails: input.recipientEmails,
@@ -107,9 +134,36 @@ export class ScheduledReportsService implements OnModuleInit {
     return { sent };
   }
 
-  private async sendReport(report: { id: string; companyId: string; name: string; reportType: ScheduledReportType; recipientEmails: string[] }) {
+  private assertCanView(user: AuthUser, reportType: ScheduledReportType) {
+    if (!canViewReport(SCHEDULED_REPORT_KEYS[reportType], user.permissions)) {
+      throw new ForbiddenException("You don't have access to this report");
+    }
+  }
+
+  /**
+   * The member a report's numbers are computed for — its author with their current role, so
+   * restricted projects they can't see stay out of the email. A report whose author is gone
+   * (no longer a member, or deleted) or was never recorded runs as NO_AUTHOR_VIEWER. One whose
+   * author can no longer open that report isn't sent at all.
+   */
+  async viewerFor(report: Pick<ReportRow, "companyId" | "reportType" | "createdById">): Promise<Required<ProjectViewer>> {
+    if (!report.createdById) return NO_AUTHOR_VIEWER;
+    const membership = await this.prisma.membership.findUnique({
+      where: { userId_companyId: { userId: report.createdById, companyId: report.companyId } },
+      include: { customRole: true },
+    });
+    if (!membership) return NO_AUTHOR_VIEWER;
+    const granted = await this.permissions.effectiveFor(report.companyId, membership.role, membership.customRole);
+    if (!canViewReport(SCHEDULED_REPORT_KEYS[report.reportType], granted)) {
+      throw new ForbiddenException("The person who set up this report no longer has access to it — save it again to take it over");
+    }
+    return { userId: report.createdById, role: membership.role };
+  }
+
+  private async sendReport(report: ReportRow) {
+    const viewer = await this.viewerFor(report);
     const company = await this.prisma.company.findUniqueOrThrow({ where: { id: report.companyId } });
-    const data = await this.fetchReportData(report.companyId, report.reportType);
+    const data = await this.fetchReportData(report.companyId, report.reportType, viewer);
     const highlights = this.buildHighlights(report.reportType, data, company.currency);
     const webOrigin = this.config.get<string>("WEB_ORIGIN") ?? "http://localhost:3000";
     const typeLabel = REPORT_TYPE_LABELS[report.reportType];
@@ -127,18 +181,19 @@ export class ScheduledReportsService implements OnModuleInit {
     }
   }
 
-  private fetchReportData(companyId: string, reportType: ScheduledReportType) {
+  /** Same calls, with the same viewer, as the interactive GET /reports/<key> routes make. */
+  private fetchReportData(companyId: string, reportType: ScheduledReportType, viewer: ProjectViewer) {
     switch (reportType) {
       case "overview":
         return this.reports.overview(companyId);
       case "project_margins":
-        return this.reports.projectMargins(companyId);
+        return this.reports.projectMargins(companyId, viewer);
       case "warehouse_turnover":
         return this.reports.warehouseTurnover(companyId);
       case "invoice_aging":
-        return this.reports.invoiceAging(companyId);
+        return this.reports.invoiceAging(companyId, viewer);
       case "portfolio":
-        return this.reports.portfolio(companyId);
+        return this.reports.portfolio(companyId, viewer);
       case "cash_flow_forecast":
         return this.reports.cashFlowForecast(companyId);
     }

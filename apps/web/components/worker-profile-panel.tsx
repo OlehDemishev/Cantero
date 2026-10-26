@@ -3,7 +3,11 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { SUPPORTED_LOCALES } from "@cantero/shared";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, notifyApiError } from "@/lib/api-client";
+import { useConfirm } from "@/components/ui/confirm-dialog";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Field, FormError } from "@/components/ui/field";
 
 interface WageClassification {
   id: string;
@@ -26,9 +30,13 @@ interface WorkerProfile {
  * `onChanged` lets the parent refresh the header stats (name/role/active) after a save. */
 export function WorkerProfilePanel({ workerId, currency, onChanged }: { workerId: string; currency: string; onChanged: () => void }) {
   const t = useTranslations("team");
+  const confirm = useConfirm();
+  const td = useTranslations("dialog");
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
 
   const [worker, setWorker] = useState<WorkerProfile | null>(null);
+  const [workerError, setWorkerError] = useState<Error | null>(null);
   const [form, setForm] = useState({
     name: "",
     role: "",
@@ -59,8 +67,8 @@ export function WorkerProfilePanel({ workerId, currency, onChanged }: { workerId
         payrollEmployeeId: w.payrollEmployeeId ?? "",
         isApprentice: w.isApprentice,
       });
-    });
-    apiFetch<WageClassification[]>("/wage-classifications").then(setWageClassifications);
+    }).catch(setWorkerError);
+    apiFetch<WageClassification[]>("/wage-classifications").then(setWageClassifications).catch(notifyApiError);
   }
 
   useEffect(load, [workerId]);
@@ -122,6 +130,7 @@ export function WorkerProfilePanel({ workerId, currency, onChanged }: { workerId
   }
 
   async function clearClockInPin() {
+    if (!(await confirm({ message: td("clearClockInPin"), tone: "danger", verb: "remove" }))) return;
     setPinBusy(true);
     try {
       await apiFetch(`/workers/${workerId}/clock-in-pin`, { method: "DELETE" });
@@ -131,47 +140,44 @@ export function WorkerProfilePanel({ workerId, currency, onChanged }: { workerId
     }
   }
 
-  if (!worker) return null;
+  if (!worker) return workerError ? <ErrorState error={workerError} onRetry={load} compact /> : <Skeleton lines={3} />;
 
   return (
     <>
       <form onSubmit={saveProfile} className="card flex flex-col gap-3">
         <input
           required
-          placeholder={tc("name")}
+          placeholder={tc("name")} aria-label={tc("name")}
           className="input"
           value={form.name}
           onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
         />
         <input
-          placeholder={t("role")}
+          placeholder={t("role")} aria-label={t("role")}
           className="input"
           value={form.role}
           onChange={(e) => setForm((f) => ({ ...f, role: e.target.value }))}
         />
-        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
-          {t("hourlyCost")} ({currency})
+        <Field label={`${t("hourlyCost")} (${currency})`} size="sm">
           <input
             type="number"
             step="0.01"
-            className="input mt-1"
+            className="input"
             value={form.hourlyCost}
             onChange={(e) => setForm((f) => ({ ...f, hourlyCost: e.target.value }))}
           />
-        </label>
-        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
-          {t("payrollEmployeeId")}
+        </Field>
+        <Field label={t("payrollEmployeeId")} size="sm">
           <input
             placeholder={t("payrollEmployeeIdPlaceholder")}
-            className="input mt-1"
+            className="input"
             value={form.payrollEmployeeId}
             onChange={(e) => setForm((f) => ({ ...f, payrollEmployeeId: e.target.value }))}
           />
-        </label>
-        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
-          {t("wageClassification")}
+        </Field>
+        <Field label={t("wageClassification")} size="sm">
           <select
-            className="input mt-1"
+            className="input"
             value={form.wageClassificationId}
             onChange={(e) => setForm((f) => ({ ...f, wageClassificationId: e.target.value }))}
           >
@@ -182,25 +188,23 @@ export function WorkerProfilePanel({ workerId, currency, onChanged }: { workerId
               </option>
             ))}
           </select>
-        </label>
-        <label className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+        </Field>
+        <label className="flex items-center gap-2 text-xs text-fg-subtle">
           <input type="checkbox" checked={form.isApprentice} onChange={(e) => setForm((f) => ({ ...f, isApprentice: e.target.checked }))} />
           {t("isApprentice")}
         </label>
-        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
-          {t("phone")}
+        <Field label={t("phone")} size="sm">
           <input
             type="tel"
             placeholder={t("phonePlaceholder")}
-            className="input mt-1"
+            className="input"
             value={form.phone}
             onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
           />
-        </label>
-        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
-          {t("preferredLocale")}
+        </Field>
+        <Field label={t("preferredLocale")} size="sm">
           <select
-            className="input mt-1"
+            className="input"
             value={form.preferredLocale}
             onChange={(e) => setForm((f) => ({ ...f, preferredLocale: e.target.value }))}
           >
@@ -211,30 +215,30 @@ export function WorkerProfilePanel({ workerId, currency, onChanged }: { workerId
               </option>
             ))}
           </select>
-        </label>
+        </Field>
         <div className="flex items-center gap-2">
           <button type="submit" disabled={busy} className="btn-primary">
             {tc("save")}
           </button>
-          {saved && <span className="text-xs text-success-700 dark:text-success-500">{tc("saved")}</span>}
+          {saved && <span className="text-xs text-success-fg">{tc("saved")}</span>}
         </div>
       </form>
       <button onClick={toggleActive} disabled={busy} className="btn-secondary mt-3 w-full">
         {worker.active ? t("deactivate") : t("reactivate")}
       </button>
 
-      <h2 className="mb-3 mt-8 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("kioskPin")}</h2>
-      <p className="mb-2 text-xs text-gray-500 dark:text-gray-400">{t("kioskPinHint")}</p>
+      <h2 className="mb-3 mt-8 text-sm font-semibold text-fg-muted">{t("kioskPin")}</h2>
+      <p className="mb-2 text-xs text-fg-subtle">{t("kioskPinHint")}</p>
       {worker.hasClockInPin ? (
         <div className="flex items-center justify-between">
-          <span className="text-xs text-success-700 dark:text-success-500">{t("kioskPinSet")}</span>
-          <button onClick={clearClockInPin} disabled={pinBusy} className="text-xs text-error-700 dark:text-error-500 hover:underline">
+          <span className="text-xs text-success-fg">{t("kioskPinSet")}</span>
+          <button onClick={clearClockInPin} disabled={pinBusy} className="text-xs text-danger-fg hover:underline">
             {t("kioskPinClear")}
           </button>
         </div>
       ) : (
         <form onSubmit={setClockInPin} className="flex items-center gap-2">
-          <input
+          <input aria-label={ta("pin")}
             type="text"
             inputMode="numeric"
             pattern="\d{4,6}"
@@ -248,7 +252,7 @@ export function WorkerProfilePanel({ workerId, currency, onChanged }: { workerId
           </button>
         </form>
       )}
-      {pinError && <p className="mt-1 text-xs text-error-700 dark:text-error-500">{pinError}</p>}
+      {pinError && <FormError className="mt-1">{pinError}</FormError>}
     </>
   );
 }

@@ -1,8 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
+import { formatCurrency } from "@/lib/format-currency";
+import { Field, FormError } from "@/components/ui/field";
 
 interface FranchiseBranch {
   companyId: string;
@@ -27,15 +30,11 @@ interface FranchiseOverview {
 export function FranchisePanel() {
   const t = useTranslations("settings");
   const tc = useTranslations("common");
-  const [franchiseOverview, setFranchiseOverview] = useState<FranchiseOverview | null>(null);
+  const { data: franchiseOverview = null } = useApi<FranchiseOverview>("/company/franchise-overview");
   const [franchiseLinkCode, setFranchiseLinkCode] = useState<string | null>(null);
   const [linkCodeInput, setLinkCodeInput] = useState("");
   const [franchiseBusy, setFranchiseBusy] = useState(false);
   const [franchiseError, setFranchiseError] = useState<string | null>(null);
-
-  useEffect(() => {
-    apiFetch<FranchiseOverview>("/company/franchise-overview").then(setFranchiseOverview);
-  }, []);
 
   async function generateFranchiseLinkCode() {
     setFranchiseBusy(true);
@@ -69,24 +68,24 @@ export function FranchisePanel() {
 
   return (
     <section className="card lg:col-span-2">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("franchise")}</h2>
-      <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">{t("franchiseHint")}</p>
+      <h2 className="mb-1 text-sm font-semibold text-fg-muted">{t("franchise")}</h2>
+      <p className="mb-4 text-xs text-fg-subtle">{t("franchiseHint")}</p>
 
-      {franchiseError && <p className="mb-3 text-xs text-red-600">{franchiseError}</p>}
+      {franchiseError && <FormError className="mb-3">{franchiseError}</FormError>}
 
       {franchiseOverview && franchiseOverview.branches.length > 0 ? (
         <>
-          <p className="mb-2 text-xs text-gray-500 dark:text-gray-400">{t("reportingIn", { currency: franchiseOverview.reportingCurrency ?? "" })}</p>
-          <div className="overflow-x-auto">
+          <p className="mb-2 text-xs text-fg-subtle">{t("reportingIn", { currency: franchiseOverview.reportingCurrency ?? "" })}</p>
+          <div tabIndex={0} className="overflow-x-auto">
           <table className="w-full border-collapse text-sm">
             <thead>
-              <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
-                <th className="py-2">{tc("name")}</th>
-                <th className="py-2">{t("branchRevenue")}</th>
-                <th className="py-2">{t("branchCost")}</th>
-                <th className="py-2">{t("branchMargin")}</th>
-                <th className="py-2">{t("branchProjects")}</th>
-                <th className="py-2">{t("branchMembers")}</th>
+              <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
+                <th scope="col" className="py-2">{tc("name")}</th>
+                <th scope="col" className="py-2">{t("branchRevenue")}</th>
+                <th scope="col" className="py-2">{t("branchCost")}</th>
+                <th scope="col" className="py-2">{t("branchMargin")}</th>
+                <th scope="col" className="py-2">{t("branchProjects")}</th>
+                <th scope="col" className="py-2">{t("branchMembers")}</th>
               </tr>
             </thead>
             <tbody>
@@ -94,34 +93,34 @@ export function FranchisePanel() {
                 <tr key={b.companyId} className="border-b border-gray-100 dark:border-gray-700">
                   <td className="py-2">{b.name}</td>
                   <td className="py-2">
-                    {b.revenueConverted.toFixed(2)} {franchiseOverview.reportingCurrency}
+                    {formatCurrency(b.revenueConverted, franchiseOverview.reportingCurrency)}
                     {b.currency !== franchiseOverview.reportingCurrency && (
-                      <span className="ml-1 text-xs text-gray-400 dark:text-gray-500">
-                        ({b.revenue.toFixed(2)} {b.currency})
+                      <span className="ml-1 text-xs text-fg-subtle">
+                        ({formatCurrency(b.revenue, b.currency)})
                       </span>
                     )}
                   </td>
                   <td className="py-2">
-                    {b.costConverted.toFixed(2)} {franchiseOverview.reportingCurrency}
+                    {formatCurrency(b.costConverted, franchiseOverview.reportingCurrency)}
                   </td>
-                  <td className={`py-2 font-medium ${b.marginConverted >= 0 ? "text-success-700 dark:text-success-500" : "text-error-700 dark:text-error-500"}`}>
-                    {b.marginConverted.toFixed(2)} {franchiseOverview.reportingCurrency}
+                  <td className={`py-2 font-medium ${b.marginConverted >= 0 ? "text-success-fg" : "text-danger-fg"}`}>
+                    {formatCurrency(b.marginConverted, franchiseOverview.reportingCurrency)}
                   </td>
                   <td className="py-2">{b.projectCount}</td>
                   <td className="py-2">{b.memberCount}</td>
                 </tr>
               ))}
               {franchiseOverview.totals && (
-                <tr className="font-medium text-gray-700 dark:text-gray-200">
+                <tr className="font-medium text-fg-muted">
                   <td className="py-2">{t("total")}</td>
                   <td className="py-2">
-                    {franchiseOverview.totals.revenue.toFixed(2)} {franchiseOverview.reportingCurrency}
+                    {formatCurrency(franchiseOverview.totals.revenue, franchiseOverview.reportingCurrency)}
                   </td>
                   <td className="py-2">
-                    {franchiseOverview.totals.cost.toFixed(2)} {franchiseOverview.reportingCurrency}
+                    {formatCurrency(franchiseOverview.totals.cost, franchiseOverview.reportingCurrency)}
                   </td>
-                  <td className={franchiseOverview.totals.margin >= 0 ? "py-2 text-success-700 dark:text-success-500" : "py-2 text-error-700 dark:text-error-500"}>
-                    {franchiseOverview.totals.margin.toFixed(2)} {franchiseOverview.reportingCurrency}
+                  <td className={franchiseOverview.totals.margin >= 0 ? "py-2 text-success-fg" : "py-2 text-danger-fg"}>
+                    {formatCurrency(franchiseOverview.totals.margin, franchiseOverview.reportingCurrency)}
                   </td>
                   <td className="py-2">{franchiseOverview.totals.projectCount}</td>
                   <td className="py-2">{franchiseOverview.totals.memberCount}</td>
@@ -138,19 +137,18 @@ export function FranchisePanel() {
               {t("generateLinkCode")}
             </button>
             {franchiseLinkCode && (
-              <p className="mt-2 font-mono text-xs text-gray-700 dark:text-gray-200">{franchiseLinkCode}</p>
+              <p className="mt-2 font-mono text-xs text-fg-muted">{franchiseLinkCode}</p>
             )}
           </div>
           <form onSubmit={linkToParentCompany} className="flex items-end gap-2">
-            <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
-              {t("linkToParentCode")}
+            <Field label={t("linkToParentCode")} size="sm">
               <input
                 type="text"
-                className="input mt-1"
+                className="input"
                 value={linkCodeInput}
                 onChange={(e) => setLinkCodeInput(e.target.value)}
               />
-            </label>
+            </Field>
             <button type="submit" disabled={franchiseBusy || !linkCodeInput} className="btn-secondary">
               {t("linkToParent")}
             </button>

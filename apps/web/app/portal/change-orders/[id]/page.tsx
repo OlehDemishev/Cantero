@@ -4,9 +4,13 @@ import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { getPortalToken, portalApiFetch } from "@/lib/portal-api-client";
-import { ApiError, downloadBlob } from "@/lib/api-client";
+import { downloadBlob } from "@/lib/api-client";
 import { SignaturePad } from "@/components/signature-pad";
 import { formatDateTime } from "@/lib/format-date";
+import { formatCurrency } from "@/lib/format-currency";
+import { PublicLinkError } from "@/components/public-link-error";
+import { Alert } from "@/components/ui/alert";
+import { Field, FormError } from "@/components/ui/field";
 
 interface PortalLine {
   id: string;
@@ -39,11 +43,12 @@ interface PortalChangeOrder {
 export default function PortalChangeOrderPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const t = useTranslations("portal");
+  const tp = useTranslations("publicLink");
   const te = useTranslations("estimates");
   const router = useRouter();
 
   const [co, setCo] = useState<PortalChangeOrder | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<unknown>(null);
   const [note, setNote] = useState("");
   const [signerName, setSignerName] = useState("");
   const [signatureDataUrl, setSignatureDataUrl] = useState<string | null>(null);
@@ -56,10 +61,12 @@ export default function PortalChangeOrderPage({ params }: { params: Promise<{ id
       .then((c) => {
         setCo(c);
         if (c.hasSignature) {
-          portalApiFetch<Blob>(`/portal/change-orders/${id}/signature`).then((blob) => setSignatureUrl(URL.createObjectURL(blob)));
+          portalApiFetch<Blob>(`/portal/change-orders/${id}/signature`)
+            .then((blob) => setSignatureUrl(URL.createObjectURL(blob)))
+            .catch(() => setSignatureUrl(null));
         }
       })
-      .catch((err) => setError(err instanceof ApiError ? err.message : te("linkNotFound")));
+      .catch(setLoadError);
   }
 
   useEffect(() => {
@@ -99,17 +106,22 @@ export default function PortalChangeOrderPage({ params }: { params: Promise<{ id
     downloadBlob(blob, `CO-${co?.number ?? ""}.pdf`);
   }
 
-  if (error) {
+  if (loadError) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-700 px-6 py-12">
-        <p className="text-sm text-gray-500 dark:text-gray-400">{error}</p>
-      </main>
+      <PublicLinkError
+        error={loadError}
+        action={
+          <a href="/portal" className="btn-primary inline-block">
+            {tp("backToPortal")}
+          </a>
+        }
+      />
     );
   }
   if (!co) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-700 px-6 py-12">
-        <p className="text-sm text-gray-500 dark:text-gray-400">{t("loading")}</p>
+        <p className="text-sm text-fg-subtle">{t("loading")}</p>
       </main>
     );
   }
@@ -117,25 +129,25 @@ export default function PortalChangeOrderPage({ params }: { params: Promise<{ id
   return (
     <main className="flex min-h-screen justify-center bg-gray-50 dark:bg-gray-700 px-6 py-12">
       <div className="w-full max-w-2xl">
-        <a href="/portal" className="mb-4 inline-block text-xs text-gray-500 dark:text-gray-400 hover:underline">
+        <a href="/portal" className="mb-4 inline-block text-xs text-fg-subtle hover:underline">
           ← {co.companyName}
         </a>
         <div className="card">
-          <p className="text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">
+          <p className="text-xs font-medium uppercase tracking-wide text-fg-subtle">
             {te("changeOrderFor", { estimateName: co.estimateName })}
           </p>
-          <h1 className="mt-1 text-xl font-semibold text-gray-900 dark:text-gray-50">
+          <h1 className="mt-1 text-xl font-semibold text-fg">
             CO-{co.number} — {co.title}
           </h1>
-          {co.description && <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{co.description}</p>}
+          {co.description && <p className="mt-1 text-sm text-fg-subtle">{co.description}</p>}
 
-          <div className="mt-6 overflow-x-auto">
+          <div tabIndex={0} className="mt-6 overflow-x-auto">
             <table className="w-full min-w-[420px] border-collapse text-sm">
               <thead>
-                <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
-                  <th className="py-2">{te("rateItem")}</th>
-                  <th>{te("quantity")}</th>
-                  <th className="text-right">{te("lineTotal")}</th>
+                <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
+                  <th scope="col" className="py-2">{te("rateItem")}</th>
+                  <th scope="col">{te("quantity")}</th>
+                  <th scope="col" className="text-right">{te("lineTotal")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -146,7 +158,7 @@ export default function PortalChangeOrderPage({ params }: { params: Promise<{ id
                       {l.quantity} {l.unit}
                     </td>
                     <td className="text-right">
-                      {l.lineTotal} {co.currency}
+                      {formatCurrency(l.lineTotal, co.currency)}
                     </td>
                   </tr>
                 ))}
@@ -156,52 +168,50 @@ export default function PortalChangeOrderPage({ params }: { params: Promise<{ id
 
           <dl className="mt-4 flex flex-col gap-1.5 text-sm">
             <div className="flex justify-between">
-              <dt className="text-gray-500 dark:text-gray-400">{te("subtotal")}</dt>
+              <dt className="text-fg-subtle">{te("subtotal")}</dt>
               <dd>
-                {co.subtotal} {co.currency}
+                {formatCurrency(co.subtotal, co.currency)}
               </dd>
             </div>
             <div className="flex justify-between">
-              <dt className="text-gray-500 dark:text-gray-400">{te("markupAmount")}</dt>
+              <dt className="text-fg-subtle">{te("markupAmount")}</dt>
               <dd>
-                {co.markupAmount} {co.currency}
+                {formatCurrency(co.markupAmount, co.currency)}
               </dd>
             </div>
             <div className="flex justify-between">
-              <dt className="text-gray-500 dark:text-gray-400">{te("taxAmount")}</dt>
+              <dt className="text-fg-subtle">{te("taxAmount")}</dt>
               <dd>
-                {co.taxAmount} {co.currency}
+                {formatCurrency(co.taxAmount, co.currency)}
               </dd>
             </div>
             <div className="flex justify-between border-t border-gray-200 dark:border-gray-700 pt-2 font-semibold">
               <dt>{te("grandTotal")}</dt>
               <dd>
-                {co.grandTotal} {co.currency}
+                {formatCurrency(co.grandTotal, co.currency)}
               </dd>
             </div>
           </dl>
 
           {co.clientDecision === "pending" ? (
             <div className="mt-6 border-t border-gray-100 dark:border-gray-700 pt-4">
-              <label className="flex flex-col gap-1.5 text-sm">
-                <span className="font-medium text-gray-700 dark:text-gray-200">{te("clientNoteOptional")}</span>
+              <Field label={te("clientNoteOptional")}>
                 <textarea rows={2} className="input" value={note} onChange={(e) => setNote(e.target.value)} />
-              </label>
+              </Field>
 
-              <div className="mt-4 flex flex-col gap-1.5 text-sm">
-                <span className="font-medium text-gray-700 dark:text-gray-200">{te("signerNameLabel")}</span>
+              <Field label={te("signerNameLabel")} className="mt-4">
                 <input
                   className="input"
                   placeholder={te("signerNamePlaceholder")}
                   value={signerName}
                   onChange={(e) => setSignerName(e.target.value)}
                 />
-              </div>
+              </Field>
               <div className="mt-3 flex flex-col gap-1.5 text-sm">
-                <span className="font-medium text-gray-700 dark:text-gray-200">{te("signHere")}</span>
+                <span className="font-medium text-fg-muted">{te("signHere")}</span>
                 <SignaturePad onChange={setSignatureDataUrl} clearLabel={te("clearSignature")} />
               </div>
-              {signatureError && <p className="mt-2 text-xs text-error-600">{signatureError}</p>}
+              {signatureError && <FormError className="mt-2">{signatureError}</FormError>}
 
               <div className="mt-3 flex gap-2">
                 <button onClick={() => decide("approved")} disabled={busy} className="btn-primary flex-1">
@@ -213,13 +223,7 @@ export default function PortalChangeOrderPage({ params }: { params: Promise<{ id
               </div>
             </div>
           ) : (
-            <div
-              className={`mt-6 rounded-lg border-t px-4 py-3 text-sm ${
-                co.clientDecision === "approved"
-                  ? "border-success-200 bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500"
-                  : "border-error-200 bg-error-50 dark:bg-error-500/15 text-error-700 dark:text-error-500"
-              }`}
-            >
+            <Alert tone={co.clientDecision === "approved" ? "success" : "danger"} className="mt-6" role="status">
               {co.clientDecision === "approved" ? te("clientDecisionThanksApproved") : te("clientDecisionThanksRejected")}
               {co.decisionAt && <span className="block text-xs opacity-75">{formatDateTime(new Date(co.decisionAt))}</span>}
               {co.signerName && (
@@ -228,7 +232,7 @@ export default function PortalChangeOrderPage({ params }: { params: Promise<{ id
                   <span className="text-xs opacity-75">{te("signedBy", { name: co.signerName })}</span>
                 </div>
               )}
-            </div>
+            </Alert>
           )}
 
           <button onClick={downloadPdf} className="btn-secondary mt-4">

@@ -321,7 +321,14 @@ model Company {
   /// password login, and is just-in-time provisioned (as "worker") on first successful sign-in.
   /// ssoIssuer/ssoCert describe the IdP (its entity ID and signing certificate) — our own SP
   /// entity ID is derived per-company, not stored here.
-  ssoDomain                            String?                @unique
+  /// ssoDomain is only a claim until the company proves it controls the domain's DNS (a TXT record
+  /// at _cantero-sso.<domain> holding ssoDomainVerificationToken). ssoVerifiedDomain is set to the
+  /// same string once verified and is what login routing and provisioning use; its unique index
+  /// means only one company can hold a domain verified, while an unverified claim blocks nobody.
+  ssoDomain                            String?
+  ssoDomainVerificationToken           String?
+  ssoDomainVerifiedAt                  DateTime?
+  ssoVerifiedDomain                    String?                @unique
   ssoEntryPoint                        String?
   ssoIssuer                            String?
   ssoCert                              String?
@@ -519,6 +526,7 @@ model Company {
   gobdLedgerAnchors               GobdLedgerAnchor[]
   intacctConnection               IntacctConnection?
   samlConsumedAssertions          SamlConsumedAssertion[]
+  ssoLoginCodes                   SsoLoginCode[]
   expenses                        Expense[]
   materialRfqs                    MaterialRfq[]
   customRoles                     CustomRole[]
@@ -844,8 +852,10 @@ model User {
   commentMentions     CommentMention[]
   savedViews          SavedView[]
   customReports       CustomReport[]
+  scheduledReports    ScheduledReport[]    @relation("ScheduledReportCreator")
   sessions            UserSession[]
   passwordResetTokens PasswordResetToken[]
+  ssoLoginCodes       SsoLoginCode[]
   notificationReads   NotificationRead[]
   dashboardWidgets    DashboardWidget[]
   projectMemberships  ProjectMember[]
@@ -860,6 +870,10 @@ model User {
 model UserSession {
   id         String    @id @default(uuid())
   userId     String
+  /// The company the session's access token was issued for, so a company can sign a person out of
+  /// its own workspace (SCIM deactivation) without touching their sessions elsewhere. Null on
+  /// sessions created before this column existed.
+  companyId  String?
   createdAt  DateTime  @default(now())
   lastSeenAt DateTime  @default(now())
   userAgent  String?
@@ -869,6 +883,7 @@ model UserSession {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  @@index([userId, companyId])
   @@map("user_sessions")
 }
 
@@ -2122,19 +2137,22 @@ model StockCountLine {
 }
 
 model Supplier {
-  id           String  @id @default(uuid())
-  companyId    String
-  name         String
-  email        String?
-  phone        String?
+  id                 String  @id @default(uuid())
+  companyId          String
+  name               String
+  email              String?
+  /// Bumped when the supplier signs out of the portal: a portal token carries the value it was issued
+  /// with and stops working once they differ (see SupplierPortalAuthGuard).
+  portalTokenVersion Int     @default(0)
+  phone              String?
   /// VAT/tax identification number (e.g. German "USt-IdNr.") — used to match this supplier
   /// against the seller identity on an incoming e-invoice (see IncomingEInvoicesService). Not
   /// required for domestic suppliers who never send structured e-invoices.
-  vatId        String?
+  vatId              String?
   /// This supplier's Vendor ID inside the company's Sage 300 CRE (max 10 chars there) — the AP
   /// invoice export writes it verbatim, since Sage rejects any invoice whose vendor it doesn't
   /// already know. Nothing here can guess it, so it's entered by hand.
-  sageVendorId String?
+  sageVendorId       String?
 
   company                     Company                      @relation(fields: [companyId], references: [id], onDelete: Cascade)
   purchaseOrders              PurchaseOrder[]
@@ -3681,6 +3699,9 @@ model Subcontractor {
   companyId                       String
   name                            String
   email                           String?
+  /// Bumped when the subcontractor signs out of the portal: a portal token carries the value it was issued
+  /// with and stops working once they differ (see SubcontractorPortalAuthGuard).
+  portalTokenVersion              Int                              @default(0)
   phone                           String?
   /// Self-described trade/specialty (e.g. "Electrical", "Framing") shown on the public profile.
   specialization                  String?
@@ -4078,9 +4099,15 @@ model ScheduledReport {
   active          Boolean                  @default(true)
   nextRunAt       DateTime
   lastSentAt      DateTime?
+  /// Who the report runs as: whoever created it or last changed it. Its numbers leave out the
+  /// restricted projects that member can't see, and it isn't sent once they lose the report's
+  /// permission. Null for reports from before this was recorded (or whose author was deleted):
+  /// those run with every restricted project left out — see ScheduledReportsService.viewerFor().
+  createdById     String?
   createdAt       DateTime                 @default(now())
 
-  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdBy User?   @relation("ScheduledReportCreator", fields: [createdById], references: [id], onDelete: SetNull)
 
   @@index([companyId])
   @@index([active, nextRunAt])
@@ -4775,6 +4802,26 @@ model SamlConsumedAssertion {
   @@map("saml_consumed_assertions")
 }
 
+/// One-time code the SAML ACS endpoint hands the browser in place of an access token (see
+/// SsoService.handleAcs/exchangeCode): valid for a minute, deleted on the first exchange attempt,
+/// and redeemable only together with the nonce the login page put in RelayState, so a code alone —
+/// from history, a log or a link someone was sent — signs no one in. Only hashes are stored.
+model SsoLoginCode {
+  id        String   @id @default(uuid())
+  codeHash  String   @unique
+  nonceHash String
+  userId    String
+  companyId String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([expiresAt])
+  @@map("sso_login_codes")
+}
+
 /// One connected "Project for the Web" environment per company — same OAuth2 shape as
 /// DocuSign/QuickBooks/Xero (see MsProjectService), but for Microsoft's modern cloud Project
 /// product, which stores its data in a Power Platform/Dataverse environment rather than behind
@@ -5091,6 +5138,9 @@ model Client {
   companyId                String
   name                     String
   email                    String?
+  /// Bumped when the client signs out of the portal: a portal token carries the value it was issued
+  /// with and stops working once they differ (see PortalAuthGuard).
+  portalTokenVersion       Int                  @default(0)
   phone                    String?
   stage                    ClientStage          @default(lead)
   notes                    String?

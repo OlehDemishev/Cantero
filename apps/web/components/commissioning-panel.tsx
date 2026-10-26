@@ -1,10 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import type { CommissioningSystemStatus, FunctionalTestResult } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate } from "@/lib/format-date";
+import { Badge } from "@/components/ui/badge";
+import { statusTone } from "@/lib/status-tone";
 
 interface ChecklistItem {
   id: string;
@@ -37,17 +42,12 @@ interface CommissioningSystem {
   trainingSessions: TrainingSession[];
 }
 
-const STATUS_STYLES: Record<CommissioningSystemStatus, string> = {
-  pending_testing: "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300",
-  testing: "bg-warning-50 dark:bg-warning-500/15 text-warning-700 dark:text-warning-500",
-  complete: "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500",
-};
-
 export function CommissioningPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("commissioning");
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
 
-  const [systems, setSystems] = useState<CommissioningSystem[] | null>(null);
+  const { data: systems = null, reload: reloadSystems, error: systemsError } = useApi<CommissioningSystem[]>(`/projects/${projectId}/commissioning-systems`);
   const [adding, setAdding] = useState(false);
   const [form, setForm] = useState({ name: "", category: "" });
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -59,9 +59,8 @@ export function CommissioningPanel({ projectId }: { projectId: string }) {
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<CommissioningSystem[]>(`/projects/${projectId}/commissioning-systems`).then(setSystems);
+    void reloadSystems();
   }
-  useEffect(load, [projectId]);
 
   async function createSystem(e: React.FormEvent) {
     e.preventDefault();
@@ -153,19 +152,19 @@ export function CommissioningPanel({ projectId }: { projectId: string }) {
   return (
     <div className="mt-10">
       <div className="mb-1 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
+        <h2 className="text-sm font-semibold text-fg-muted">{t("title")}</h2>
         {!adding && (
           <button onClick={() => setAdding(true)} className="btn-secondary px-2.5 py-1 text-xs">
             {t("addSystem")}
           </button>
         )}
       </div>
-      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("hint")}</p>
+      <p className="mb-3 text-xs text-fg-subtle">{t("hint")}</p>
 
       {adding && (
         <form onSubmit={createSystem} className="card mb-3 flex flex-wrap items-end gap-2">
-          <input required placeholder={t("namePlaceholder")} className="input flex-1" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
-          <input placeholder={t("categoryPlaceholder")} className="input w-40" value={form.category} onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))} />
+          <input required placeholder={t("namePlaceholder")} aria-label={t("namePlaceholder")} className="input flex-1" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
+          <input placeholder={t("categoryPlaceholder")} aria-label={t("categoryPlaceholder")} className="input w-40" value={form.category} onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))} />
           <button type="submit" disabled={busy} className="btn-primary">
             {tc("save")}
           </button>
@@ -176,9 +175,9 @@ export function CommissioningPanel({ projectId }: { projectId: string }) {
       )}
 
       {!systems ? (
-        <p className="text-sm text-gray-500 dark:text-gray-400">{tc("loading")}</p>
+        systemsError ? <ErrorState error={systemsError} onRetry={reloadSystems} compact /> : <Skeleton lines={3} />
       ) : systems.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noSystems")}</p>
+        <p className="text-sm text-fg-subtle">{t("noSystems")}</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {systems.map((sys) => {
@@ -186,30 +185,32 @@ export function CommissioningPanel({ projectId }: { projectId: string }) {
             return (
               <li key={sys.id} className="card">
                 <button onClick={() => setExpandedId(expanded ? null : sys.id)} className="flex w-full items-center justify-between text-left">
-                  <span className="text-sm font-medium text-gray-900 dark:text-gray-50">
+                  <span className="text-sm font-medium text-fg">
                     {sys.name}
-                    {sys.category && <span className="ml-1.5 text-xs text-gray-400 dark:text-gray-500">({sys.category})</span>}
+                    {sys.category && <span className="ml-1.5 text-xs text-fg-subtle">({sys.category})</span>}
                   </span>
-                  <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[sys.status]}`}>{t(`status_${sys.status}`)}</span>
+                  <Badge tone={statusTone(sys.status)}>{t(`status_${sys.status}`)}</Badge>
                 </button>
 
                 {expanded && (
                   <div className="mt-3 flex flex-col gap-4 border-t border-gray-100 dark:border-gray-700 pt-3">
                     <div>
-                      <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("checklist")}</h3>
+                      <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-fg-subtle">{t("checklist")}</h3>
                       {sys.checklistItems.length > 0 && (
                         <ul className="mb-2 flex flex-col gap-1">
                           {sys.checklistItems.map((item) => (
-                            <li key={item.id} className="flex items-center gap-2 text-sm">
-                              <input type="checkbox" checked={item.done} onChange={() => toggleChecklistItem(item.id)} />
-                              <span className={item.done ? "text-gray-400 dark:text-gray-500 line-through" : "text-gray-700 dark:text-gray-200"}>{item.description}</span>
+                            <li key={item.id} className=" text-sm">
+                              <label className="flex items-center gap-2">
+                                <input type="checkbox" checked={item.done} onChange={() => toggleChecklistItem(item.id)} />
+                                <span className={item.done ? "text-fg-subtle line-through" : "text-fg-muted"}>{item.description}</span>
+                              </label>
                             </li>
                           ))}
                         </ul>
                       )}
                       <div className="flex gap-2">
                         <input
-                          placeholder={t("checklistItemPlaceholder")}
+                          placeholder={t("checklistItemPlaceholder")} aria-label={t("checklistItemPlaceholder")}
                           className="input flex-1"
                           value={checklistText}
                           onChange={(e) => setChecklistText(e.target.value)}
@@ -221,12 +222,12 @@ export function CommissioningPanel({ projectId }: { projectId: string }) {
                     </div>
 
                     <div>
-                      <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("functionalTests")}</h3>
+                      <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-fg-subtle">{t("functionalTests")}</h3>
                       {sys.functionalTests.length > 0 && (
                         <ul className="mb-2 flex flex-col gap-1 text-xs">
                           {sys.functionalTests.map((test) => (
                             <li key={test.id}>
-                              <span className={test.result === "fail" ? "font-medium text-error-700 dark:text-error-500" : "text-success-700 dark:text-success-500"}>{t(`result_${test.result}`)}</span> —{" "}
+                              <span className={test.result === "fail" ? "font-medium text-danger-fg" : "text-success-fg"}>{t(`result_${test.result}`)}</span> —{" "}
                               {test.procedure} ({test.testedByName}, {formatDate(new Date(test.testedAt))})
                             </li>
                           ))}
@@ -234,17 +235,17 @@ export function CommissioningPanel({ projectId }: { projectId: string }) {
                       )}
                       <div className="flex flex-wrap gap-2">
                         <input
-                          placeholder={t("procedurePlaceholder")}
+                          placeholder={t("procedurePlaceholder")} aria-label={t("procedurePlaceholder")}
                           className="input flex-1"
                           value={testForm.procedure}
                           onChange={(e) => setTestForm((f) => ({ ...f, procedure: e.target.value }))}
                         />
-                        <select className="input" value={testForm.result} onChange={(e) => setTestForm((f) => ({ ...f, result: e.target.value as FunctionalTestResult }))}>
+                        <select aria-label={ta("result")} className="input" value={testForm.result} onChange={(e) => setTestForm((f) => ({ ...f, result: e.target.value as FunctionalTestResult }))}>
                           <option value="pass">{t("result_pass")}</option>
                           <option value="fail">{t("result_fail")}</option>
                         </select>
                         <input
-                          placeholder={t("testedByPlaceholder")}
+                          placeholder={t("testedByPlaceholder")} aria-label={t("testedByPlaceholder")}
                           className="input w-32"
                           value={testForm.testedByName}
                           onChange={(e) => setTestForm((f) => ({ ...f, testedByName: e.target.value }))}
@@ -256,7 +257,7 @@ export function CommissioningPanel({ projectId }: { projectId: string }) {
                     </div>
 
                     <div>
-                      <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("ownerTraining")}</h3>
+                      <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-fg-subtle">{t("ownerTraining")}</h3>
                       {sys.trainingSessions.length > 0 && (
                         <ul className="mb-2 flex flex-col gap-1.5 text-xs">
                           {sys.trainingSessions.map((session) => (
@@ -264,15 +265,15 @@ export function CommissioningPanel({ projectId }: { projectId: string }) {
                               <div className="flex items-center justify-between">
                                 <span>
                                   {session.trainerName} — {formatDate(new Date(session.trainingDate))}
-                                  {session.attendeeNames && <span className="text-gray-400 dark:text-gray-500"> · {session.attendeeNames}</span>}
+                                  {session.attendeeNames && <span className="text-fg-subtle"> · {session.attendeeNames}</span>}
                                 </span>
                                 {session.ownerSignedOffAt ? (
-                                  <span className="text-success-700 dark:text-success-500">{t("signedOffBy", { name: session.ownerSignerName ?? "" })}</span>
+                                  <span className="text-success-fg">{t("signedOffBy", { name: session.ownerSignerName ?? "" })}</span>
                                 ) : signingId === session.id ? (
                                   <span className="flex items-center gap-1.5">
                                     <input
                                       className="input w-32 py-0.5 text-xs"
-                                      placeholder={t("ownerSignerPlaceholder")}
+                                      placeholder={t("ownerSignerPlaceholder")} aria-label={t("ownerSignerPlaceholder")}
                                       value={signerName}
                                       onChange={(e) => setSignerName(e.target.value)}
                                     />
@@ -292,19 +293,19 @@ export function CommissioningPanel({ projectId }: { projectId: string }) {
                       )}
                       <div className="flex flex-wrap gap-2">
                         <input
-                          placeholder={t("trainerNamePlaceholder")}
+                          placeholder={t("trainerNamePlaceholder")} aria-label={t("trainerNamePlaceholder")}
                           className="input"
                           value={trainingForm.trainerName}
                           onChange={(e) => setTrainingForm((f) => ({ ...f, trainerName: e.target.value }))}
                         />
-                        <input
+                        <input aria-label={ta("date")}
                           type="date"
                           className="input"
                           value={trainingForm.trainingDate}
                           onChange={(e) => setTrainingForm((f) => ({ ...f, trainingDate: e.target.value }))}
                         />
                         <input
-                          placeholder={t("attendeeNamesPlaceholder")}
+                          placeholder={t("attendeeNamesPlaceholder")} aria-label={t("attendeeNamesPlaceholder")}
                           className="input flex-1"
                           value={trainingForm.attendeeNames}
                           onChange={(e) => setTrainingForm((f) => ({ ...f, attendeeNames: e.target.value }))}

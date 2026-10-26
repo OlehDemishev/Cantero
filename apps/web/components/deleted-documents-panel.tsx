@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { formatDateTime } from "@/lib/format-date";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface DeletedDocument {
   id: string;
@@ -23,15 +25,17 @@ export function DeletedDocumentsPanel() {
   const t = useTranslations("documents");
   const tc = useTranslations("common");
   const [documents, setDocuments] = useState<DeletedDocument[] | null>(null);
+  const [documentsError, setDocumentsError] = useState<Error | null>(null);
   const [restoringId, setRestoringId] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(false);
   const [loadMoreBusy, setLoadMoreBusy] = useState(false);
 
   function load() {
     apiFetch<DeletedDocument[]>("/documents/deleted").then((page) => {
+      setDocumentsError(null);
       setDocuments(page);
       setHasMore(page.length === DELETED_DOCUMENTS_PAGE_SIZE);
-    });
+    }).catch(setDocumentsError);
   }
 
   useEffect(load, []);
@@ -62,18 +66,16 @@ export function DeletedDocumentsPanel() {
 
   return (
     <div className="card">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">
+      <h2 className="mb-1 text-sm font-semibold text-fg-muted">
         {t("deletedDocuments")}
       </h2>
-      <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">
+      <p className="mb-4 text-xs text-fg-subtle">
         {t("deletedDocumentsHint")}
       </p>
       {!documents ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">
-          {tc("loading")}
-        </p>
+        documentsError ? <ErrorState error={documentsError} onRetry={load} compact /> : <Skeleton lines={3} />
       ) : documents.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">
+        <p className="text-sm text-fg-subtle">
           {t("noDeletedDocuments")}
         </p>
       ) : (
@@ -84,10 +86,10 @@ export function DeletedDocumentsPanel() {
               className="flex items-center justify-between gap-3 border-b border-gray-100 dark:border-gray-700 pb-2 text-sm last:border-0"
             >
               <div className="min-w-0">
-                <p className="truncate font-medium text-gray-800 dark:text-gray-100">
+                <p className="truncate font-medium text-fg">
                   {d.name}
                 </p>
-                <p className="text-xs text-gray-400 dark:text-gray-500">
+                <p className="text-xs text-fg-subtle">
                   {d.project ? `${d.project.name} · ` : ""}
                   {d.uploadedBy
                     ? `${t("uploadedBy", { name: d.uploadedBy.name })} · `

@@ -3,6 +3,11 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { useConfirm } from "@/components/ui/confirm-dialog";
+import { formatNumber } from "@/lib/format-currency";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Field, FormError } from "@/components/ui/field";
 
 interface Project {
   geofenceLat: number | null;
@@ -12,22 +17,26 @@ interface Project {
 
 export function GeofencePanel({ projectId }: { projectId: string }) {
   const t = useTranslations("geofence");
+  const confirm = useConfirm();
+  const td = useTranslations("dialog");
   const tc = useTranslations("common");
 
   const [project, setProject] = useState<Project | null>(null);
+  const [projectError, setProjectError] = useState<Error | null>(null);
   const [form, setForm] = useState({ lat: "", lng: "", radiusMeters: "150" });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   function load() {
     apiFetch<Project>(`/projects/${projectId}`).then((p) => {
+      setProjectError(null);
       setProject(p);
       setForm({
         lat: p.geofenceLat?.toString() ?? "",
         lng: p.geofenceLng?.toString() ?? "",
         radiusMeters: p.geofenceRadiusMeters?.toString() ?? "150",
       });
-    });
+    }).catch(setProjectError);
   }
 
   useEffect(load, [projectId]);
@@ -65,6 +74,7 @@ export function GeofencePanel({ projectId }: { projectId: string }) {
   }
 
   async function clearGeofence() {
+    if (!(await confirm({ message: td("clearGeofence"), tone: "danger", verb: "remove" }))) return;
     setBusy(true);
     try {
       await apiFetch(`/projects/${projectId}/geofence`, { method: "DELETE" });
@@ -74,25 +84,24 @@ export function GeofencePanel({ projectId }: { projectId: string }) {
     }
   }
 
-  if (!project) return null;
+  if (!project) return projectError ? <ErrorState error={projectError} onRetry={load} compact /> : <Skeleton lines={3} />;
   const isSet = project.geofenceLat !== null;
 
   return (
     <div className="mt-10">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
-      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("hint")}</p>
+      <h2 className="mb-1 text-sm font-semibold text-fg-muted">{t("title")}</h2>
+      <p className="mb-3 text-xs text-fg-subtle">{t("hint")}</p>
 
       {isSet && (
-        <p className="mb-2 text-xs text-success-700 dark:text-success-500">
-          {t("activeSummary", { lat: project.geofenceLat!.toFixed(5), lng: project.geofenceLng!.toFixed(5), radius: project.geofenceRadiusMeters! })}
+        <p className="mb-2 text-xs text-success-fg">
+          {t("activeSummary", { lat: formatNumber(project.geofenceLat, { fractionDigits: 5 }), lng: formatNumber(project.geofenceLng, { fractionDigits: 5 }), radius: project.geofenceRadiusMeters! })}
         </p>
       )}
 
-      {error && <p className="mb-2 text-xs text-error-600">{error}</p>}
+      {error && <FormError className="mb-2">{error}</FormError>}
 
       <form onSubmit={save} className="flex flex-wrap items-end gap-2">
-        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
-          {t("lat")}
+        <Field label={t("lat")} size="sm">
           <input
             type="number"
             step="any"
@@ -101,9 +110,8 @@ export function GeofencePanel({ projectId }: { projectId: string }) {
             value={form.lat}
             onChange={(e) => setForm((f) => ({ ...f, lat: e.target.value }))}
           />
-        </label>
-        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
-          {t("lng")}
+        </Field>
+        <Field label={t("lng")} size="sm">
           <input
             type="number"
             step="any"
@@ -112,9 +120,8 @@ export function GeofencePanel({ projectId }: { projectId: string }) {
             value={form.lng}
             onChange={(e) => setForm((f) => ({ ...f, lng: e.target.value }))}
           />
-        </label>
-        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
-          {t("radiusMeters")}
+        </Field>
+        <Field label={t("radiusMeters")} size="sm">
           <input
             type="number"
             min="10"
@@ -124,7 +131,7 @@ export function GeofencePanel({ projectId }: { projectId: string }) {
             value={form.radiusMeters}
             onChange={(e) => setForm((f) => ({ ...f, radiusMeters: e.target.value }))}
           />
-        </label>
+        </Field>
         <button type="button" onClick={detectFromAddress} disabled={busy} className="btn-secondary">
           {t("detectFromAddress")}
         </button>

@@ -1,9 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
+import { useCan } from "@/lib/permissions";
 import { formatDate } from "@/lib/format-date";
+import { formatCurrency } from "@/lib/format-currency";
 
 interface Supplier {
   id: string;
@@ -20,20 +23,16 @@ interface MaintenanceRecord {
 
 export function EquipmentMaintenanceRecordsPanel({ equipmentId, currency }: { equipmentId: string; currency: string }) {
   const t = useTranslations("equipment");
-  const [maintenanceRecords, setMaintenanceRecords] = useState<MaintenanceRecord[] | null>(null);
-  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const ta = useTranslations("a11y");
+  const { data: maintenanceRecords = null, reload: reloadMaintenanceRecords } = useApi<MaintenanceRecord[]>(`/equipment/${equipmentId}/maintenance-records`);
+  const canSeeSuppliers = useCan()("purchasing.view");
+  const { data: suppliers = [] } = useApi<Supplier[]>(canSeeSuppliers ? "/materials/suppliers" : null);
   const [maintenanceForm, setMaintenanceForm] = useState({ description: "", cost: "", supplierId: "", meterHours: "" });
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<MaintenanceRecord[]>(`/equipment/${equipmentId}/maintenance-records`).then(setMaintenanceRecords);
+    void reloadMaintenanceRecords();
   }
-
-  useEffect(() => {
-    load();
-    apiFetch<Supplier[]>("/materials/suppliers").then(setSuppliers);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [equipmentId]);
 
   async function addMaintenanceRecord(e: React.FormEvent) {
     e.preventDefault();
@@ -57,9 +56,9 @@ export function EquipmentMaintenanceRecordsPanel({ equipmentId, currency }: { eq
 
   return (
     <section className="card">
-      <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("maintenanceRecords")}</h2>
+      <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("maintenanceRecords")}</h2>
       {!maintenanceRecords || maintenanceRecords.length === 0 ? (
-        <p className="mb-3 text-sm text-gray-400 dark:text-gray-500">{t("noMaintenanceRecords")}</p>
+        <p className="mb-3 text-sm text-fg-subtle">{t("noMaintenanceRecords")}</p>
       ) : (
         <ul className="mb-3 flex flex-col gap-2">
           {maintenanceRecords.map((r) => (
@@ -67,12 +66,12 @@ export function EquipmentMaintenanceRecordsPanel({ equipmentId, currency }: { eq
               <div className="flex justify-between">
                 <span>{r.description}</span>
                 {r.cost && (
-                  <span className="text-gray-500 dark:text-gray-400">
-                    {r.cost} {currency}
+                  <span className="text-fg-subtle">
+                    {formatCurrency(r.cost, currency)}
                   </span>
                 )}
               </div>
-              <span className="text-xs text-gray-400 dark:text-gray-500">
+              <span className="text-xs text-fg-subtle">
                 {formatDate(new Date(r.performedAt))}
                 {r.supplier && ` · ${r.supplier.name}`}
                 {r.meterHours && ` · ${r.meterHours}${t("hoursAbbr")}`}
@@ -84,7 +83,7 @@ export function EquipmentMaintenanceRecordsPanel({ equipmentId, currency }: { eq
       <form onSubmit={addMaintenanceRecord} className="flex flex-col gap-2">
         <input
           required
-          placeholder={t("descriptionPlaceholder")}
+          placeholder={t("descriptionPlaceholder")} aria-label={t("descriptionPlaceholder")}
           className="input"
           value={maintenanceForm.description}
           onChange={(e) => setMaintenanceForm((f) => ({ ...f, description: e.target.value }))}
@@ -94,7 +93,7 @@ export function EquipmentMaintenanceRecordsPanel({ equipmentId, currency }: { eq
             type="number"
             step="0.01"
             min="0"
-            placeholder={t("cost")}
+            placeholder={t("cost")} aria-label={t("cost")}
             className="input"
             value={maintenanceForm.cost}
             onChange={(e) => setMaintenanceForm((f) => ({ ...f, cost: e.target.value }))}
@@ -103,12 +102,12 @@ export function EquipmentMaintenanceRecordsPanel({ equipmentId, currency }: { eq
             type="number"
             step="0.1"
             min="0"
-            placeholder={t("meterHoursPlaceholder")}
+            placeholder={t("meterHoursPlaceholder")} aria-label={t("meterHoursPlaceholder")}
             className="input w-32"
             value={maintenanceForm.meterHours}
             onChange={(e) => setMaintenanceForm((f) => ({ ...f, meterHours: e.target.value }))}
           />
-          <select
+          <select aria-label={ta("vendor")}
             className="input"
             value={maintenanceForm.supplierId}
             onChange={(e) => setMaintenanceForm((f) => ({ ...f, supplierId: e.target.value }))}

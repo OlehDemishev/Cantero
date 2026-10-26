@@ -59,7 +59,7 @@ export class CompanyCoiService {
   async getPublicCoi(token: string) {
     const company = await this.prisma.company.findFirst({
       where: { coiPublicToken: token, coiPubliclyShared: true },
-      select: { id: true, name: true },
+      select: { id: true, name: true, locale: true },
     });
     if (!company) throw new NotFoundException("Certificates not found");
 
@@ -71,6 +71,7 @@ export class CompanyCoiService {
 
     return {
       companyName: company.name,
+      locale: company.locale,
       documents: documents.map((d) => ({
         id: d.id,
         type: d.type,

@@ -3,10 +3,16 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import type { BulkActionResult, WarrantyClaimStatus } from "@cantero/shared";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, notifyApiError } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { PhotoAttachments } from "@/components/photo-attachments";
 import { useBulkSelection } from "@/components/bulk-select";
 import { formatDate } from "@/lib/format-date";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
+import { statusTone } from "@/lib/status-tone";
+import { Field } from "@/components/ui/field";
 
 interface Worker {
   id: string;
@@ -36,13 +42,6 @@ interface Project {
   warrantyMonths: number | null;
 }
 
-const STATUS_STYLES: Record<WarrantyClaimStatus, string> = {
-  open: "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300",
-  in_progress: "bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-400",
-  resolved: "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500",
-  denied: "bg-error-50 dark:bg-error-500/15 text-error-700 dark:text-error-500",
-};
-
 function warrantyExpiresAt(handoverDate: string | null, warrantyMonths: number | null): Date | null {
   if (!handoverDate || !warrantyMonths) return null;
   const d = new Date(handoverDate);
@@ -54,11 +53,12 @@ export function WarrantyPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("warranty");
   const tc = useTranslations("common");
   const tb = useTranslations("bulk");
+  const ta = useTranslations("a11y");
   const bulk = useBulkSelection();
 
   const [project, setProject] = useState<Project | null>(null);
-  const [claims, setClaims] = useState<WarrantyClaim[] | null>(null);
-  const [workers, setWorkers] = useState<Worker[]>([]);
+  const { data: claims = null, error: claimsError, reload: reloadClaims } = useApi<WarrantyClaim[]>(`/warranty-claims?projectId=${projectId}`);
+  const { data: workers = [] } = useApi<Worker[]>("/workers");
   const [warrantyForm, setWarrantyForm] = useState({ handoverDate: "", warrantyMonths: "" });
   const [creating, setCreating] = useState(false);
   const [claimForm, setClaimForm] = useState({ title: "", description: "", location: "", assigneeWorkerId: "" });
@@ -68,20 +68,24 @@ export function WarrantyPanel({ projectId }: { projectId: string }) {
   const [repairCost, setRepairCost] = useState("");
   const [busy, setBusy] = useState(false);
 
-  function load() {
+  function loadProject() {
     apiFetch<Project>(`/projects/${projectId}`).then((p) => {
       setProject(p);
       setWarrantyForm({
         handoverDate: p.handoverDate ? p.handoverDate.slice(0, 10) : "",
         warrantyMonths: p.warrantyMonths?.toString() ?? "",
       });
-    });
-    apiFetch<WarrantyClaim[]>(`/warranty-claims?projectId=${projectId}`).then(setClaims);
+    }).catch(notifyApiError);
+  }
+
+  /** After a change: the project's warranty terms and its claims. */
+  function load() {
+    loadProject();
+    void reloadClaims();
   }
 
   useEffect(() => {
-    load();
-    apiFetch<Worker[]>("/workers").then(setWorkers);
+    loadProject();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId]);
 
@@ -174,20 +178,18 @@ export function WarrantyPanel({ projectId }: { projectId: string }) {
 
   return (
     <div className="mt-10">
-      <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
+      <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("title")}</h2>
 
       <form onSubmit={saveWarranty} className="card mb-4 flex flex-wrap items-end gap-3">
-        <label className="flex flex-col gap-1.5 text-sm">
-          <span className="font-medium text-gray-700 dark:text-gray-200">{t("handoverDate")}</span>
+        <Field label={t("handoverDate")}>
           <input
             type="date"
             className="input"
             value={warrantyForm.handoverDate}
             onChange={(e) => setWarrantyForm((f) => ({ ...f, handoverDate: e.target.value }))}
           />
-        </label>
-        <label className="flex flex-col gap-1.5 text-sm">
-          <span className="font-medium text-gray-700 dark:text-gray-200">{t("warrantyMonths")}</span>
+        </Field>
+        <Field label={t("warrantyMonths")}>
           <input
             type="number"
             min="1"
@@ -196,19 +198,19 @@ export function WarrantyPanel({ projectId }: { projectId: string }) {
             value={warrantyForm.warrantyMonths}
             onChange={(e) => setWarrantyForm((f) => ({ ...f, warrantyMonths: e.target.value }))}
           />
-        </label>
+        </Field>
         <button type="submit" disabled={busy} className="btn-secondary">
           {tc("save")}
         </button>
         {expiresAt && (
-          <span className={`text-xs font-medium ${isUnderWarranty ? "text-success-700 dark:text-success-500" : "text-gray-400 dark:text-gray-500"}`}>
+          <span className={`text-xs font-medium ${isUnderWarranty ? "text-success-fg" : "text-fg-subtle"}`}>
             {isUnderWarranty ? t("underWarrantyUntil", { date: formatDate(expiresAt) }) : t("warrantyExpiredOn", { date: formatDate(expiresAt) })}
           </span>
         )}
       </form>
 
       <div className="mb-2 flex items-center justify-between">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("claims")}</h3>
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-fg-subtle">{t("claims")}</h3>
         {!creating && (
           <button onClick={() => setCreating(true)} className="btn-secondary px-3 py-1 text-xs">
             {t("newClaim")}
@@ -218,26 +220,23 @@ export function WarrantyPanel({ projectId }: { projectId: string }) {
 
       {creating && (
         <form onSubmit={submitClaim} className="card mb-4 flex flex-col gap-3">
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700 dark:text-gray-200">{t("claimTitle")}</span>
+          <Field label={t("claimTitle")}>
             <input
               required
               className="input"
               value={claimForm.title}
               onChange={(e) => setClaimForm((f) => ({ ...f, title: e.target.value }))}
             />
-          </label>
+          </Field>
           <div className="flex gap-3">
-            <label className="flex flex-1 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700 dark:text-gray-200">{t("location")}</span>
+            <Field label={t("location")} className="flex-1">
               <input
                 className="input"
                 value={claimForm.location}
                 onChange={(e) => setClaimForm((f) => ({ ...f, location: e.target.value }))}
               />
-            </label>
-            <label className="flex flex-1 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700 dark:text-gray-200">{t("assignee")}</span>
+            </Field>
+            <Field label={t("assignee")} className="flex-1">
               <select
                 className="input"
                 value={claimForm.assigneeWorkerId}
@@ -250,17 +249,16 @@ export function WarrantyPanel({ projectId }: { projectId: string }) {
                   </option>
                 ))}
               </select>
-            </label>
+            </Field>
           </div>
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700 dark:text-gray-200">{t("description")}</span>
+          <Field label={t("description")}>
             <textarea
               rows={2}
               className="input"
               value={claimForm.description}
               onChange={(e) => setClaimForm((f) => ({ ...f, description: e.target.value }))}
             />
-          </label>
+          </Field>
           <div className="flex gap-2">
             <button type="submit" disabled={busy} className="btn-primary">
               {tc("save")}
@@ -275,19 +273,19 @@ export function WarrantyPanel({ projectId }: { projectId: string }) {
       {bulk.result && (
         <div className="mb-3 flex items-center justify-between rounded-md bg-gray-50 dark:bg-gray-700 px-3 py-2 text-xs text-gray-600 dark:text-gray-300">
           <span>{tb("resultSummary", { succeeded: bulk.result.succeeded, failed: bulk.result.failed.length })}</span>
-          <button onClick={bulk.dismissResult} className="text-gray-400 dark:text-gray-500 hover:text-gray-600">
+          <button aria-label={ta("dismiss")} onClick={bulk.dismissResult} className="text-fg-subtle hover:text-fg-muted">
             ×
           </button>
         </div>
       )}
 
       {claims === null ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
+        claimsError ? <ErrorState error={claimsError} onRetry={reloadClaims} compact /> : <Skeleton lines={3} />
       ) : claims.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noClaims")}</p>
+        <p className="text-sm text-fg-subtle">{t("noClaims")}</p>
       ) : (
         <>
-          <div className="mb-2 flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
+          <div className="mb-2 flex items-center gap-3 text-xs text-fg-subtle">
             <label className="flex items-center gap-1.5">
               <input
                 type="checkbox"
@@ -311,7 +309,7 @@ export function WarrantyPanel({ projectId }: { projectId: string }) {
             return (
               <li key={claim.id} className="card">
                 <div className="flex w-full items-start gap-3">
-                  <input type="checkbox" className="mt-1" checked={bulk.selected.has(claim.id)} onChange={() => bulk.toggle(claim.id)} />
+                  <input aria-label={ta("selectItem", { name: claim.title })} type="checkbox" className="mt-1" checked={bulk.selected.has(claim.id)} onChange={() => bulk.toggle(claim.id)} />
                   <button
                     onClick={() => {
                       setExpandedId(expanded ? null : claim.id);
@@ -322,15 +320,15 @@ export function WarrantyPanel({ projectId }: { projectId: string }) {
                   >
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-gray-900 dark:text-gray-50">{claim.title}</span>
-                        <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[claim.status]}`}>
+                        <span className="text-sm font-medium text-fg">{claim.title}</span>
+                        <Badge tone={statusTone(claim.status)}>
                           {t(claim.status)}
-                        </span>
+                        </Badge>
                         {claim.submittedByClientId && (
-                          <span className="rounded-full bg-brand-50 dark:bg-brand-500/15 px-2 py-0.5 text-xs font-medium text-brand-700 dark:text-brand-400">{t("fromClient")}</span>
+                          <Badge tone="brand">{t("fromClient")}</Badge>
                         )}
                       </div>
-                      <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+                      <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-fg-subtle">
                         {claim.location && <span>{claim.location}</span>}
                         {claim.assignee && <span>{t("assignedTo", { name: claim.assignee.name })}</span>}
                       </div>
@@ -341,16 +339,16 @@ export function WarrantyPanel({ projectId }: { projectId: string }) {
                 {expanded && (
                   <div className="mt-3 flex flex-col gap-2 border-t border-gray-100 dark:border-gray-700 pt-3 text-sm">
                     {claim.description && <p>{claim.description}</p>}
-                    <p className="text-xs text-gray-400 dark:text-gray-500">{t("submittedBy", { name: claim.submittedByName })}</p>
+                    <p className="text-xs text-fg-subtle">{t("submittedBy", { name: claim.submittedByName })}</p>
                     {claim.resolutionNotes && (
                       <p>
-                        <span className="font-medium text-gray-700 dark:text-gray-200">{t("resolutionNotes")}: </span>
+                        <span className="font-medium text-fg-muted">{t("resolutionNotes")}: </span>
                         {claim.resolutionNotes}
                       </p>
                     )}
                     {claim.denialReason && (
                       <p>
-                        <span className="font-medium text-gray-700 dark:text-gray-200">{t("denialReason")}: </span>
+                        <span className="font-medium text-fg-muted">{t("denialReason")}: </span>
                         {claim.denialReason}
                       </p>
                     )}
@@ -380,7 +378,7 @@ export function WarrantyPanel({ projectId }: { projectId: string }) {
                         <textarea
                           rows={2}
                           className="input"
-                          placeholder={t("resolutionNotesPlaceholder")}
+                          placeholder={t("resolutionNotesPlaceholder")} aria-label={t("resolutionNotesPlaceholder")}
                           value={resolutionNotes}
                           onChange={(e) => setResolutionNotes(e.target.value)}
                         />
@@ -389,7 +387,7 @@ export function WarrantyPanel({ projectId }: { projectId: string }) {
                           min="0"
                           step="0.01"
                           className="input w-40"
-                          placeholder={t("repairCostPlaceholder")}
+                          placeholder={t("repairCostPlaceholder")} aria-label={t("repairCostPlaceholder")}
                           value={repairCost}
                           onChange={(e) => setRepairCost(e.target.value)}
                         />
@@ -399,7 +397,7 @@ export function WarrantyPanel({ projectId }: { projectId: string }) {
                         <textarea
                           rows={2}
                           className="input"
-                          placeholder={t("denialReasonPlaceholder")}
+                          placeholder={t("denialReasonPlaceholder")} aria-label={t("denialReasonPlaceholder")}
                           value={denyReason}
                           onChange={(e) => setDenyReason(e.target.value)}
                         />

@@ -5,6 +5,10 @@ import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { formatDate } from "@/lib/format-date";
 import { resetStateInEffect } from "@/lib/effect-reset";
+import { useConfirm } from "@/components/ui/confirm-dialog";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Field, FormError } from "@/components/ui/field";
 
 interface Status {
   connected: boolean;
@@ -14,16 +18,19 @@ interface Status {
 
 export function IntacctSettingsPanel({ canManage }: { canManage: boolean }) {
   const t = useTranslations("intacct");
+  const confirm = useConfirm();
   const [status, setStatus] = useState<Status | null>(null);
+  const [statusError, setStatusError] = useState<Error | null>(null);
   const [itemId, setItemId] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   function load() {
     apiFetch<Status>("/company/intacct/status").then((s) => {
+      setStatusError(null);
       setStatus(s);
       setItemId(s.changeOrderItemId ?? "");
-    });
+    }).catch(setStatusError);
   }
 
   useEffect(() => {
@@ -56,7 +63,7 @@ export function IntacctSettingsPanel({ canManage }: { canManage: boolean }) {
   }
 
   async function disconnect() {
-    if (!window.confirm(t("confirmDisconnect"))) return;
+    if (!(await confirm({ message: t("confirmDisconnect"), tone: "danger", verb: "disconnect" }))) return;
     setBusy(true);
     try {
       await apiFetch("/company/intacct/connection", { method: "DELETE" });
@@ -66,31 +73,30 @@ export function IntacctSettingsPanel({ canManage }: { canManage: boolean }) {
     }
   }
 
-  if (!status) return null;
+  if (!status) return statusError ? <ErrorState error={statusError} onRetry={load} compact /> : <Skeleton lines={3} />;
 
   return (
     <section className="card lg:col-span-2">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
-      <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">{t("hint")}</p>
-      {error && <p className="mb-3 text-xs text-error-600">{error}</p>}
+      <h2 className="mb-1 text-sm font-semibold text-fg-muted">{t("title")}</h2>
+      <p className="mb-4 text-xs text-fg-subtle">{t("hint")}</p>
+      {error && <FormError className="mb-3">{error}</FormError>}
 
       {status.connected ? (
         <div className="flex flex-col gap-3">
-          <p className="text-sm text-success-700 dark:text-success-500">{t("connectedSummary", { date: status.connectedAt ? formatDate(new Date(status.connectedAt)) : "" })}</p>
+          <p className="text-sm text-success-fg">{t("connectedSummary", { date: status.connectedAt ? formatDate(new Date(status.connectedAt)) : "" })}</p>
           {canManage && (
             <>
               <form onSubmit={saveItem} className="flex flex-wrap items-end gap-2">
-                <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
-                  {t("itemId")}
+                <Field label={t("itemId")} size="sm">
                   <input className="input" maxLength={100} value={itemId} onChange={(e) => setItemId(e.target.value)} />
-                </label>
+                </Field>
                 <button type="submit" disabled={busy || itemId.trim() === (status.changeOrderItemId ?? "")} className="btn-secondary px-2.5 py-1.5 text-xs">
                   {t("saveItem")}
                 </button>
               </form>
-              <p className="text-xs text-gray-400 dark:text-gray-500">{t("itemIdHint")}</p>
+              <p className="text-xs text-fg-subtle">{t("itemIdHint")}</p>
               <div>
-                <button onClick={disconnect} disabled={busy} className="btn-secondary text-error-600">
+                <button onClick={disconnect} disabled={busy} className="btn-secondary text-danger-fg">
                   {t("disconnect")}
                 </button>
               </div>
@@ -102,7 +108,7 @@ export function IntacctSettingsPanel({ canManage }: { canManage: boolean }) {
           {t("connect")}
         </button>
       ) : (
-        <p className="text-sm text-gray-500 dark:text-gray-400">{t("notConnected")}</p>
+        <p className="text-sm text-fg-subtle">{t("notConnected")}</p>
       )}
     </section>
   );

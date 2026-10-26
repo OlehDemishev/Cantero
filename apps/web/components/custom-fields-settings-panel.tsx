@@ -1,9 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { CUSTOM_FIELD_ENTITY_TYPES, CUSTOM_FIELD_TYPES, type CustomFieldEntityType, type CustomFieldType } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useConfirm } from "@/components/ui/confirm-dialog";
+import { Field, FormError } from "@/components/ui/field";
 
 interface FieldDefinition {
   id: string;
@@ -15,18 +20,18 @@ interface FieldDefinition {
 
 export function CustomFieldsSettingsPanel({ canManage }: { canManage: boolean }) {
   const t = useTranslations("customFields");
+  const confirm = useConfirm();
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
 
-  const [fields, setFields] = useState<FieldDefinition[] | null>(null);
+  const { data: fields = null, reload: reloadFields, error: fieldsError } = useApi<FieldDefinition[]>("/custom-fields/definitions");
   const [form, setForm] = useState({ entityType: "project" as CustomFieldEntityType, name: "", type: "text" as CustomFieldType, options: "" });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   function load() {
-    apiFetch<FieldDefinition[]>("/custom-fields/definitions").then(setFields);
+    void reloadFields();
   }
-
-  useEffect(load, []);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -58,33 +63,46 @@ export function CustomFieldsSettingsPanel({ canManage }: { canManage: boolean })
   }
 
   async function remove(id: string) {
-    if (!window.confirm(t("confirmDelete"))) return;
+    if (!(await confirm({ message: t("confirmDelete"), tone: "danger", verb: "delete" }))) return;
     await apiFetch(`/custom-fields/definitions/${id}`, { method: "DELETE" });
     load();
   }
 
   return (
     <section className="card lg:col-span-2">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
-      <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">{t("hint")}</p>
+      <h2 className="mb-1 text-sm font-semibold text-fg-muted">{t("title")}</h2>
+      <p className="mb-4 text-xs text-fg-subtle">{t("hint")}</p>
 
       {!fields ? (
-        <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
+        fieldsError ? <ErrorState error={fieldsError} onRetry={reloadFields} compact /> : <Skeleton lines={3} />
       ) : fields.length === 0 ? (
-        <p className="mb-4 text-sm text-gray-400 dark:text-gray-500">{t("noFields")}</p>
+        <p className="mb-4 text-sm text-fg-subtle">{t("noFields")}</p>
       ) : (
         <div className="overflow-x-auto">
         <table className="mb-4 w-full border-collapse text-sm">
+          <thead>
+            <tr className="border-b border-gray-200 text-left text-xs text-fg-subtle dark:border-gray-700">
+              <th scope="col" className="py-1.5 font-medium">{ta("name")}</th>
+              <th scope="col" className="font-medium">{ta("appliesTo")}</th>
+              <th scope="col" className="font-medium">{ta("type")}</th>
+              <th scope="col" className="font-medium">{ta("options")}</th>
+              {canManage && (
+                <th scope="col" className="text-right font-medium">
+                  <span className="sr-only">{ta("actions")}</span>
+                </th>
+              )}
+            </tr>
+          </thead>
           <tbody>
             {fields.map((f) => (
               <tr key={f.id} className="border-b border-gray-100 dark:border-gray-700">
                 <td className="py-1.5">{f.name}</td>
-                <td className="text-gray-500 dark:text-gray-400">{t(`entityType_${f.entityType}`)}</td>
-                <td className="text-gray-500 dark:text-gray-400">{t(`fieldType_${f.type}`)}</td>
-                <td className="text-gray-400 dark:text-gray-500">{f.type === "select" ? f.options.join(", ") : ""}</td>
+                <td className="text-fg-subtle">{t(`entityType_${f.entityType}`)}</td>
+                <td className="text-fg-subtle">{t(`fieldType_${f.type}`)}</td>
+                <td className="text-fg-subtle">{f.type === "select" ? f.options.join(", ") : ""}</td>
                 {canManage && (
                   <td className="text-right">
-                    <button onClick={() => remove(f.id)} className="text-xs text-error-600 hover:underline">
+                    <button onClick={() => remove(f.id)} className="text-xs text-danger-fg hover:underline">
                       {tc("delete")}
                     </button>
                   </td>
@@ -98,8 +116,7 @@ export function CustomFieldsSettingsPanel({ canManage }: { canManage: boolean })
 
       {canManage && (
         <form onSubmit={submit} className="flex flex-wrap items-end gap-2 border-t border-gray-100 dark:border-gray-700 pt-4">
-          <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
-            {t("entityType")}
+          <Field label={t("entityType")} size="sm">
             <select
               className="input w-auto"
               value={form.entityType}
@@ -111,18 +128,16 @@ export function CustomFieldsSettingsPanel({ canManage }: { canManage: boolean })
                 </option>
               ))}
             </select>
-          </label>
-          <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
-            {tc("name")}
+          </Field>
+          <Field label={tc("name")} size="sm">
             <input
               required
               className="input w-auto"
               value={form.name}
               onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
             />
-          </label>
-          <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
-            {t("fieldType")}
+          </Field>
+          <Field label={t("fieldType")} size="sm">
             <select
               className="input w-auto"
               value={form.type}
@@ -134,10 +149,9 @@ export function CustomFieldsSettingsPanel({ canManage }: { canManage: boolean })
                 </option>
               ))}
             </select>
-          </label>
+          </Field>
           {form.type === "select" && (
-            <label className="flex flex-1 flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
-              {t("optionsCommaSeparated")}
+            <Field label={t("optionsCommaSeparated")} size="sm" className="flex-1">
               <input
                 required
                 className="input"
@@ -145,14 +159,14 @@ export function CustomFieldsSettingsPanel({ canManage }: { canManage: boolean })
                 value={form.options}
                 onChange={(e) => setForm((f) => ({ ...f, options: e.target.value }))}
               />
-            </label>
+            </Field>
           )}
           <button type="submit" disabled={busy} className="btn-secondary">
             {t("addField")}
           </button>
         </form>
       )}
-      {error && <p className="mt-2 text-xs text-error-600">{error}</p>}
+      {error && <FormError className="mt-2">{error}</FormError>}
     </section>
   );
 }

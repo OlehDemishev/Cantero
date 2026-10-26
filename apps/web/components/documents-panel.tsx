@@ -1,10 +1,16 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { DOCUMENT_CATEGORIES, type DocumentCategory } from "@cantero/shared";
-import { apiFetch, apiUpload, downloadBlob } from "@/lib/api-client";
+import { apiFetch, apiUpload, downloadBlob, notifyApiError } from "@/lib/api-client";
 import { formatDateTime } from "@/lib/format-date";
+import { Dialog } from "@/components/ui/dialog";
+import { useConfirm } from "@/components/ui/confirm-dialog";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useApi } from "@/lib/use-api";
+import { Badge } from "@/components/ui/badge";
 
 interface Document {
   id: string;
@@ -28,8 +34,9 @@ export function DocumentsPanel({
   insuranceClaimId?: string;
 }) {
   const t = useTranslations("documents");
+  const confirm = useConfirm();
   const tc = useTranslations("common");
-  const [documents, setDocuments] = useState<Document[] | null>(null);
+  const ta = useTranslations("a11y");
   const [busy, setBusy] = useState(false);
   const [category, setCategory] = useState<DocumentCategory>("other");
   const [newTags, setNewTags] = useState("");
@@ -54,14 +61,18 @@ export function DocumentsPanel({
     return params.toString();
   }
 
-  function load() {
-    const params = new URLSearchParams(query());
-    if (search) params.set("search", search);
-    if (tagFilter) params.set("tag", tagFilter);
-    apiFetch<Document[]>(`/documents?${params.toString()}`).then(setDocuments);
-  }
+  const listParams = new URLSearchParams(query());
+  if (search) listParams.set("search", search);
+  if (tagFilter) listParams.set("tag", tagFilter);
+  const {
+    data: documents = null,
+    error: documentsError,
+    reload: reloadDocuments,
+  } = useApi<Document[]>(`/documents?${listParams.toString()}`, { keepPrevious: query() });
 
-  useEffect(load, [projectId, invoiceId, insuranceClaimId, search, tagFilter]);
+  function load() {
+    void reloadDocuments();
+  }
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -105,7 +116,7 @@ export function DocumentsPanel({
   }
 
   async function remove(doc: Document) {
-    if (!window.confirm(t("confirmDelete"))) return;
+    if (!(await confirm({ message: t("confirmDelete"), tone: "danger", verb: "delete" }))) return;
     setBusy(true);
     try {
       await apiFetch(`/documents/${doc.id}`, { method: "DELETE" });
@@ -124,7 +135,7 @@ export function DocumentsPanel({
     }
     setVersionsFor(doc.id);
     setCompareIds([]);
-    apiFetch<Document[]>(`/documents/${doc.id}/versions`).then(setVersions);
+    apiFetch<Document[]>(`/documents/${doc.id}/versions`).then(setVersions).catch(notifyApiError);
   }
 
   function toggleCompareId(id: string) {
@@ -180,27 +191,27 @@ export function DocumentsPanel({
 
   return (
     <div className="mt-10">
-      <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
+      <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("title")}</h2>
 
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <input
           className="input w-auto"
-          placeholder={t("searchPlaceholder")}
+          placeholder={t("searchPlaceholder")} aria-label={t("searchPlaceholder")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
         <input
           className="input w-auto"
-          placeholder={t("tagFilterPlaceholder")}
+          placeholder={t("tagFilterPlaceholder")} aria-label={t("tagFilterPlaceholder")}
           value={tagFilter}
           onChange={(e) => setTagFilter(e.target.value)}
         />
       </div>
 
       {!documents ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
+        documentsError ? <ErrorState error={documentsError} onRetry={reloadDocuments} compact /> : <Skeleton lines={3} />
       ) : documents.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noDocuments")}</p>
+        <p className="text-sm text-fg-subtle">{t("noDocuments")}</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {documents.map((doc) => (
@@ -208,13 +219,13 @@ export function DocumentsPanel({
               <div className="flex items-center justify-between">
                 <div>
                   <span className="text-sm">{doc.name}</span>
-                  <span className="ml-2 rounded-full bg-gray-100 dark:bg-gray-700 px-2 py-0.5 text-xs text-gray-600 dark:text-gray-300">
+                  <Badge tone="neutral" className="ml-2">
                     {t(`category_${doc.category}`)}
-                  </span>
+                  </Badge>
                   {doc.tags.map((tag) => (
-                    <span key={tag} className="ml-1 rounded-full bg-brand-50 dark:bg-brand-500/15 px-2 py-0.5 text-xs text-brand-700 dark:text-brand-400">
+                    <Badge tone="brand" className="ml-1" key={tag}>
                       {tag}
-                    </span>
+                    </Badge>
                   ))}
                   {doc.version > 1 && (
                     <button
@@ -235,13 +246,13 @@ export function DocumentsPanel({
                   <button onClick={() => startReplace(doc.id)} disabled={busy} className="text-brand-700 dark:text-brand-400 hover:underline">
                     {t("replace")}
                   </button>
-                  <button onClick={() => remove(doc)} disabled={busy} className="text-error-700 dark:text-error-500 hover:underline">
+                  <button onClick={() => remove(doc)} disabled={busy} className="text-danger-fg hover:underline">
                     {tc("delete")}
                   </button>
                 </div>
               </div>
               {doc.uploadedBy && (
-                <div className="mt-1 text-xs text-gray-400 dark:text-gray-500">
+                <div className="mt-1 text-xs text-fg-subtle">
                   {t("uploadedBy", { name: doc.uploadedBy.name })}
                 </div>
               )}
@@ -249,14 +260,14 @@ export function DocumentsPanel({
                 <div className="mt-2 flex items-center gap-2 border-t border-gray-100 dark:border-gray-700 pt-2">
                   <input
                     className="input flex-1 text-xs"
-                    placeholder={t("tagsPlaceholder")}
+                    placeholder={t("tagsPlaceholder")} aria-label={t("tagsPlaceholder")}
                     value={tagsDraft}
                     onChange={(e) => setTagsDraft(e.target.value)}
                   />
                   <button onClick={() => saveTags(doc)} disabled={busy} className="btn-secondary px-2 py-1 text-xs">
                     {tc("save")}
                   </button>
-                  <button onClick={() => setEditingTagsId(null)} className="text-xs text-gray-400 dark:text-gray-500">
+                  <button onClick={() => setEditingTagsId(null)} className="text-xs text-fg-subtle">
                     {tc("cancel")}
                   </button>
                 </div>
@@ -265,8 +276,8 @@ export function DocumentsPanel({
                 <div className="mt-2 border-t border-gray-100 dark:border-gray-700 pt-2">
                   <ul className="flex flex-col gap-1">
                     {versions.map((v) => (
-                      <li key={v.id} className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-                        <input
+                      <li key={v.id} className="flex items-center gap-2 text-xs text-fg-subtle">
+                        <input aria-label={ta("fieldOf", { field: ta("compare"), item: t("version", { n: v.version }) })}
                           type="checkbox"
                           checked={compareIds.includes(v.id)}
                           onChange={() => toggleCompareId(v.id)}
@@ -296,7 +307,7 @@ export function DocumentsPanel({
       )}
 
       <div className="mt-3 flex flex-wrap items-center gap-2">
-        <select
+        <select aria-label={t("category")}
           className="input w-auto"
           value={category}
           onChange={(e) => setCategory(e.target.value as DocumentCategory)}
@@ -309,7 +320,7 @@ export function DocumentsPanel({
         </select>
         <input
           className="input w-auto"
-          placeholder={t("tagsPlaceholder")}
+          placeholder={t("tagsPlaceholder")} aria-label={t("tagsPlaceholder")}
           value={newTags}
           onChange={(e) => setNewTags(e.target.value)}
         />
@@ -320,40 +331,42 @@ export function DocumentsPanel({
       </div>
       <input ref={replaceInputRef} type="file" onChange={handleReplaceChange} className="hidden" />
 
-      {comparing && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={closeCompare}>
-          <div className="max-h-full max-w-4xl overflow-auto rounded-lg bg-white dark:bg-gray-800 p-4" onClick={(e) => e.stopPropagation()}>
-            <div className="mb-3 flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("compareVersions")}</h3>
-              <button onClick={closeCompare} className="text-xs text-gray-400 dark:text-gray-500 hover:text-gray-700">
-                {tc("close")}
-              </button>
-            </div>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              {[comparing.a, comparing.b].map((v) => (
-                <div key={v.id}>
-                  <div className="mb-2 text-xs font-medium text-gray-600 dark:text-gray-300">
-                    {t("version", { n: v.version })} — {formatDateTime(new Date(v.createdAt))}
-                  </div>
-                  {comparePreviews[v.id] ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={comparePreviews[v.id]} alt="" className="max-h-[60vh] w-full rounded border border-gray-200 dark:border-gray-700 object-contain" />
-                  ) : (
-                    <div className="rounded border border-gray-200 dark:border-gray-700 p-6 text-center text-xs text-gray-400 dark:text-gray-500">
-                      {t("noPreview")}
-                      <div className="mt-2">
-                        <button onClick={() => download(v)} className="btn-secondary px-2 py-1 text-xs">
-                          {tc("download")}
-                        </button>
-                      </div>
-                    </div>
-                  )}
+      <Dialog
+        open={!!comparing}
+        onClose={closeCompare}
+        title={t("compareVersions")}
+        showCloseButton
+        panelClassName="max-w-4xl p-4"
+      >
+        {comparing && (
+          <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {[comparing.a, comparing.b].map((v) => (
+              <div key={v.id}>
+                <div className="mb-2 text-xs font-medium text-fg-muted">
+                  {t("version", { n: v.version })} — {formatDateTime(new Date(v.createdAt))}
                 </div>
-              ))}
-            </div>
+                {comparePreviews[v.id] ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={comparePreviews[v.id]}
+                    alt={t("version", { n: v.version })}
+                    className="max-h-[60vh] w-full rounded border border-border object-contain"
+                  />
+                ) : (
+                  <div className="rounded border border-border p-6 text-center text-xs text-fg-subtle">
+                    {t("noPreview")}
+                    <div className="mt-2">
+                      <button onClick={() => download(v)} className="btn-secondary px-2 py-1 text-xs">
+                        {tc("download")}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
-        </div>
-      )}
+        )}
+      </Dialog>
     </div>
   );
 }

@@ -10,6 +10,7 @@ import {
   refreshIfExpiring,
   requestToken,
   signState,
+  type OAuthStateClaims,
   tokenExpiry,
   verifyState,
   type OAuthTokens,
@@ -132,13 +133,13 @@ export class AutodeskService {
     return { connected: true as const, hubId: connection.hubId, connectedAt: connection.connectedAt };
   }
 
-  getAuthorizeUrl(companyId: string): string {
+  getAuthorizeUrl(user: OAuthStateClaims): string {
     const clientId = this.config.get<string>("AUTODESK_CLIENT_ID");
     if (!clientId) {
       throw new BadRequestException("Autodesk isn't configured on this server — set AUTODESK_CLIENT_ID/AUTODESK_CLIENT_SECRET");
     }
 
-    const state = signState(this.jwt, { companyId });
+    const state = signState(this.jwt, "autodesk", user);
     const params = new URLSearchParams({
       response_type: "code",
       client_id: clientId,
@@ -155,7 +156,7 @@ export class AutodeskService {
    * returned is what gets connected. Returns the companyId so the controller can redirect
    * appropriately even on later failures. */
   async handleCallback(code: string, state: string): Promise<{ companyId: string }> {
-    const { companyId } = verifyState(this.jwt, state);
+    const { companyId } = verifyState(this.jwt, state, "autodesk");
 
     const tokens = await exchangeCode(this.tokenEndpoint(), { code, redirect_uri: this.callbackUrl() });
     const hubs = await this.fetchHubs(tokens.access_token);

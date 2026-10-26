@@ -1,15 +1,24 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import {
   SCHEDULED_REPORT_FREQUENCIES,
+  SCHEDULED_REPORT_KEYS,
   SCHEDULED_REPORT_TYPES,
   type ScheduledReportFrequency,
   type ScheduledReportType,
 } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
+import { useCan } from "@/lib/permissions";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate } from "@/lib/format-date";
+import { useReportAccess } from "@/lib/report-access";
+import { useConfirm } from "@/components/ui/confirm-dialog";
+import { Badge } from "@/components/ui/badge";
+import { Field } from "@/components/ui/field";
 
 interface ScheduledReport {
   id: string;
@@ -24,8 +33,16 @@ interface ScheduledReport {
 
 export function ScheduledReportsPanel() {
   const t = useTranslations("reports");
+  const confirm = useConfirm();
+  const td = useTranslations("dialog");
   const tc = useTranslations("common");
-  const [scheduledReports, setScheduledReports] = useState<ScheduledReport[] | null>(null);
+  // Scheduling a report is part of custom reporting (reports.custom) — nothing to show without it.
+  const canSchedule = useCan()("reports.custom");
+  const {
+    data: scheduledReports = null,
+    error: scheduledReportsError,
+    reload: reloadScheduledReports,
+  } = useApi<ScheduledReport[]>(canSchedule ? "/scheduled-reports" : null);
   const [scheduleForm, setScheduleForm] = useState({
     name: "",
     reportType: "overview" as ScheduledReportType,
@@ -34,12 +51,14 @@ export function ScheduledReportsPanel() {
   });
   const [scheduleBusy, setScheduleBusy] = useState(false);
   const [sentNowId, setSentNowId] = useState<string | null>(null);
+  // A scheduled report runs as whoever sets it up, so only the reports they can open are offered.
+  const canView = useReportAccess();
+  const reportTypes = SCHEDULED_REPORT_TYPES.filter((ty) => canView(SCHEDULED_REPORT_KEYS[ty]));
+  const selectedType: ScheduledReportType | undefined = reportTypes.includes(scheduleForm.reportType) ? scheduleForm.reportType : reportTypes[0];
 
   function load() {
-    apiFetch<ScheduledReport[]>("/scheduled-reports").then(setScheduledReports);
+    void reloadScheduledReports();
   }
-
-  useEffect(load, []);
 
   async function createScheduledReport(e: React.FormEvent) {
     e.preventDefault();
@@ -47,12 +66,12 @@ export function ScheduledReportsPanel() {
       .split(",")
       .map((s) => s.trim())
       .filter(Boolean);
-    if (recipientEmails.length === 0) return;
+    if (recipientEmails.length === 0 || !selectedType) return;
     setScheduleBusy(true);
     try {
       await apiFetch("/scheduled-reports", {
         method: "POST",
-        body: JSON.stringify({ name: scheduleForm.name, reportType: scheduleForm.reportType, frequency: scheduleForm.frequency, recipientEmails }),
+        body: JSON.stringify({ name: scheduleForm.name, reportType: selectedType, frequency: scheduleForm.frequency, recipientEmails }),
       });
       setScheduleForm({ name: "", reportType: "overview", frequency: "weekly", recipientEmails: "" });
       load();
@@ -67,6 +86,7 @@ export function ScheduledReportsPanel() {
   }
 
   async function deleteScheduledReport(id: string) {
+    if (!(await confirm({ message: td("deleteScheduledReport"), tone: "danger", verb: "delete" }))) return;
     await apiFetch(`/scheduled-reports/${id}`, { method: "DELETE" });
     load();
   }
@@ -77,35 +97,35 @@ export function ScheduledReportsPanel() {
     setSentNowId(id);
   }
 
+  if (!canSchedule) return null;
+
   return (
     <>
-      <h2 className="mb-3 mt-10 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("scheduledReports")}</h2>
+      <h2 className="mb-3 mt-10 text-sm font-semibold text-fg-muted">{t("scheduledReports")}</h2>
       <div className="card max-w-xl">
         <form onSubmit={createScheduledReport} className="flex flex-col gap-3">
           <input
             required
-            placeholder={t("scheduleName")}
+            placeholder={t("scheduleName")} aria-label={t("scheduleName")}
             className="input"
             value={scheduleForm.name}
             onChange={(e) => setScheduleForm((f) => ({ ...f, name: e.target.value }))}
           />
           <div className="flex gap-3">
-            <label className="flex flex-1 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700 dark:text-gray-200">{t("reportType")}</span>
+            <Field label={t("reportType")} className="flex-1">
               <select
                 className="input"
-                value={scheduleForm.reportType}
+                value={selectedType ?? ""}
                 onChange={(e) => setScheduleForm((f) => ({ ...f, reportType: e.target.value as ScheduledReportType }))}
               >
-                {SCHEDULED_REPORT_TYPES.map((ty) => (
+                {reportTypes.map((ty) => (
                   <option key={ty} value={ty}>
                     {t(`reportType_${ty}`)}
                   </option>
                 ))}
               </select>
-            </label>
-            <label className="flex flex-1 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700 dark:text-gray-200">{t("frequency")}</span>
+            </Field>
+            <Field label={t("frequency")} className="flex-1">
               <select
                 className="input"
                 value={scheduleForm.frequency}
@@ -117,10 +137,9 @@ export function ScheduledReportsPanel() {
                   </option>
                 ))}
               </select>
-            </label>
+            </Field>
           </div>
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700 dark:text-gray-200">{t("recipientEmails")}</span>
+          <Field label={t("recipientEmails")}>
             <input
               required
               placeholder={t("recipientEmailsPlaceholder")}
@@ -128,17 +147,21 @@ export function ScheduledReportsPanel() {
               value={scheduleForm.recipientEmails}
               onChange={(e) => setScheduleForm((f) => ({ ...f, recipientEmails: e.target.value }))}
             />
-          </label>
-          <button type="submit" disabled={scheduleBusy} className="btn-primary self-start">
+          </Field>
+          <button type="submit" disabled={scheduleBusy || !selectedType} className="btn-primary self-start">
             {t("createSchedule")}
           </button>
         </form>
       </div>
 
       {!scheduledReports ? (
-        <p className="mt-4 text-gray-500 dark:text-gray-400">{tc("loading")}</p>
+        scheduledReportsError ? (
+          <ErrorState error={scheduledReportsError} onRetry={reloadScheduledReports} compact className="mt-4" />
+        ) : (
+          <Skeleton className="mt-4" lines={2} />
+        )
       ) : scheduledReports.length === 0 ? (
-        <p className="mt-4 text-sm text-gray-400 dark:text-gray-500">{t("noScheduledReports")}</p>
+        <p className="mt-4 text-sm text-fg-subtle">{t("noScheduledReports")}</p>
       ) : (
         <ul className="mt-4 flex flex-col gap-2">
           {scheduledReports.map((report) => (
@@ -146,23 +169,19 @@ export function ScheduledReportsPanel() {
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-gray-900 dark:text-gray-50">{report.name}</span>
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                        report.active ? "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500" : "bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400"
-                      }`}
-                    >
+                    <span className="text-sm font-medium text-fg">{report.name}</span>
+                    <Badge tone={report.active ? "success" : "neutral"}>
                       {report.active ? t("active") : t("paused")}
-                    </span>
+                    </Badge>
                   </div>
-                  <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  <div className="mt-1 text-xs text-fg-subtle">
                     {t(`reportType_${report.reportType}`)} · {t(`frequency_${report.frequency}`)} · {report.recipientEmails.join(", ")}
                   </div>
-                  <div className="mt-1 text-xs text-gray-400 dark:text-gray-500">
+                  <div className="mt-1 text-xs text-fg-subtle">
                     {t("nextRun", { date: formatDate(new Date(report.nextRunAt)) })}
                     {report.lastSentAt && ` · ${t("lastSent", { date: formatDate(new Date(report.lastSentAt)) })}`}
                   </div>
-                  {sentNowId === report.id && <p className="mt-1 text-xs text-success-700 dark:text-success-500">{t("sentNowConfirmation")}</p>}
+                  {sentNowId === report.id && <p className="mt-1 text-xs text-success-fg">{t("sentNowConfirmation")}</p>}
                 </div>
                 <div className="flex flex-none flex-col gap-1.5">
                   <button onClick={() => sendScheduledReportNow(report.id)} className="btn-secondary px-2.5 py-1 text-xs">
@@ -171,7 +190,7 @@ export function ScheduledReportsPanel() {
                   <button onClick={() => toggleScheduledReportActive(report)} className="btn-secondary px-2.5 py-1 text-xs">
                     {report.active ? t("pause") : t("resume")}
                   </button>
-                  <button onClick={() => deleteScheduledReport(report.id)} className="text-xs text-gray-400 dark:text-gray-500 hover:text-error-600">
+                  <button onClick={() => deleteScheduledReport(report.id)} className="text-xs text-fg-subtle hover:text-danger-fg">
                     {tc("delete")}
                   </button>
                 </div>

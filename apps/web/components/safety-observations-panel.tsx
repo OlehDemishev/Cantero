@@ -1,11 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import type { ObservationCategory } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { PrintButton } from "@/components/ui/print-button";
 import { formatDate } from "@/lib/format-date";
+import { Badge } from "@/components/ui/badge";
+import { Field } from "@/components/ui/field";
 
 interface Observation {
   id: string;
@@ -20,19 +25,14 @@ export function SafetyObservationsPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("safetyObservations");
   const tc = useTranslations("common");
 
-  const [observations, setObservations] = useState<Observation[] | null>(null);
+  const { data: observations = null, reload: reloadObservations, error: observationsError } = useApi<Observation[]>(`/safety/observations?projectId=${projectId}`);
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState({ category: "safe" as ObservationCategory, behaviorObserved: "", correctiveAction: "" });
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<Observation[]>(`/safety/observations?projectId=${projectId}`).then(setObservations);
+    void reloadObservations();
   }
-
-  useEffect(() => {
-    load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projectId]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -58,7 +58,7 @@ export function SafetyObservationsPanel({ projectId }: { projectId: string }) {
   return (
     <div className="mt-10">
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
+        <h2 className="text-sm font-semibold text-fg-muted">{t("title")}</h2>
         <div className="flex items-center gap-1.5">
           {!creating && (
             <button onClick={() => setCreating(true)} className="btn-secondary px-3 py-1 text-xs">
@@ -71,8 +71,7 @@ export function SafetyObservationsPanel({ projectId }: { projectId: string }) {
 
       {creating && (
         <form onSubmit={submit} className="card mb-4 flex flex-col gap-3">
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700 dark:text-gray-200">{t("category")}</span>
+          <Field label={t("category")}>
             <select
               className="input"
               value={form.category}
@@ -81,9 +80,8 @@ export function SafetyObservationsPanel({ projectId }: { projectId: string }) {
               <option value="safe">{t("safe")}</option>
               <option value="at_risk">{t("at_risk")}</option>
             </select>
-          </label>
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700 dark:text-gray-200">{t("behaviorObserved")}</span>
+          </Field>
+          <Field label={t("behaviorObserved")}>
             <textarea
               required
               rows={2}
@@ -91,10 +89,9 @@ export function SafetyObservationsPanel({ projectId }: { projectId: string }) {
               value={form.behaviorObserved}
               onChange={(e) => setForm((f) => ({ ...f, behaviorObserved: e.target.value }))}
             />
-          </label>
+          </Field>
           {form.category === "at_risk" && (
-            <label className="flex flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700 dark:text-gray-200">{t("correctiveAction")}</span>
+            <Field label={t("correctiveAction")}>
               <textarea
                 required
                 rows={2}
@@ -102,7 +99,7 @@ export function SafetyObservationsPanel({ projectId }: { projectId: string }) {
                 value={form.correctiveAction}
                 onChange={(e) => setForm((f) => ({ ...f, correctiveAction: e.target.value }))}
               />
-            </label>
+            </Field>
           )}
           <div className="flex gap-2">
             <button type="submit" disabled={busy} className="btn-primary">
@@ -116,26 +113,22 @@ export function SafetyObservationsPanel({ projectId }: { projectId: string }) {
       )}
 
       {observations === null ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
+        observationsError ? <ErrorState error={observationsError} onRetry={reloadObservations} compact /> : <Skeleton lines={3} />
       ) : observations.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noObservations")}</p>
+        <p className="text-sm text-fg-subtle">{t("noObservations")}</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {observations.map((o) => (
             <li key={o.id} className="card">
               <div className="flex items-center gap-2">
-                <span
-                  className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                    o.category === "safe" ? "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500" : "bg-warning-50 dark:bg-warning-500/15 text-warning-700 dark:text-warning-500"
-                  }`}
-                >
+                <Badge tone={o.category === "safe" ? "success" : "warning"}>
                   {t(o.category)}
-                </span>
-                <span className="text-xs text-gray-500 dark:text-gray-400">{formatDate(new Date(o.observedAt))}</span>
-                <span className="text-xs text-gray-500 dark:text-gray-400">{o.observerName}</span>
+                </Badge>
+                <span className="text-xs text-fg-subtle">{formatDate(new Date(o.observedAt))}</span>
+                <span className="text-xs text-fg-subtle">{o.observerName}</span>
               </div>
-              <p className="mt-1.5 text-sm text-gray-700 dark:text-gray-200">{o.behaviorObserved}</p>
-              {o.correctiveAction && <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{t("correctiveActionTaken", { action: o.correctiveAction })}</p>}
+              <p className="mt-1.5 text-sm text-fg-muted">{o.behaviorObserved}</p>
+              {o.correctiveAction && <p className="mt-1 text-xs text-fg-subtle">{t("correctiveActionTaken", { action: o.correctiveAction })}</p>}
             </li>
           ))}
         </ul>

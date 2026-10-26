@@ -36,6 +36,7 @@ interface PushPayload {
 @Injectable()
 export class PushService implements OnModuleInit {
   private readonly logger = new Logger(PushService.name);
+  private webPushEnabled = false;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -43,11 +44,18 @@ export class PushService implements OnModuleInit {
     private readonly notifications: NotificationsService,
     @InjectQueue(PUSH_CHECK_QUEUE) private readonly queue: Queue,
   ) {
-    webpush.setVapidDetails(
-      this.config.getOrThrow<string>("VAPID_SUBJECT"),
-      this.config.getOrThrow<string>("VAPID_PUBLIC_KEY"),
-      this.config.getOrThrow<string>("VAPID_PRIVATE_KEY"),
-    );
+    // Unset or placeholder keys turn web push off instead of failing the boot; production config
+    // requires real ones (production-config.ts).
+    try {
+      webpush.setVapidDetails(
+        this.config.get<string>("VAPID_SUBJECT") ?? "",
+        this.config.get<string>("VAPID_PUBLIC_KEY") ?? "",
+        this.config.get<string>("VAPID_PRIVATE_KEY") ?? "",
+      );
+      this.webPushEnabled = true;
+    } catch (err) {
+      this.logger.warn(`Web push is off: ${err instanceof Error ? err.message : err}`);
+    }
   }
 
   async onModuleInit() {
@@ -141,7 +149,7 @@ export class PushService implements OnModuleInit {
 
   private async sendToMembership(membershipId: string, payload: PushPayload) {
     const subs = await this.prisma.pushSubscription.findMany({ where: { membershipId } });
-    await Promise.all([...subs.map((sub) => this.sendToSubscription(sub, payload)), this.sendToDevices(membershipId, payload)]);
+    await Promise.all([...(this.webPushEnabled ? subs : []).map((sub) => this.sendToSubscription(sub, payload)), this.sendToDevices(membershipId, payload)]);
   }
 
   /** The same alert to the member's phones through Expo Push. A token Expo says is gone is deleted

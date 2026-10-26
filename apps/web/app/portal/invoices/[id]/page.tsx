@@ -6,6 +6,8 @@ import { useTranslations } from "next-intl";
 import { getPortalToken, portalApiFetch } from "@/lib/portal-api-client";
 import { ApiError, downloadBlob } from "@/lib/api-client";
 import { formatDate } from "@/lib/format-date";
+import { PublicLinkError } from "@/components/public-link-error";
+import { Badge } from "@/components/ui/badge";
 
 interface PortalInvoiceLine {
   id: string;
@@ -44,11 +46,14 @@ interface PortalInvoice {
 export default function PortalInvoicePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const t = useTranslations("portal");
+  const tp = useTranslations("publicLink");
   const ti = useTranslations("invoices");
+  const ta = useTranslations("a11y");
   const router = useRouter();
 
   const [invoice, setInvoice] = useState<PortalInvoice | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<unknown>(null);
   const [payBusy, setPayBusy] = useState(false);
 
   useEffect(() => {
@@ -58,7 +63,7 @@ export default function PortalInvoicePage({ params }: { params: Promise<{ id: st
     }
     portalApiFetch<PortalInvoice>(`/portal/invoices/${id}`)
       .then(setInvoice)
-      .catch((err) => setError(err instanceof ApiError ? err.message : t("verifyError")));
+      .catch(setLoadError);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
@@ -82,17 +87,29 @@ export default function PortalInvoicePage({ params }: { params: Promise<{ id: st
     }
   }
 
+  if (loadError) {
+    return (
+      <PublicLinkError
+        error={loadError}
+        action={
+          <a href="/portal" className="btn-primary inline-block">
+            {tp("backToPortal")}
+          </a>
+        }
+      />
+    );
+  }
   if (error) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-700 px-6 py-12">
-        <p className="text-sm text-gray-500 dark:text-gray-400">{error}</p>
+        <p className="text-sm text-fg-subtle">{error}</p>
       </main>
     );
   }
   if (!invoice) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-700 px-6 py-12">
-        <p className="text-sm text-gray-500 dark:text-gray-400">{t("loading")}</p>
+        <p className="text-sm text-fg-subtle">{t("loading")}</p>
       </main>
     );
   }
@@ -114,28 +131,24 @@ export default function PortalInvoicePage({ params }: { params: Promise<{ id: st
   return (
     <main className="flex min-h-screen justify-center bg-gray-50 dark:bg-gray-700 px-6 py-12">
       <div className="w-full max-w-2xl">
-        <a href="/portal" className="mb-4 inline-block text-xs text-gray-500 dark:text-gray-400 hover:underline">
+        <a href="/portal" className="mb-4 inline-block text-xs text-fg-subtle hover:underline">
           ← {t("back")}
         </a>
         <div className="card">
           <div className="flex items-center justify-between">
-            <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-50">{invoice.number}</h1>
-            <span
-              className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                invoice.status === "paid" ? "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500" : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
-              }`}
-            >
+            <h1 className="text-xl font-semibold text-fg">{invoice.number}</h1>
+            <Badge tone={invoice.status === "paid" ? "success" : "neutral"}>
               {ti(invoice.status)}
-            </span>
+            </Badge>
           </div>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{invoice.project.name}</p>
+          <p className="mt-1 text-sm text-fg-subtle">{invoice.project.name}</p>
 
-          <div className="mt-6 overflow-x-auto">
+          <div tabIndex={0} className="mt-6 overflow-x-auto">
             <table className="w-full min-w-[300px] border-collapse text-sm">
               <thead>
-                <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
-                  <th className="py-2">{t("description")}</th>
-                  <th>{ti("total")}</th>
+                <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
+                  <th scope="col" className="py-2">{t("description")}</th>
+                  <th scope="col">{ti("total")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -151,11 +164,11 @@ export default function PortalInvoicePage({ params }: { params: Promise<{ id: st
 
           <dl className="mt-4 flex flex-col gap-1.5 text-sm">
             <div className="flex justify-between">
-              <dt className="text-gray-500 dark:text-gray-400">{ti("total")}</dt>
+              <dt className="text-fg-subtle">{ti("total")}</dt>
               <dd className="font-semibold">{invoice.total}</dd>
             </div>
             <div className="flex justify-between">
-              <dt className="text-gray-500 dark:text-gray-400">{ti("paidTotal")}</dt>
+              <dt className="text-fg-subtle">{ti("paidTotal")}</dt>
               <dd>{paidTotal}</dd>
             </div>
             <div className="flex justify-between border-t border-gray-200 dark:border-gray-700 pt-2 font-semibold">
@@ -166,26 +179,27 @@ export default function PortalInvoicePage({ params }: { params: Promise<{ id: st
 
           {installmentRows.length > 0 && (
             <>
-              <h2 className="mb-2 mt-6 text-sm font-semibold text-gray-700 dark:text-gray-200">{ti("paymentPlan")}</h2>
+              <h2 className="mb-2 mt-6 text-sm font-semibold text-fg-muted">{ti("paymentPlan")}</h2>
               <div className="overflow-x-auto">
               <table className="w-full min-w-[420px] border-collapse text-sm">
+                <thead>
+                  <tr className="border-b border-gray-200 text-left text-xs text-fg-subtle dark:border-gray-700">
+                    <th scope="col" className="py-1.5 font-medium">{ta("installment")}</th>
+                    <th scope="col" className="font-medium">{ta("dueDate")}</th>
+                    <th scope="col" className="font-medium">{ta("status")}</th>
+                    <th scope="col" className="text-right font-medium">{ta("amount")}</th>
+                    <th scope="col" className="text-right font-medium"><span className="sr-only">{ta("actions")}</span></th>
+                  </tr>
+                </thead>
                 <tbody>
                   {installmentRows.map((inst) => (
                     <tr key={inst.id} className="border-b border-gray-100 dark:border-gray-700">
                       <td className="py-1.5">{inst.label}</td>
-                      <td className="text-gray-500 dark:text-gray-400">{inst.dueDate ? formatDate(new Date(inst.dueDate)) : "—"}</td>
+                      <td className="text-fg-subtle">{inst.dueDate ? formatDate(new Date(inst.dueDate)) : "—"}</td>
                       <td>
-                        <span
-                          className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                            inst.fulfilled
-                              ? "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500"
-                              : inst.partial
-                                ? "bg-warning-50 dark:bg-warning-500/15 text-warning-700 dark:text-warning-500"
-                                : "bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400"
-                          }`}
-                        >
+                        <Badge tone={inst.fulfilled ? "success" : inst.partial ? "warning" : "neutral"}>
                           {inst.fulfilled ? ti("fulfilled") : inst.partial ? ti("partial") : ti("pending")}
-                        </span>
+                        </Badge>
                       </td>
                       <td className="text-right font-medium">{inst.amount}</td>
                       <td className="pl-2 text-right">

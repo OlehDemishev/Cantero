@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
+import { formatCurrency } from "@/lib/format-currency";
 
 type ClientDecision = "pending" | "approved" | "rejected" | "countered";
 type EstimateStatus = "draft" | "pending_approval" | "approved";
@@ -19,15 +21,12 @@ interface VariantSummary {
 export function EstimateVariantsPanel({ estimateId, currency }: { estimateId: string; currency: string }) {
   const t = useTranslations("estimates");
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
   const router = useRouter();
 
-  const [variants, setVariants] = useState<VariantSummary[] | null>(null);
+  const { data: variants = null } = useApi<VariantSummary[]>(`/estimates/${estimateId}/variants`);
   const [variantLabel, setVariantLabel] = useState("");
   const [busy, setBusy] = useState(false);
-
-  useEffect(() => {
-    apiFetch<VariantSummary[]>(`/estimates/${estimateId}/variants`).then(setVariants);
-  }, [estimateId]);
 
   async function createVariant(e: React.FormEvent) {
     e.preventDefault();
@@ -46,16 +45,16 @@ export function EstimateVariantsPanel({ estimateId, currency }: { estimateId: st
 
   return (
     <div className="mt-10">
-      <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("variants")}</h2>
+      <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("variants")}</h2>
       {variants && variants.length > 1 && (
         <div className="overflow-x-auto">
         <table className="mb-4 w-full border-collapse text-sm">
           <thead>
-            <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
-              <th className="py-2">{t("variantOption")}</th>
-              <th>{tc("status")}</th>
-              <th>{t("clientDecision_label")}</th>
-              <th className="text-right">{t("grandTotal")}</th>
+            <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
+              <th scope="col" className="py-2">{t("variantOption")}</th>
+              <th scope="col">{tc("status")}</th>
+              <th scope="col">{t("clientDecision_label")}</th>
+              <th scope="col" className="text-right">{t("grandTotal")}</th>
             </tr>
           </thead>
           <tbody>
@@ -73,7 +72,7 @@ export function EstimateVariantsPanel({ estimateId, currency }: { estimateId: st
                 <td>{v.status === "approved" ? t("approved") : t("draft")}</td>
                 <td>{t(`clientDecision_${v.clientDecision}`)}</td>
                 <td className="text-right">
-                  {v.grandTotal} {currency}
+                  {formatCurrency(v.grandTotal, currency)}
                 </td>
               </tr>
             ))}
@@ -82,7 +81,7 @@ export function EstimateVariantsPanel({ estimateId, currency }: { estimateId: st
         </div>
       )}
       <form onSubmit={createVariant} className="flex items-end gap-2">
-        <input
+        <input aria-label={ta("label")}
           required
           placeholder={t("variantLabelPlaceholder")}
           className="input"

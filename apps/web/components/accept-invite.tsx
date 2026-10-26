@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch, ApiError, setToken } from "@/lib/api-client";
+import { Alert } from "@/components/ui/alert";
 
 interface InviteInfo {
   email: string;
@@ -57,21 +58,21 @@ export function AcceptInvite({ token }: { token: string }) {
   if (!invite) {
     return (
       <main className="mx-auto flex min-h-screen max-w-sm flex-col items-center justify-center px-6 py-12 text-center">
-        <p className="text-gray-400 dark:text-gray-500">{tc("loading")}</p>
+        <p className="text-fg-subtle">{tc("loading")}</p>
       </main>
     );
   }
 
   return (
     <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center px-6 py-12">
-      <h1 className="text-2xl font-semibold">{t("acceptInviteTitle", { company: invite.company.name })}</h1>
-      <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{t("acceptInviteSubtitle", { role: t(invite.role) })}</p>
+      <h1 className="text-2xl font-semibold text-fg">{t("acceptInviteTitle", { company: invite.company.name })}</h1>
+      <p className="mt-1 text-sm text-fg-subtle">{t("acceptInviteSubtitle", { role: t(invite.role) })}</p>
 
-      {error && <p className="mt-4 rounded-md bg-red-50 dark:bg-red-500/15 px-3 py-2 text-sm text-red-700 dark:text-red-400">{error}</p>}
+      {error && <Alert tone="danger" className="mt-4">{error}</Alert>}
 
       <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
         <label className="flex flex-col gap-1 text-sm">
-          <span className="font-medium text-gray-700 dark:text-gray-200">{t("yourName")}</span>
+          <span className="font-medium text-fg-muted">{t("yourName")}</span>
           <input
             required
             className="input"
@@ -80,7 +81,7 @@ export function AcceptInvite({ token }: { token: string }) {
           />
         </label>
         <label className="flex flex-col gap-1 text-sm">
-          <span className="font-medium text-gray-700 dark:text-gray-200">{t("password")}</span>
+          <span className="font-medium text-fg-muted">{t("password")}</span>
           <input
             required
             type="password"

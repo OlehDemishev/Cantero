@@ -1,13 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { INCIDENT_SEVERITIES, OSHA_CASE_TYPES, type IncidentSeverity, type OshaCaseType } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { PhotoAttachments } from "@/components/photo-attachments";
 import { TemplatePicker } from "@/components/template-picker";
 import { PrintButton } from "@/components/ui/print-button";
 import { formatDate } from "@/lib/format-date";
+import { Badge } from "@/components/ui/badge";
+import { statusTone } from "@/lib/status-tone";
+import { Field } from "@/components/ui/field";
 
 interface Worker {
   id: string;
@@ -46,14 +52,6 @@ interface Jha {
   acknowledgments: { worker: Worker }[];
 }
 
-const SEVERITY_STYLES: Record<IncidentSeverity, string> = {
-  near_miss: "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300",
-  first_aid: "bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-400",
-  medical_treatment: "bg-warning-50 dark:bg-warning-500/15 text-warning-700 dark:text-warning-500",
-  lost_time_injury: "bg-error-50 dark:bg-error-500/15 text-error-700 dark:text-error-500",
-  fatality: "bg-error-600 text-white",
-};
-
 const EMPTY_INCIDENT_FORM = {
   occurredAt: new Date().toISOString().slice(0, 10),
   severity: "near_miss" as IncidentSeverity,
@@ -80,10 +78,10 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("safety");
   const tc = useTranslations("common");
 
-  const [incidents, setIncidents] = useState<IncidentReport[] | null>(null);
-  const [briefings, setBriefings] = useState<SafetyBriefing[] | null>(null);
-  const [jhas, setJhas] = useState<Jha[] | null>(null);
-  const [workers, setWorkers] = useState<Worker[]>([]);
+  const { data: incidents = null, reload: reloadIncidents, error: incidentsError } = useApi<IncidentReport[]>(`/safety/incidents?projectId=${projectId}`);
+  const { data: briefings = null, reload: reloadBriefings, error: briefingsError } = useApi<SafetyBriefing[]>(`/safety/briefings?projectId=${projectId}`);
+  const { data: jhas = null, reload: reloadJhas, error: jhasError } = useApi<Jha[]>(`/safety/jha?projectId=${projectId}`);
+  const { data: workers = [] } = useApi<Worker[]>("/workers");
   const [creatingIncident, setCreatingIncident] = useState(false);
   const [quickNearMiss, setQuickNearMiss] = useState(false);
   const [creatingBriefing, setCreatingBriefing] = useState(false);
@@ -94,16 +92,10 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<IncidentReport[]>(`/safety/incidents?projectId=${projectId}`).then(setIncidents);
-    apiFetch<SafetyBriefing[]>(`/safety/briefings?projectId=${projectId}`).then(setBriefings);
-    apiFetch<Jha[]>(`/safety/jha?projectId=${projectId}`).then(setJhas);
+    void reloadIncidents();
+    void reloadBriefings();
+    void reloadJhas();
   }
-
-  useEffect(() => {
-    load();
-    apiFetch<Worker[]>("/workers").then(setWorkers);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projectId]);
 
   async function submitIncident(e: React.FormEvent) {
     e.preventDefault();
@@ -212,12 +204,12 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
   return (
     <div className="mt-10">
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
+        <h2 className="text-sm font-semibold text-fg-muted">{t("title")}</h2>
         <PrintButton />
       </div>
 
       <div className="mb-2 flex items-center justify-between">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("incidents")}</h3>
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-fg-subtle">{t("incidents")}</h3>
         {!creatingIncident && (
           <div className="flex gap-2">
             <button
@@ -239,10 +231,9 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
 
       {creatingIncident && (
         <form onSubmit={submitIncident} className="card mb-4 flex flex-col gap-3">
-          {quickNearMiss && <p className="text-xs text-gray-500 dark:text-gray-400">{t("quickNearMissHint")}</p>}
+          {quickNearMiss && <p className="text-xs text-fg-subtle">{t("quickNearMissHint")}</p>}
           <div className="flex flex-wrap gap-3">
-            <label className="flex flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700 dark:text-gray-200">{t("occurredAt")}</span>
+            <Field label={t("occurredAt")}>
               <input
                 type="date"
                 required
@@ -250,10 +241,9 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
                 value={incidentForm.occurredAt}
                 onChange={(e) => setIncidentForm((f) => ({ ...f, occurredAt: e.target.value }))}
               />
-            </label>
+            </Field>
             {!quickNearMiss && (
-              <label className="flex flex-col gap-1.5 text-sm">
-                <span className="font-medium text-gray-700 dark:text-gray-200">{t("severity")}</span>
+              <Field label={t("severity")}>
                 <select
                   className="input"
                   value={incidentForm.severity}
@@ -265,19 +255,17 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
                     </option>
                   ))}
                 </select>
-              </label>
+              </Field>
             )}
-            <label className="flex flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700 dark:text-gray-200">{t("location")}</span>
+            <Field label={t("location")}>
               <input
                 className="input"
                 value={incidentForm.location}
                 onChange={(e) => setIncidentForm((f) => ({ ...f, location: e.target.value }))}
               />
-            </label>
+            </Field>
           </div>
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700 dark:text-gray-200">{t("description")}</span>
+          <Field label={t("description")}>
             <textarea
               required
               rows={2}
@@ -285,39 +273,36 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
               value={incidentForm.description}
               onChange={(e) => setIncidentForm((f) => ({ ...f, description: e.target.value }))}
             />
-          </label>
+          </Field>
           {!quickNearMiss && (
             <>
-              <label className="flex flex-col gap-1.5 text-sm">
-                <span className="font-medium text-gray-700 dark:text-gray-200">{t("involvedPersons")}</span>
+              <Field label={t("involvedPersons")}>
                 <input
                   className="input"
                   placeholder={t("involvedPersonsPlaceholder")}
                   value={incidentForm.involvedPersons}
                   onChange={(e) => setIncidentForm((f) => ({ ...f, involvedPersons: e.target.value }))}
                 />
-              </label>
-              <label className="flex flex-col gap-1.5 text-sm">
-                <span className="font-medium text-gray-700 dark:text-gray-200">{t("correctiveActions")}</span>
+              </Field>
+              <Field label={t("correctiveActions")}>
                 <textarea
                   rows={2}
                   className="input"
                   value={incidentForm.correctiveActions}
                   onChange={(e) => setIncidentForm((f) => ({ ...f, correctiveActions: e.target.value }))}
                 />
-              </label>
+              </Field>
               <label className="flex items-center gap-2 text-sm">
                 <input
                   type="checkbox"
                   checked={incidentForm.oshaRecordable}
                   onChange={(e) => setIncidentForm((f) => ({ ...f, oshaRecordable: e.target.checked }))}
                 />
-                <span className="font-medium text-gray-700 dark:text-gray-200">{t("oshaRecordable")}</span>
+                <span className="font-medium text-fg-muted">{t("oshaRecordable")}</span>
               </label>
               {incidentForm.oshaRecordable && (
                 <div className="flex flex-wrap gap-3 rounded-lg border border-gray-100 dark:border-gray-700 p-3">
-                  <label className="flex flex-col gap-1.5 text-sm">
-                    <span className="font-medium text-gray-700 dark:text-gray-200">{t("oshaCaseType")}</span>
+                  <Field label={t("oshaCaseType")}>
                     <select
                       className="input"
                       value={incidentForm.oshaCaseType}
@@ -329,9 +314,8 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
                         </option>
                       ))}
                     </select>
-                  </label>
-                  <label className="flex flex-col gap-1.5 text-sm">
-                    <span className="font-medium text-gray-700 dark:text-gray-200">{t("daysAwayFromWork")}</span>
+                  </Field>
+                  <Field label={t("daysAwayFromWork")}>
                     <input
                       type="number"
                       min="0"
@@ -339,9 +323,8 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
                       value={incidentForm.daysAwayFromWork}
                       onChange={(e) => setIncidentForm((f) => ({ ...f, daysAwayFromWork: e.target.value }))}
                     />
-                  </label>
-                  <label className="flex flex-col gap-1.5 text-sm">
-                    <span className="font-medium text-gray-700 dark:text-gray-200">{t("daysJobTransferOrRestriction")}</span>
+                  </Field>
+                  <Field label={t("daysJobTransferOrRestriction")}>
                     <input
                       type="number"
                       min="0"
@@ -349,7 +332,7 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
                       value={incidentForm.daysJobTransferOrRestriction}
                       onChange={(e) => setIncidentForm((f) => ({ ...f, daysJobTransferOrRestriction: e.target.value }))}
                     />
-                  </label>
+                  </Field>
                 </div>
               )}
             </>
@@ -374,28 +357,28 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
       )}
 
       {incidents === null ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
+        incidentsError ? <ErrorState error={incidentsError} onRetry={reloadIncidents} compact /> : <Skeleton lines={3} />
       ) : incidents.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noIncidents")}</p>
+        <p className="text-sm text-fg-subtle">{t("noIncidents")}</p>
       ) : (
         <ul className="mb-6 flex flex-col gap-2">
           {incidents.map((item) => (
             <li key={item.id} className="card">
               <div className="flex items-center gap-2">
-                <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${SEVERITY_STYLES[item.severity]}`}>
+                <Badge tone={statusTone(item.severity)}>
                   {t(`severity_${item.severity}`)}
-                </span>
-                <span className="text-xs text-gray-500 dark:text-gray-400">{formatDate(new Date(item.occurredAt))}</span>
-                {item.location && <span className="text-xs text-gray-500 dark:text-gray-400">· {item.location}</span>}
+                </Badge>
+                <span className="text-xs text-fg-subtle">{formatDate(new Date(item.occurredAt))}</span>
+                {item.location && <span className="text-xs text-fg-subtle">· {item.location}</span>}
                 {item.oshaRecordable && (
-                  <span className="rounded-full bg-error-50 dark:bg-error-500/15 px-2 py-0.5 text-xs font-medium text-error-700 dark:text-error-500">
+                  <Badge tone="danger">
                     {t("oshaRecordable")}
-                  </span>
+                  </Badge>
                 )}
               </div>
-              <p className="mt-1.5 text-sm text-gray-900 dark:text-gray-50">{item.description}</p>
+              <p className="mt-1.5 text-sm text-fg">{item.description}</p>
               {item.oshaRecordable && (item.oshaCaseType || item.daysAwayFromWork || item.daysJobTransferOrRestriction) && (
-                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                <p className="mt-1 text-xs text-fg-subtle">
                   {item.oshaCaseType && t(`oshaCaseType_${item.oshaCaseType}`)}
                   {item.daysAwayFromWork ? ` · ${t("daysAwayFromWork")}: ${item.daysAwayFromWork}` : ""}
                   {item.daysJobTransferOrRestriction
@@ -404,12 +387,12 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
                 </p>
               )}
               {item.involvedPersons && (
-                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                <p className="mt-1 text-xs text-fg-subtle">
                   {t("involvedPersons")}: {item.involvedPersons}
                 </p>
               )}
               {item.correctiveActions && (
-                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                <p className="mt-1 text-xs text-fg-subtle">
                   {t("correctiveActions")}: {item.correctiveActions}
                 </p>
               )}
@@ -417,7 +400,7 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
                 <PhotoAttachments param="incidentReportId" entityId={item.id} />
               </div>
               <div className="mt-1 flex items-center justify-between">
-                <p className="text-xs text-gray-400 dark:text-gray-500">{item.reportedByName}</p>
+                <p className="text-xs text-fg-subtle">{item.reportedByName}</p>
                 <a
                   href={`/insurance-claims?projectId=${projectId}&incidentReportId=${item.id}`}
                   className="text-xs text-brand-700 dark:text-brand-400 hover:underline"
@@ -431,7 +414,7 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
       )}
 
       <div className="mb-2 flex items-center justify-between">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("briefings")}</h3>
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-fg-subtle">{t("briefings")}</h3>
         {!creatingBriefing && (
           <button onClick={() => setCreatingBriefing(true)} className="btn-secondary px-3 py-1 text-xs">
             {t("newBriefing")}
@@ -446,8 +429,7 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
             onSelect={({ subject, body }) => setBriefingForm((f) => ({ ...f, topic: subject, notes: body }))}
           />
           <div className="flex gap-3">
-            <label className="flex flex-1 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700 dark:text-gray-200">{t("topic")}</span>
+            <Field label={t("topic")} className="flex-1">
               <input
                 required
                 className="input"
@@ -455,9 +437,8 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
                 value={briefingForm.topic}
                 onChange={(e) => setBriefingForm((f) => ({ ...f, topic: e.target.value }))}
               />
-            </label>
-            <label className="flex w-40 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700 dark:text-gray-200">{t("date")}</span>
+            </Field>
+            <Field label={t("date")} className="w-40">
               <input
                 type="date"
                 required
@@ -465,19 +446,18 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
                 value={briefingForm.date}
                 onChange={(e) => setBriefingForm((f) => ({ ...f, date: e.target.value }))}
               />
-            </label>
+            </Field>
           </div>
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700 dark:text-gray-200">{t("notes")}</span>
+          <Field label={t("notes")}>
             <textarea
               rows={2}
               className="input"
               value={briefingForm.notes}
               onChange={(e) => setBriefingForm((f) => ({ ...f, notes: e.target.value }))}
             />
-          </label>
+          </Field>
           <div className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700 dark:text-gray-200">{t("attendees")}</span>
+            <span className="font-medium text-fg-muted">{t("attendees")}</span>
             <div className="flex flex-wrap gap-2">
               {workers.map((w) => (
                 <label
@@ -506,30 +486,30 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
       )}
 
       {briefings === null ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
+        briefingsError ? <ErrorState error={briefingsError} onRetry={reloadBriefings} compact /> : <Skeleton lines={3} />
       ) : briefings.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noBriefings")}</p>
+        <p className="text-sm text-fg-subtle">{t("noBriefings")}</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {briefings.map((item) => (
             <li key={item.id} className="card">
               <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-gray-900 dark:text-gray-50">{item.topic}</span>
-                <span className="text-xs text-gray-500 dark:text-gray-400">{formatDate(new Date(item.date))}</span>
+                <span className="text-sm font-medium text-fg">{item.topic}</span>
+                <span className="text-xs text-fg-subtle">{formatDate(new Date(item.date))}</span>
               </div>
-              {item.notes && <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{item.notes}</p>}
-              <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+              {item.notes && <p className="mt-1 text-xs text-fg-subtle">{item.notes}</p>}
+              <p className="mt-1.5 text-xs text-fg-subtle">
                 {t("attendeeCount", { count: item.attendees.length })}
                 {item.attendees.length > 0 && ": " + item.attendees.map((a) => a.worker.name).join(", ")}
               </p>
-              <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">{item.conductedByName}</p>
+              <p className="mt-1 text-xs text-fg-subtle">{item.conductedByName}</p>
             </li>
           ))}
         </ul>
       )}
 
       <div className="mb-2 mt-6 flex items-center justify-between">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("jhaTitle")}</h3>
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-fg-subtle">{t("jhaTitle")}</h3>
         {!creatingJha && (
           <button onClick={() => setCreatingJha(true)} className="btn-secondary px-3 py-1 text-xs">
             {t("newJha")}
@@ -546,8 +526,7 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
             }
           />
           <div className="flex gap-3">
-            <label className="flex flex-1 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700 dark:text-gray-200">{t("taskDescription")}</span>
+            <Field label={t("taskDescription")} className="flex-1">
               <input
                 required
                 className="input"
@@ -555,9 +534,8 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
                 value={jhaForm.taskDescription}
                 onChange={(e) => setJhaForm((f) => ({ ...f, taskDescription: e.target.value }))}
               />
-            </label>
-            <label className="flex w-40 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700 dark:text-gray-200">{t("date")}</span>
+            </Field>
+            <Field label={t("date")} className="w-40">
               <input
                 type="date"
                 required
@@ -565,10 +543,9 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
                 value={jhaForm.date}
                 onChange={(e) => setJhaForm((f) => ({ ...f, date: e.target.value }))}
               />
-            </label>
+            </Field>
           </div>
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700 dark:text-gray-200">{t("hazards")}</span>
+          <Field label={t("hazards")}>
             <textarea
               required
               rows={2}
@@ -577,9 +554,8 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
               value={jhaForm.hazards}
               onChange={(e) => setJhaForm((f) => ({ ...f, hazards: e.target.value }))}
             />
-          </label>
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700 dark:text-gray-200">{t("controlMeasures")}</span>
+          </Field>
+          <Field label={t("controlMeasures")}>
             <textarea
               required
               rows={2}
@@ -588,18 +564,17 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
               value={jhaForm.controlMeasures}
               onChange={(e) => setJhaForm((f) => ({ ...f, controlMeasures: e.target.value }))}
             />
-          </label>
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700 dark:text-gray-200">{t("requiredPpe")}</span>
+          </Field>
+          <Field label={t("requiredPpe")}>
             <input
               className="input"
               placeholder={t("requiredPpePlaceholder")}
               value={jhaForm.requiredPpe}
               onChange={(e) => setJhaForm((f) => ({ ...f, requiredPpe: e.target.value }))}
             />
-          </label>
+          </Field>
           <div className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700 dark:text-gray-200">{t("acknowledgedBy")}</span>
+            <span className="font-medium text-fg-muted">{t("acknowledgedBy")}</span>
             <div className="flex flex-wrap gap-2">
               {workers.map((w) => (
                 <label
@@ -633,9 +608,9 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
       )}
 
       {jhas === null ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
+        jhasError ? <ErrorState error={jhasError} onRetry={reloadJhas} compact /> : <Skeleton lines={3} />
       ) : jhas.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noJhas")}</p>
+        <p className="text-sm text-fg-subtle">{t("noJhas")}</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {jhas.map((item) => {
@@ -644,21 +619,21 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
             return (
               <li key={item.id} className="card">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-gray-900 dark:text-gray-50">{item.taskDescription}</span>
-                  <span className="text-xs text-gray-500 dark:text-gray-400">{formatDate(new Date(item.date))}</span>
+                  <span className="text-sm font-medium text-fg">{item.taskDescription}</span>
+                  <span className="text-xs text-fg-subtle">{formatDate(new Date(item.date))}</span>
                 </div>
-                <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
-                  <span className="font-medium text-gray-700 dark:text-gray-200">{t("hazards")}:</span> {item.hazards}
+                <p className="mt-1.5 text-xs text-fg-subtle">
+                  <span className="font-medium text-fg-muted">{t("hazards")}:</span> {item.hazards}
                 </p>
-                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                  <span className="font-medium text-gray-700 dark:text-gray-200">{t("controlMeasures")}:</span> {item.controlMeasures}
+                <p className="mt-1 text-xs text-fg-subtle">
+                  <span className="font-medium text-fg-muted">{t("controlMeasures")}:</span> {item.controlMeasures}
                 </p>
                 {item.requiredPpe && (
-                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                    <span className="font-medium text-gray-700 dark:text-gray-200">{t("requiredPpe")}:</span> {item.requiredPpe}
+                  <p className="mt-1 text-xs text-fg-subtle">
+                    <span className="font-medium text-fg-muted">{t("requiredPpe")}:</span> {item.requiredPpe}
                   </p>
                 )}
-                <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                <p className="mt-1.5 text-xs text-fg-subtle">
                   {t("acknowledgedCount", { count: item.acknowledgments.length })}
                   {item.acknowledgments.length > 0 && ": " + item.acknowledgments.map((a) => a.worker.name).join(", ")}
                 </p>
@@ -675,7 +650,7 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
                     ))}
                   </div>
                 )}
-                <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">{item.conductedByName}</p>
+                <p className="mt-1 text-xs text-fg-subtle">{item.conductedByName}</p>
               </li>
             );
           })}

@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { formatDateTime } from "@/lib/format-date";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface PortalMessage {
   id: string;
@@ -21,15 +23,17 @@ export function PortalMessagesPanel({ projectId }: { projectId: string }) {
   const tc = useTranslations("common");
 
   const [messages, setMessages] = useState<PortalMessage[] | null>(null);
+  const [messagesError, setMessagesError] = useState<Error | null>(null);
   const [content, setContent] = useState("");
   const [busy, setBusy] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   function load() {
     apiFetch<PortalMessage[]>(`/projects/${projectId}/portal-messages`).then((list) => {
+      setMessagesError(null);
       setMessages(list);
       setTimeout(() => bottomRef.current?.scrollIntoView({ block: "end" }), 0);
-    });
+    }).catch(setMessagesError);
   }
 
   useEffect(load, [projectId]);
@@ -50,28 +54,28 @@ export function PortalMessagesPanel({ projectId }: { projectId: string }) {
     }
   }
 
-  if (messages === null) return null;
+  if (messages === null) return messagesError ? <ErrorState error={messagesError} onRetry={load} compact /> : <Skeleton lines={3} />;
 
   return (
     <div className="mt-8">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
-      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("hint")}</p>
+      <h2 className="mb-1 text-sm font-semibold text-fg-muted">{t("title")}</h2>
+      <p className="mb-3 text-xs text-fg-subtle">{t("hint")}</p>
 
       <div className="card flex flex-col">
         <div className="flex max-h-96 min-h-[120px] flex-col gap-3 overflow-y-auto">
           {messages.length === 0 ? (
-            <p className="text-sm text-gray-400 dark:text-gray-500">{t("noMessages")}</p>
+            <p className="text-sm text-fg-subtle">{t("noMessages")}</p>
           ) : (
             messages.map((m) => (
               <div key={m.id} className={`max-w-[80%] ${m.authorUserId ? "self-end text-right" : "self-start"}`}>
                 <div
                   className={`inline-block rounded-lg px-3 py-2 text-sm ${
-                    m.authorUserId ? "bg-brand-500 text-white" : "bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100"
+                    m.authorUserId ? "bg-brand-500 text-white" : "bg-gray-100 dark:bg-gray-700 text-fg"
                   }`}
                 >
                   {m.content}
                 </div>
-                <div className="mt-1 text-[11px] text-gray-400 dark:text-gray-500">
+                <div className="mt-1 text-xs text-fg-subtle">
                   {m.authorName} · {formatDateTime(new Date(m.createdAt))}
                 </div>
               </div>
@@ -85,7 +89,7 @@ export function PortalMessagesPanel({ projectId }: { projectId: string }) {
             required
             rows={2}
             className="input flex-1"
-            placeholder={t("messagePlaceholder")}
+            placeholder={t("messagePlaceholder")} aria-label={t("messagePlaceholder")}
             value={content}
             onChange={(e) => setContent(e.target.value)}
           />

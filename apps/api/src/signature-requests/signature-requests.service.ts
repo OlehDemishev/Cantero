@@ -9,6 +9,7 @@ import { decodePngDataUrl } from "../common/signature";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
 import { OutboxService } from "../common/webhooks/outbox.service";
 import { html } from "../common/mail/html";
+import { ProjectAccessService, type ProjectViewer } from "../common/project-access/project-access.service";
 
 @Injectable()
 export class SignatureRequestsService {
@@ -19,11 +20,15 @@ export class SignatureRequestsService {
     private readonly config: ConfigService,
     private readonly audit: AuditService,
     private readonly outbox: OutboxService,
+    private readonly projectAccess: ProjectAccessService,
   ) {}
 
-  list(companyId: string) {
+  /** Requests on a document of a project the viewer can't see are left out, like every other
+   * project-scoped list. */
+  async list(companyId: string, viewer: ProjectViewer = {}) {
+    const visible = await this.projectAccess.visibleWhere(companyId, "SignatureRequest", viewer.userId, viewer.role);
     return this.prisma.signatureRequest.findMany({
-      where: { companyId },
+      where: { AND: [{ companyId }, visible] },
       include: { document: { select: { id: true, name: true } }, signers: { orderBy: { order: "asc" } } },
       orderBy: { createdAt: "desc" },
     });
@@ -94,6 +99,7 @@ export class SignatureRequestsService {
       title: signer.signatureRequest.title,
       documentName: signer.signatureRequest.document.name,
       companyName: signer.signatureRequest.company.name,
+      locale: signer.signatureRequest.company.locale,
       status: signer.signatureRequest.status,
       signerName: signer.name,
       signedAt: signer.signedAt,
@@ -150,10 +156,12 @@ export class SignatureRequestsService {
     return { status: "sent" as const };
   }
 
-  private async notifySigner(companyId: string, requestTitle: string, signer: { id: string; name: string; email: string; accessToken: string }) {
+  private async notifySigner(companyId: string, requestTitle: string, signer: { id: string; name: string; email: string }) {
     const company = await this.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
+    // The token is left out of every other read (GLOBAL_OMIT) — it is the signer's credential.
+    const { accessToken } = await this.prisma.signatureRequestSigner.findUniqueOrThrow({ where: { id: signer.id }, select: { accessToken: true } });
     const webOrigin = this.config.get<string>("WEB_ORIGIN") ?? "http://localhost:3000";
-    const link = `${webOrigin}/sign/${signer.accessToken}`;
+    const link = `${webOrigin}/sign/${accessToken}`;
     this.mail.send({
       to: signer.email,
       subject: `${requestTitle} — please sign`,
@@ -179,7 +187,7 @@ export class SignatureRequestsService {
         signatureRequest: {
           include: {
             document: { select: { name: true, mimeType: true, storageKey: true } },
-            company: { select: { name: true } },
+            company: { select: { name: true, locale: true } },
             signers: { orderBy: { order: "asc" } },
           },
         },

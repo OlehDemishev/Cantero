@@ -1,10 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { formatDate } from "@/lib/format-date";
 import { EmptyState } from "@/components/ui/empty-state";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 
 interface TrainingEnrollment {
   id: string;
@@ -15,14 +19,12 @@ interface TrainingEnrollment {
 
 export function WorkerTrainingPanel({ workerId }: { workerId: string }) {
   const t = useTranslations("team");
-  const [trainingEnrollments, setTrainingEnrollments] = useState<TrainingEnrollment[] | null>(null);
+  const { data: trainingEnrollments = null, reload: reloadTrainingEnrollments, error: trainingEnrollmentsError } = useApi<TrainingEnrollment[]>(`/training/workers/${workerId}/enrollments`);
   const [trainingBusy, setTrainingBusy] = useState(false);
 
   function load() {
-    apiFetch<TrainingEnrollment[]>(`/training/workers/${workerId}/enrollments`).then(setTrainingEnrollments);
+    void reloadTrainingEnrollments();
   }
-
-  useEffect(load, [workerId]);
 
   async function completeTraining(enrollmentId: string) {
     setTrainingBusy(true);
@@ -34,11 +36,11 @@ export function WorkerTrainingPanel({ workerId }: { workerId: string }) {
     }
   }
 
-  if (trainingEnrollments === null) return null;
+  if (trainingEnrollments === null) return trainingEnrollmentsError ? <ErrorState error={trainingEnrollmentsError} onRetry={reloadTrainingEnrollments} compact /> : <Skeleton lines={3} />;
 
   return (
     <>
-      <h2 className="mb-3 mt-8 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("trainingHistory")}</h2>
+      <h2 className="mb-3 mt-8 text-sm font-semibold text-fg-muted">{t("trainingHistory")}</h2>
       {trainingEnrollments.length === 0 ? (
         <EmptyState message={t("noTrainingEnrollments")} cta={{ label: t("enrollInTraining"), href: "/settings?tab=templates" }} />
       ) : (
@@ -47,9 +49,9 @@ export function WorkerTrainingPanel({ workerId }: { workerId: string }) {
           <li key={en.id} className="card flex items-center justify-between gap-2 text-sm">
             <span>{en.course.title}</span>
             {en.status === "completed" ? (
-              <span className="rounded-full bg-success-50 dark:bg-success-500/15 px-2 py-0.5 text-xs font-medium text-success-700 dark:text-success-500">
-                {en.completedAt ? formatDate(new Date(en.completedAt)) : t("markComplete")}
-              </span>
+              <Badge tone="success">
+                {en.completedAt ? formatDate(new Date(en.completedAt)) : t("trainingCompleted")}
+              </Badge>
             ) : (
               <button
                 onClick={() => completeTraining(en.id)}

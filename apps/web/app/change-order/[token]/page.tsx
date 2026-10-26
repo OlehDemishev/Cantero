@@ -2,9 +2,14 @@
 
 import { use, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch, ApiError } from "@/lib/api-client";
+import { apiFetch } from "@/lib/api-client";
+import { PublicLinkError } from "@/components/public-link-error";
+import { useCompanyLocale } from "@/components/public-locale";
 import { SignaturePad } from "@/components/signature-pad";
 import { formatDateTime } from "@/lib/format-date";
+import { formatCurrency } from "@/lib/format-currency";
+import { Alert } from "@/components/ui/alert";
+import { Field, FormError } from "@/components/ui/field";
 
 interface PublicLine {
   id: string;
@@ -15,6 +20,8 @@ interface PublicLine {
 }
 type ClientDecision = "pending" | "approved" | "rejected";
 interface PublicChangeOrder {
+  /** The client's or company's language — see useCompanyLocale. */
+  locale: string;
   id: string;
   number: number;
   title: string;
@@ -39,7 +46,8 @@ export default function PublicChangeOrderPage({ params }: { params: Promise<{ to
   const tc = useTranslations("common");
 
   const [changeOrder, setChangeOrder] = useState<PublicChangeOrder | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<unknown>(null);
+  useCompanyLocale(changeOrder?.locale);
   const [note, setNote] = useState("");
   const [signerName, setSignerName] = useState("");
   const [signatureDataUrl, setSignatureDataUrl] = useState<string | null>(null);
@@ -49,7 +57,7 @@ export default function PublicChangeOrderPage({ params }: { params: Promise<{ to
   function load() {
     apiFetch<PublicChangeOrder>(`/public/change-orders/${token}`)
       .then(setChangeOrder)
-      .catch((err) => setError(err instanceof ApiError ? err.message : t("linkNotFound")));
+      .catch(setError);
   }
 
   useEffect(load, [token]);
@@ -77,18 +85,12 @@ export default function PublicChangeOrderPage({ params }: { params: Promise<{ to
     }
   }
 
-  if (error) {
-    return (
-      <main className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-700 px-6 py-12">
-        <p className="text-sm text-gray-500 dark:text-gray-400">{error}</p>
-      </main>
-    );
-  }
+  if (error) return <PublicLinkError error={error} />;
 
   if (!changeOrder) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-700 px-6 py-12">
-        <p className="text-sm text-gray-500 dark:text-gray-400">{tc("loading")}</p>
+        <p className="text-sm text-fg-subtle">{tc("loading")}</p>
       </main>
     );
   }
@@ -100,25 +102,25 @@ export default function PublicChangeOrderPage({ params }: { params: Promise<{ to
           <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-500 text-sm font-semibold text-white">
             C
           </span>
-          <span className="text-lg font-semibold tracking-tight text-gray-900 dark:text-gray-50">{changeOrder.companyName}</span>
+          <span className="text-lg font-semibold tracking-tight text-fg">{changeOrder.companyName}</span>
         </div>
 
         <div className="card">
-          <p className="text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">
+          <p className="text-xs font-medium uppercase tracking-wide text-fg-subtle">
             {t("changeOrderFor", { estimateName: changeOrder.estimateName })}
           </p>
-          <h1 className="mt-1 text-xl font-semibold text-gray-900 dark:text-gray-50">
+          <h1 className="mt-1 text-xl font-semibold text-fg">
             CO-{changeOrder.number} — {changeOrder.title}
           </h1>
-          {changeOrder.description && <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{changeOrder.description}</p>}
+          {changeOrder.description && <p className="mt-1 text-sm text-fg-subtle">{changeOrder.description}</p>}
 
-          <div className="overflow-x-auto">
+          <div tabIndex={0} className="overflow-x-auto">
           <table className="mt-6 w-full border-collapse text-sm">
             <thead>
-              <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
-                <th className="py-2">{t("rateItem")}</th>
-                <th>{t("quantity")}</th>
-                <th className="text-right">{t("lineTotal")}</th>
+              <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
+                <th scope="col" className="py-2">{t("rateItem")}</th>
+                <th scope="col">{t("quantity")}</th>
+                <th scope="col" className="text-right">{t("lineTotal")}</th>
               </tr>
             </thead>
             <tbody>
@@ -129,7 +131,7 @@ export default function PublicChangeOrderPage({ params }: { params: Promise<{ to
                     {l.quantity} {l.unit}
                   </td>
                   <td className="text-right">
-                    {l.lineTotal} {changeOrder.currency}
+                    {formatCurrency(l.lineTotal, changeOrder.currency)}
                   </td>
                 </tr>
               ))}
@@ -139,27 +141,27 @@ export default function PublicChangeOrderPage({ params }: { params: Promise<{ to
 
           <dl className="mt-4 flex flex-col gap-1.5 text-sm">
             <div className="flex justify-between">
-              <dt className="text-gray-500 dark:text-gray-400">{t("subtotal")}</dt>
+              <dt className="text-fg-subtle">{t("subtotal")}</dt>
               <dd>
-                {changeOrder.subtotal} {changeOrder.currency}
+                {formatCurrency(changeOrder.subtotal, changeOrder.currency)}
               </dd>
             </div>
             <div className="flex justify-between">
-              <dt className="text-gray-500 dark:text-gray-400">{t("markupAmount")}</dt>
+              <dt className="text-fg-subtle">{t("markupAmount")}</dt>
               <dd>
-                {changeOrder.markupAmount} {changeOrder.currency}
+                {formatCurrency(changeOrder.markupAmount, changeOrder.currency)}
               </dd>
             </div>
             <div className="flex justify-between">
-              <dt className="text-gray-500 dark:text-gray-400">{t("taxAmount")}</dt>
+              <dt className="text-fg-subtle">{t("taxAmount")}</dt>
               <dd>
-                {changeOrder.taxAmount} {changeOrder.currency}
+                {formatCurrency(changeOrder.taxAmount, changeOrder.currency)}
               </dd>
             </div>
             <div className="flex justify-between border-t border-gray-200 dark:border-gray-700 pt-2 font-semibold">
               <dt>{t("grandTotal")}</dt>
               <dd>
-                {changeOrder.grandTotal} {changeOrder.currency}
+                {formatCurrency(changeOrder.grandTotal, changeOrder.currency)}
               </dd>
             </div>
           </dl>
@@ -173,25 +175,23 @@ export default function PublicChangeOrderPage({ params }: { params: Promise<{ to
 
           {changeOrder.clientDecision === "pending" ? (
             <div className="mt-6 border-t border-gray-100 dark:border-gray-700 pt-4">
-              <label className="flex flex-col gap-1.5 text-sm">
-                <span className="font-medium text-gray-700 dark:text-gray-200">{t("clientNoteOptional")}</span>
+              <Field label={t("clientNoteOptional")}>
                 <textarea rows={2} className="input" value={note} onChange={(e) => setNote(e.target.value)} />
-              </label>
+              </Field>
 
-              <div className="mt-4 flex flex-col gap-1.5 text-sm">
-                <span className="font-medium text-gray-700 dark:text-gray-200">{t("signerNameLabel")}</span>
+              <Field label={t("signerNameLabel")} className="mt-4">
                 <input
                   className="input"
                   placeholder={t("signerNamePlaceholder")}
                   value={signerName}
                   onChange={(e) => setSignerName(e.target.value)}
                 />
-              </div>
+              </Field>
               <div className="mt-3 flex flex-col gap-1.5 text-sm">
-                <span className="font-medium text-gray-700 dark:text-gray-200">{t("signHere")}</span>
+                <span className="font-medium text-fg-muted">{t("signHere")}</span>
                 <SignaturePad onChange={setSignatureDataUrl} clearLabel={t("clearSignature")} />
               </div>
-              {signatureError && <p className="mt-2 text-xs text-error-600">{signatureError}</p>}
+              {signatureError && <FormError className="mt-2">{signatureError}</FormError>}
 
               <div className="mt-3 flex gap-2">
                 <button onClick={() => decide("approved")} disabled={busy} className="btn-primary flex-1">
@@ -203,18 +203,12 @@ export default function PublicChangeOrderPage({ params }: { params: Promise<{ to
               </div>
             </div>
           ) : (
-            <div
-              className={`mt-6 rounded-lg border-t px-4 py-3 text-sm ${
-                changeOrder.clientDecision === "approved"
-                  ? "border-success-200 bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500"
-                  : "border-error-200 bg-error-50 dark:bg-error-500/15 text-error-700 dark:text-error-500"
-              }`}
-            >
+            <Alert tone={changeOrder.clientDecision === "approved" ? "success" : "danger"} className="mt-6" role="status">
               {changeOrder.clientDecision === "approved" ? t("clientDecisionThanksApproved") : t("clientDecisionThanksRejected")}
               {changeOrder.decisionAt && (
                 <span className="block text-xs opacity-75">{formatDateTime(new Date(changeOrder.decisionAt))}</span>
               )}
-            </div>
+            </Alert>
           )}
         </div>
       </div>

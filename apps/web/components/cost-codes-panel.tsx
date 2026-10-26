@@ -1,8 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useConfirm } from "@/components/ui/confirm-dialog";
+import { FormError } from "@/components/ui/field";
 
 export interface CostCode {
   id: string;
@@ -12,19 +17,19 @@ export interface CostCode {
 
 export function CostCodesPanel() {
   const t = useTranslations("costCodes");
+  const confirm = useConfirm();
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
 
-  const [costCodes, setCostCodes] = useState<CostCode[] | null>(null);
+  const { data: costCodes = null, reload: reloadCostCodes, error: costCodesError } = useApi<CostCode[]>("/cost-codes");
   const [form, setForm] = useState({ code: "", name: "" });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [importResult, setImportResult] = useState<{ created: number; skipped: number } | null>(null);
 
   function load() {
-    apiFetch<CostCode[]>("/cost-codes").then(setCostCodes);
+    void reloadCostCodes();
   }
-
-  useEffect(load, []);
 
   async function create(e: React.FormEvent) {
     e.preventDefault();
@@ -42,7 +47,7 @@ export function CostCodesPanel() {
   }
 
   async function remove(id: string) {
-    if (!window.confirm(t("confirmDelete"))) return;
+    if (!(await confirm({ message: t("confirmDelete"), tone: "danger", verb: "delete" }))) return;
     await apiFetch(`/cost-codes/${id}`, { method: "DELETE" });
     load();
   }
@@ -62,30 +67,30 @@ export function CostCodesPanel() {
   return (
     <section className="card">
       <div className="mb-1 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
+        <h2 className="text-sm font-semibold text-fg-muted">{t("title")}</h2>
         <button onClick={importStandardLibrary} disabled={busy} className="btn-secondary px-2.5 py-1 text-xs">
           {t("importStandardLibrary")}
         </button>
       </div>
-      <p className="mb-2 text-xs text-gray-500 dark:text-gray-400">{t("hint")}</p>
+      <p className="mb-2 text-xs text-fg-subtle">{t("hint")}</p>
       {importResult && (
-        <p className="mb-2 text-xs text-success-700 dark:text-success-500">
+        <p className="mb-2 text-xs text-success-fg">
           {t("importResult", { created: importResult.created, skipped: importResult.skipped })}
         </p>
       )}
 
       {!costCodes ? (
-        <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
+        costCodesError ? <ErrorState error={costCodesError} onRetry={reloadCostCodes} compact /> : <Skeleton lines={3} />
       ) : costCodes.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noCostCodes")}</p>
+        <p className="text-sm text-fg-subtle">{t("noCostCodes")}</p>
       ) : (
         <ul className="mb-4 flex flex-col gap-1.5">
           {costCodes.map((cc) => (
             <li key={cc.id} className="flex items-center justify-between text-sm">
-              <span className="text-gray-700 dark:text-gray-300">
-                <span className="font-mono text-xs text-gray-400 dark:text-gray-500">{cc.code}</span> {cc.name}
+              <span className="text-fg-muted">
+                <span className="font-mono text-xs text-fg-subtle">{cc.code}</span> {cc.name}
               </span>
-              <button onClick={() => remove(cc.id)} className="text-gray-400 dark:text-gray-500 hover:text-error-600">
+              <button aria-label={ta("removeItem", { name: cc.name })} onClick={() => remove(cc.id)} className="text-fg-subtle hover:text-danger-fg">
                 ×
               </button>
             </li>
@@ -96,14 +101,14 @@ export function CostCodesPanel() {
       <form onSubmit={create} className="flex flex-wrap items-end gap-2 border-t border-gray-100 pt-3 dark:border-gray-800">
         <input
           required
-          placeholder={t("codePlaceholder")}
+          placeholder={t("codePlaceholder")} aria-label={t("codePlaceholder")}
           className="input w-28"
           value={form.code}
           onChange={(e) => setForm((f) => ({ ...f, code: e.target.value }))}
         />
         <input
           required
-          placeholder={t("namePlaceholder")}
+          placeholder={t("namePlaceholder")} aria-label={t("namePlaceholder")}
           className="input"
           value={form.name}
           onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
@@ -112,7 +117,7 @@ export function CostCodesPanel() {
           {tc("create")}
         </button>
       </form>
-      {error && <p className="mt-2 text-xs text-error-600">{error}</p>}
+      {error && <FormError className="mt-2">{error}</FormError>}
     </section>
   );
 }

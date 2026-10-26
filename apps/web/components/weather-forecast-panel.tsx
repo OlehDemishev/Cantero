@@ -47,9 +47,9 @@ export function WeatherForecastPanel({ projectId }: { projectId: string }) {
 
   return (
     <div className="mt-10">
-      <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
+      <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("title")}</h2>
       {riskyDays.length > 0 && (
-        <p className="mb-2 text-xs font-medium text-warning-700 dark:text-warning-500">{t("riskWarning", { count: riskyDays.length })}</p>
+        <p className="mb-2 text-xs font-medium text-warning-fg">{t("riskWarning", { count: riskyDays.length })}</p>
       )}
       <div className="flex gap-2 overflow-x-auto">
         {days.map((day) => (
@@ -57,12 +57,12 @@ export function WeatherForecastPanel({ projectId }: { projectId: string }) {
             key={day.date}
             className={`card flex min-w-[100px] flex-col items-center gap-1 px-3 py-2.5 ${day.risky ? "border-warning-200 bg-warning-50 dark:bg-warning-500/15" : ""}`}
           >
-            <span className="text-xs text-gray-500 dark:text-gray-400">
+            <span className="text-xs text-fg-subtle">
               {formatDateWithOptions(day.date, { weekday: "short", day: "numeric", month: "short" })}
             </span>
             <span className="text-xl">{CONDITION_ICON[day.condition]}</span>
             <span className="text-xs text-gray-600 dark:text-gray-300">{td(`weather_${day.condition}`)}</span>
-            <span className="text-xs font-medium text-gray-800 dark:text-gray-100 tabular-nums">
+            <span className="text-xs font-medium text-fg tabular-nums">
               {Math.round(day.tempMinC)}° / {Math.round(day.tempMaxC)}°
             </span>
           </div>

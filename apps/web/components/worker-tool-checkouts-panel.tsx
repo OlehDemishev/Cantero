@@ -1,9 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { EmptyState } from "@/components/ui/empty-state";
+import { formatCurrency } from "@/lib/format-currency";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 
 interface ToolCheckout {
   id: string;
@@ -21,23 +24,18 @@ interface ToolLiability {
 export function WorkerToolCheckoutsPanel({ workerId, currency }: { workerId: string; currency: string }) {
   const tt = useTranslations("toolCrib");
   const t = useTranslations("team");
-  const [toolCheckouts, setToolCheckouts] = useState<ToolCheckout[] | null>(null);
-  const [toolLiability, setToolLiability] = useState<ToolLiability | null>(null);
+  const { data: toolCheckouts = null, error: toolCheckoutsError, reload: reloadToolCheckouts } = useApi<ToolCheckout[]>(`/workers/${workerId}/tool-checkouts`);
+  const { data: toolLiability = null } = useApi<ToolLiability>(`/workers/${workerId}/tool-liability`);
 
-  useEffect(() => {
-    apiFetch<ToolCheckout[]>(`/workers/${workerId}/tool-checkouts`).then(setToolCheckouts);
-    apiFetch<ToolLiability>(`/workers/${workerId}/tool-liability`).then(setToolLiability);
-  }, [workerId]);
-
-  if (toolCheckouts === null) return null;
+  if (toolCheckouts === null) return toolCheckoutsError ? <ErrorState error={toolCheckoutsError} onRetry={reloadToolCheckouts} compact /> : <Skeleton lines={3} />;
 
   return (
     <>
       <div className="mb-3 mt-8 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{tt("checkedOutTools")}</h2>
+        <h2 className="text-sm font-semibold text-fg-muted">{tt("checkedOutTools")}</h2>
         {toolLiability && toolLiability.totalCharged > 0 && (
-          <span className="text-xs font-medium text-error-700 dark:text-error-500">
-            {tt("totalCharged", { amount: toolLiability.totalCharged, currency })}
+          <span className="text-xs font-medium text-danger-fg">
+            {tt("totalCharged", { amount: formatCurrency(toolLiability.totalCharged, currency) })}
           </span>
         )}
       </div>
@@ -49,19 +47,15 @@ export function WorkerToolCheckoutsPanel({ workerId, currency }: { workerId: str
           <li key={co.id} className="card text-sm">
             <div className="flex items-center justify-between">
               <span>
-                {co.item.name} <span className="text-xs text-gray-400 dark:text-gray-500">× {co.quantity}</span>
+                {co.item.name} <span className="text-xs text-fg-subtle">× {co.quantity}</span>
               </span>
-              <span
-                className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                  !co.returnedAt ? "bg-warning-50 dark:bg-warning-500/15 text-warning-700 dark:text-warning-500" : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
-                }`}
-              >
+              <Badge tone={!co.returnedAt ? "warning" : "neutral"}>
                 {!co.returnedAt ? tt("stillOut") : tt(`condition_${co.returnCondition}`)}
-              </span>
+              </Badge>
             </div>
             {co.chargeAmount && (
-              <p className="mt-1 text-xs text-error-700 dark:text-error-500">
-                {tt("chargeAmountLabel", { amount: co.chargeAmount, currency })}
+              <p className="mt-1 text-xs text-danger-fg">
+                {tt("chargeAmountLabel", { amount: formatCurrency(co.chargeAmount, currency) })}
               </p>
             )}
           </li>

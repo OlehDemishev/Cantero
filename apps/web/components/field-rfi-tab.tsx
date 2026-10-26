@@ -8,6 +8,9 @@ import { fetchCached, updateCache } from "@/lib/offline-cache";
 import { VoiceInputButton } from "@/components/voice-input-button";
 import { CachedNote } from "@/components/field-cached-note";
 import { FieldMessage, type FieldMessageType } from "@/components/field-message";
+import { Badge } from "@/components/ui/badge";
+import { statusTone } from "@/lib/status-tone";
+import { Field } from "@/components/ui/field";
 
 interface FieldRfi {
   id: string;
@@ -16,12 +19,6 @@ interface FieldRfi {
   status: "open" | "answered" | "closed";
   priority: RfiPriority;
 }
-
-const RFI_STATUS_STYLES: Record<FieldRfi["status"], string> = {
-  open: "bg-warning-50 dark:bg-warning-500/15 text-warning-700 dark:text-warning-500",
-  answered: "bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-400",
-  closed: "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500",
-};
 
 export function RfiTab({ projectId }: { projectId: string }) {
   const t = useTranslations("field");
@@ -77,19 +74,17 @@ export function RfiTab({ projectId }: { projectId: string }) {
     <div className="flex flex-col gap-4">
       <CachedNote cachedAt={cachedAt} />
       <form onSubmit={submit} className="card flex flex-col gap-3">
-        <label className="flex flex-col gap-1.5 text-sm">
-          <span className="font-medium text-gray-700 dark:text-gray-200">{tr("subject")}</span>
+        <Field label={tr("subject")}>
           <input required className="input" value={form.subject} onChange={(e) => setForm((f) => ({ ...f, subject: e.target.value }))} />
-        </label>
+        </Field>
         <label className="flex flex-col gap-1.5 text-sm">
-          <span className="flex items-center gap-2 font-medium text-gray-700 dark:text-gray-200">
+          <span className="flex items-center gap-2 font-medium text-fg-muted">
             {tr("question")}
             <VoiceInputButton onTranscript={(text) => setForm((f) => ({ ...f, question: f.question ? `${f.question} ${text}` : text }))} />
           </span>
           <textarea required rows={3} className="input" value={form.question} onChange={(e) => setForm((f) => ({ ...f, question: e.target.value }))} />
         </label>
-        <label className="flex flex-col gap-1.5 text-sm">
-          <span className="font-medium text-gray-700 dark:text-gray-200">{tr("priority")}</span>
+        <Field label={tr("priority")}>
           <select className="input" value={form.priority} onChange={(e) => setForm((f) => ({ ...f, priority: e.target.value as RfiPriority }))}>
             {RFI_PRIORITIES.map((p) => (
               <option key={p} value={p}>
@@ -97,7 +92,7 @@ export function RfiTab({ projectId }: { projectId: string }) {
               </option>
             ))}
           </select>
-        </label>
+        </Field>
         <button type="submit" disabled={busy} className="btn-primary">
           {tr("newRfi")}
         </button>
@@ -105,18 +100,18 @@ export function RfiTab({ projectId }: { projectId: string }) {
       </form>
 
       {items === null ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
+        <p className="text-sm text-fg-subtle">{tc("loading")}</p>
       ) : items.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{tr("noItems")}</p>
+        <p className="text-sm text-fg-subtle">{tr("noItems")}</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {items.map((item) => (
             <li key={item.id} className="card flex items-center justify-between">
               <div>
-                <div className="text-xs font-mono text-gray-400 dark:text-gray-500">{item.number}</div>
-                <div className="text-sm font-medium text-gray-900 dark:text-gray-50">{item.subject}</div>
+                <div className="text-xs font-mono text-fg-subtle">{item.number}</div>
+                <div className="text-sm font-medium text-fg">{item.subject}</div>
               </div>
-              <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${RFI_STATUS_STYLES[item.status]}`}>{tr(item.status)}</span>
+              <Badge tone={statusTone(item.status)}>{tr(item.status)}</Badge>
             </li>
           ))}
         </ul>

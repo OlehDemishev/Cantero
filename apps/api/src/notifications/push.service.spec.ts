@@ -96,6 +96,19 @@ describe("PushService.checkAndNotifyAll", () => {
     expect(webpush.sendNotification).not.toHaveBeenCalled();
     expect(prisma.membership.update).not.toHaveBeenCalled();
   });
+
+  it("boots with web push off when the VAPID keys are missing or invalid, and skips browser subscriptions", async () => {
+    (webpush.setVapidDetails as jest.Mock).mockImplementationOnce(() => {
+      throw new Error("Vapid public key must be a URL safe Base 64 (without \"=\")");
+    });
+    const off = new PushService(prisma as any, new ConfigService({}), notifications as any, { add: jest.fn() } as any);
+    prisma.membership.findMany.mockResolvedValue([{ id: "membership-1", companyId: "company-a", userId: "user-1", pushNotificationsLastSentAt: null }]);
+    notifications.list.mockResolvedValue({ notifications: [notification("rfi-1")] });
+
+    await off.checkAndNotifyAll();
+
+    expect(webpush.sendNotification).not.toHaveBeenCalled();
+  });
 });
 
 describe("PushService — Cantero Field phones via Expo Push", () => {

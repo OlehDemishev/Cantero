@@ -49,7 +49,7 @@ export function CsvImportButton({
         <p className="mt-2 max-w-md text-xs text-gray-600 dark:text-gray-300">
           {t("resultSummary", { created: result.created, skipped: result.skipped })}
           {result.errors.length > 0 && (
-            <span className="mt-1 block text-error-600">
+            <span className="mt-1 block text-danger-fg">
               {result.errors
                 .slice(0, 3)
                 .map((e) => `${t("row")} ${e.row}: ${e.message}`)

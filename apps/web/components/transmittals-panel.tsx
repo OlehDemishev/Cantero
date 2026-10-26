@@ -1,10 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { TRANSMITTAL_METHODS, type TransmittalMethod } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate } from "@/lib/format-date";
+import { Badge } from "@/components/ui/badge";
 
 interface TransmittalItem {
   id: string;
@@ -32,8 +36,9 @@ interface DraftItem {
 export function TransmittalsPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("transmittals");
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
 
-  const [transmittals, setTransmittals] = useState<Transmittal[] | null>(null);
+  const { data: transmittals = null, reload: reloadTransmittals, error: transmittalsError } = useApi<Transmittal[]>(`/projects/${projectId}/transmittals`);
   const [adding, setAdding] = useState(false);
   const [form, setForm] = useState({ recipientName: "", recipientCompany: "", method: "email" as TransmittalMethod, purpose: "" });
   const [items, setItems] = useState<DraftItem[]>([{ description: "", quantity: "1" }]);
@@ -42,9 +47,8 @@ export function TransmittalsPanel({ projectId }: { projectId: string }) {
   const [ackName, setAckName] = useState("");
 
   function load() {
-    apiFetch<Transmittal[]>(`/projects/${projectId}/transmittals`).then(setTransmittals);
+    void reloadTransmittals();
   }
-  useEffect(load, [projectId]);
 
   function addItemRow() {
     setItems((i) => [...i, { description: "", quantity: "1" }]);
@@ -91,32 +95,32 @@ export function TransmittalsPanel({ projectId }: { projectId: string }) {
   return (
     <div className="mt-10">
       <div className="mb-1 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
+        <h2 className="text-sm font-semibold text-fg-muted">{t("title")}</h2>
         {!adding && (
           <button onClick={() => setAdding(true)} className="btn-secondary px-2.5 py-1 text-xs">
             {t("newTransmittal")}
           </button>
         )}
       </div>
-      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("hint")}</p>
+      <p className="mb-3 text-xs text-fg-subtle">{t("hint")}</p>
 
       {adding && (
         <form onSubmit={create} className="card mb-3 flex flex-col gap-2">
           <div className="flex flex-wrap gap-2">
             <input
               required
-              placeholder={t("recipientNamePlaceholder")}
+              placeholder={t("recipientNamePlaceholder")} aria-label={t("recipientNamePlaceholder")}
               className="input flex-1"
               value={form.recipientName}
               onChange={(e) => setForm((f) => ({ ...f, recipientName: e.target.value }))}
             />
             <input
-              placeholder={t("recipientCompanyPlaceholder")}
+              placeholder={t("recipientCompanyPlaceholder")} aria-label={t("recipientCompanyPlaceholder")}
               className="input flex-1"
               value={form.recipientCompany}
               onChange={(e) => setForm((f) => ({ ...f, recipientCompany: e.target.value }))}
             />
-            <select className="input" value={form.method} onChange={(e) => setForm((f) => ({ ...f, method: e.target.value as TransmittalMethod }))}>
+            <select aria-label={ta("method")} className="input" value={form.method} onChange={(e) => setForm((f) => ({ ...f, method: e.target.value as TransmittalMethod }))}>
               {TRANSMITTAL_METHODS.map((m) => (
                 <option key={m} value={m}>
                   {t(`method_${m}`)}
@@ -125,27 +129,27 @@ export function TransmittalsPanel({ projectId }: { projectId: string }) {
             </select>
           </div>
           <input
-            placeholder={t("purposePlaceholder")}
+            placeholder={t("purposePlaceholder")} aria-label={t("purposePlaceholder")}
             className="input"
             value={form.purpose}
             onChange={(e) => setForm((f) => ({ ...f, purpose: e.target.value }))}
           />
 
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">{t("items")}</span>
+            <span className="text-xs font-semibold text-fg-subtle">{t("items")}</span>
             <button type="button" onClick={addItemRow} className="btn-secondary px-2 py-1 text-xs">
               + {t("addItem")}
             </button>
           </div>
           {items.map((item, i) => (
             <div key={i} className="flex gap-2">
-              <input
+              <input aria-label={tc("description")}
                 placeholder={t("itemDescriptionPlaceholder")}
                 className="input flex-1"
                 value={item.description}
                 onChange={(e) => setItems((its) => its.map((it, j) => (j === i ? { ...it, description: e.target.value } : it)))}
               />
-              <input
+              <input aria-label={ta("quantity")}
                 type="number"
                 min="1"
                 className="input w-20"
@@ -167,23 +171,23 @@ export function TransmittalsPanel({ projectId }: { projectId: string }) {
       )}
 
       {!transmittals ? (
-        <p className="text-sm text-gray-500 dark:text-gray-400">{tc("loading")}</p>
+        transmittalsError ? <ErrorState error={transmittalsError} onRetry={reloadTransmittals} compact /> : <Skeleton lines={3} />
       ) : transmittals.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noTransmittals")}</p>
+        <p className="text-sm text-fg-subtle">{t("noTransmittals")}</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {transmittals.map((tr) => (
             <li key={tr.id} className="card">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-900 dark:text-gray-50">
+                <span className="text-sm font-medium text-fg">
                   T-{tr.number} — {tr.recipientName}
-                  {tr.recipientCompany && <span className="text-xs text-gray-400 dark:text-gray-500"> ({tr.recipientCompany})</span>}
+                  {tr.recipientCompany && <span className="text-xs text-fg-subtle"> ({tr.recipientCompany})</span>}
                 </span>
-                <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${tr.acknowledgedAt ? "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500" : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"}`}>
+                <Badge tone={tr.acknowledgedAt ? "success" : "neutral"}>
                   {tr.acknowledgedAt ? t("acknowledged") : t("pending")}
-                </span>
+                </Badge>
               </div>
-              <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
+              <p className="mt-1 text-xs text-fg-subtle">
                 {t(`method_${tr.method}`)} · {formatDate(new Date(tr.sentAt))}
                 {tr.purpose && ` · ${tr.purpose}`}
               </p>
@@ -195,11 +199,11 @@ export function TransmittalsPanel({ projectId }: { projectId: string }) {
                 ))}
               </ul>
               {tr.acknowledgedAt ? (
-                <p className="mt-2 text-xs text-success-700 dark:text-success-500">{t("acknowledgedBy", { name: tr.acknowledgedByName ?? "" })}</p>
+                <p className="mt-2 text-xs text-success-fg">{t("acknowledgedBy", { name: tr.acknowledgedByName ?? "" })}</p>
               ) : ackingId === tr.id ? (
                 <div className="mt-2 flex items-center gap-2">
                   <input
-                    placeholder={t("acknowledgedByPlaceholder")}
+                    placeholder={t("acknowledgedByPlaceholder")} aria-label={t("acknowledgedByPlaceholder")}
                     className="input flex-1 py-1 text-xs"
                     value={ackName}
                     onChange={(e) => setAckName(e.target.value)}

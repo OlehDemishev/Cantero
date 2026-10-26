@@ -30,10 +30,10 @@ export function LanguagePanel() {
 
   return (
     <section className="card lg:col-span-2" aria-labelledby="my-language-title">
-      <h2 id="my-language-title" className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">
+      <h2 id="my-language-title" className="mb-1 text-sm font-semibold text-fg-muted">
         {t("myLanguage")}
       </h2>
-      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("myLanguageHint")}</p>
+      <p className="mb-3 text-xs text-fg-subtle">{t("myLanguageHint")}</p>
       <select className="input w-auto" aria-label={t("myLanguage")} value={me.user.locale ?? ""} disabled={busy} onChange={(e) => choose(e.target.value)}>
         <option value="">{t("companyLanguage", { language: LOCALE_NAMES[me.company.locale] })}</option>
         {SUPPORTED_LOCALES.map((l) => (

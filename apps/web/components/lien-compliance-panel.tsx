@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import {
   LIEN_NOTICE_DIRECTIONS,
@@ -10,8 +10,15 @@ import {
   type LienNoticeType,
 } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useMe } from "@/lib/use-me";
 import { formatDate } from "@/lib/format-date";
+import { formatCurrency } from "@/lib/format-currency";
+import { Badge } from "@/components/ui/badge";
+import { statusTone } from "@/lib/status-tone";
+import { Field } from "@/components/ui/field";
 
 interface LienNotice {
   id: string;
@@ -34,20 +41,15 @@ interface MechanicsLienFiling {
   notes: string | null;
 }
 
-const FILING_STATUS_STYLES: Record<LienFilingStatus, string> = {
-  filed: "bg-warning-50 dark:bg-warning-500/15 text-warning-700 dark:text-warning-500",
-  released: "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500",
-  disputed: "bg-error-50 dark:bg-error-500/15 text-error-700 dark:text-error-500",
-};
-
 export function LienCompliancePanel({ projectId }: { projectId: string }) {
   const t = useTranslations("lienCompliance");
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
 
-  const [notices, setNotices] = useState<LienNotice[] | null>(null);
-  const [filings, setFilings] = useState<MechanicsLienFiling[] | null>(null);
+  const { data: notices = null, reload: reloadNotices, error: noticesError } = useApi<LienNotice[]>(`/projects/${projectId}/lien-notices`);
+  const { data: filings = null, reload: reloadFilings, error: filingsError } = useApi<MechanicsLienFiling[]>(`/projects/${projectId}/lien-filings`);
   const [addingNotice, setAddingNotice] = useState(false);
   const [noticeForm, setNoticeForm] = useState({
     direction: "sent" as LienNoticeDirection,
@@ -61,10 +63,9 @@ export function LienCompliancePanel({ projectId }: { projectId: string }) {
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<LienNotice[]>(`/projects/${projectId}/lien-notices`).then(setNotices);
-    apiFetch<MechanicsLienFiling[]>(`/projects/${projectId}/lien-filings`).then(setFilings);
+    void reloadNotices();
+    void reloadFilings();
   }
-  useEffect(load, [projectId]);
 
   async function createNotice(e: React.FormEvent) {
     e.preventDefault();
@@ -133,25 +134,25 @@ export function LienCompliancePanel({ projectId }: { projectId: string }) {
   return (
     <div className="mt-10">
       <div className="mb-1 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
+        <h2 className="text-sm font-semibold text-fg-muted">{t("title")}</h2>
         {!addingNotice && (
           <button onClick={() => setAddingNotice(true)} className="btn-secondary px-2.5 py-1 text-xs">
             {t("logNotice")}
           </button>
         )}
       </div>
-      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("hint")}</p>
+      <p className="mb-3 text-xs text-fg-subtle">{t("hint")}</p>
 
       {addingNotice && (
         <form onSubmit={createNotice} className="card mb-3 flex flex-wrap items-end gap-2">
-          <select className="input" value={noticeForm.direction} onChange={(e) => setNoticeForm((f) => ({ ...f, direction: e.target.value as LienNoticeDirection }))}>
+          <select aria-label={ta("direction")} className="input" value={noticeForm.direction} onChange={(e) => setNoticeForm((f) => ({ ...f, direction: e.target.value as LienNoticeDirection }))}>
             {LIEN_NOTICE_DIRECTIONS.map((d) => (
               <option key={d} value={d}>
                 {t(`direction_${d}`)}
               </option>
             ))}
           </select>
-          <select className="input" value={noticeForm.type} onChange={(e) => setNoticeForm((f) => ({ ...f, type: e.target.value as LienNoticeType }))}>
+          <select aria-label={ta("type")} className="input" value={noticeForm.type} onChange={(e) => setNoticeForm((f) => ({ ...f, type: e.target.value as LienNoticeType }))}>
             {LIEN_NOTICE_TYPES.map((type) => (
               <option key={type} value={type}>
                 {t(`type_${type}`)}
@@ -160,17 +161,16 @@ export function LienCompliancePanel({ projectId }: { projectId: string }) {
           </select>
           <input
             required
-            placeholder={t("relatedPartyNamePlaceholder")}
+            placeholder={t("relatedPartyNamePlaceholder")} aria-label={t("relatedPartyNamePlaceholder")}
             className="input flex-1"
             value={noticeForm.relatedPartyName}
             onChange={(e) => setNoticeForm((f) => ({ ...f, relatedPartyName: e.target.value }))}
           />
-          <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
-            {t("deadlineDate")}
+          <Field label={t("deadlineDate")} size="sm">
             <input type="date" className="input" value={noticeForm.deadlineDate} onChange={(e) => setNoticeForm((f) => ({ ...f, deadlineDate: e.target.value }))} />
-          </label>
+          </Field>
           <input
-            placeholder={t("methodOfServicePlaceholder")}
+            placeholder={t("methodOfServicePlaceholder")} aria-label={t("methodOfServicePlaceholder")}
             className="input w-40"
             value={noticeForm.methodOfService}
             onChange={(e) => setNoticeForm((f) => ({ ...f, methodOfService: e.target.value }))}
@@ -185,22 +185,22 @@ export function LienCompliancePanel({ projectId }: { projectId: string }) {
       )}
 
       {!notices ? (
-        <p className="text-sm text-gray-500 dark:text-gray-400">{tc("loading")}</p>
+        noticesError ? <ErrorState error={noticesError} onRetry={reloadNotices} compact /> : <Skeleton lines={3} />
       ) : notices.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noNotices")}</p>
+        <p className="text-sm text-fg-subtle">{t("noNotices")}</p>
       ) : (
         <ul className="mb-6 flex flex-col gap-2">
           {notices.map((n) => (
             <li key={n.id} className="card">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-900 dark:text-gray-50">
+                <span className="text-sm font-medium text-fg">
                   {t(`type_${n.type}`)} · {n.relatedPartyName}
                 </span>
-                <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${n.sentAt ? "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500" : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"}`}>
+                <Badge tone={n.sentAt ? "success" : "neutral"}>
                   {t(`direction_${n.direction}`)} · {n.sentAt ? t("sent") : t("pending")}
-                </span>
+                </Badge>
               </div>
-              <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
+              <p className="mt-1 text-xs text-fg-subtle">
                 {n.deadlineDate && `${t("deadlineDate")}: ${formatDate(new Date(n.deadlineDate))}`}
                 {n.methodOfService && ` · ${n.methodOfService}`}
               </p>
@@ -215,7 +215,7 @@ export function LienCompliancePanel({ projectId }: { projectId: string }) {
       )}
 
       <div className="mb-1 flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("filingsTitle")}</h3>
+        <h3 className="text-sm font-semibold text-fg-muted">{t("filingsTitle")}</h3>
         {!addingFiling && (
           <button onClick={() => setAddingFiling(true)} className="btn-secondary px-2.5 py-1 text-xs">
             {t("fileLien")}
@@ -227,7 +227,7 @@ export function LienCompliancePanel({ projectId }: { projectId: string }) {
         <form onSubmit={createFiling} className="card mb-3 flex flex-wrap items-end gap-2">
           <input
             required
-            placeholder={t("filedByPlaceholder")}
+            placeholder={t("filedByPlaceholder")} aria-label={t("filedByPlaceholder")}
             className="input"
             value={filingForm.filedByName}
             onChange={(e) => setFilingForm((f) => ({ ...f, filedByName: e.target.value }))}
@@ -237,15 +237,14 @@ export function LienCompliancePanel({ projectId }: { projectId: string }) {
             type="number"
             step="0.01"
             min="0"
-            placeholder={t("amountPlaceholder", { currency })}
+            placeholder={t("amountPlaceholder", { currency })} aria-label={t("amountPlaceholder", { currency })}
             className="input w-40"
             value={filingForm.amount}
             onChange={(e) => setFilingForm((f) => ({ ...f, amount: e.target.value }))}
           />
-          <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
-            {t("filedAt")}
+          <Field label={t("filedAt")} size="sm">
             <input required type="date" className="input" value={filingForm.filedAt} onChange={(e) => setFilingForm((f) => ({ ...f, filedAt: e.target.value }))} />
-          </label>
+          </Field>
           <button type="submit" disabled={busy} className="btn-primary">
             {tc("save")}
           </button>
@@ -256,26 +255,26 @@ export function LienCompliancePanel({ projectId }: { projectId: string }) {
       )}
 
       {!filings ? (
-        <p className="text-sm text-gray-500 dark:text-gray-400">{tc("loading")}</p>
+        filingsError ? <ErrorState error={filingsError} onRetry={reloadFilings} compact /> : <Skeleton lines={3} />
       ) : filings.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noFilings")}</p>
+        <p className="text-sm text-fg-subtle">{t("noFilings")}</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {filings.map((f) => (
             <li key={f.id} className="card">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-900 dark:text-gray-50">
-                  {f.filedByName} · {f.amount} {currency}
+                <span className="text-sm font-medium text-fg">
+                  {f.filedByName} · {formatCurrency(f.amount, currency)}
                 </span>
-                <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${FILING_STATUS_STYLES[f.status]}`}>{t(`status_${f.status}`)}</span>
+                <Badge tone={statusTone(f.status, "lienFiling")}>{t(`status_${f.status}`)}</Badge>
               </div>
-              <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">{t("filedAt")}: {formatDate(new Date(f.filedAt))}</p>
+              <p className="mt-1 text-xs text-fg-subtle">{t("filedAt")}: {formatDate(new Date(f.filedAt))}</p>
               {f.status === "filed" && (
                 <div className="mt-2 flex gap-2">
                   <button onClick={() => updateFilingStatus(f.id, "released")} disabled={busy} className="btn-secondary px-2 py-1 text-xs">
                     {t("moveTo_released")}
                   </button>
-                  <button onClick={() => updateFilingStatus(f.id, "disputed")} disabled={busy} className="text-xs text-error-700 dark:text-error-500 hover:underline">
+                  <button onClick={() => updateFilingStatus(f.id, "disputed")} disabled={busy} className="text-xs text-danger-fg hover:underline">
                     {t("moveTo_disputed")}
                   </button>
                 </div>

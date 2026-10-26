@@ -2,10 +2,17 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, notifyApiError } from "@/lib/api-client";
 import { SageApExportPanel } from "@/components/sage-ap-export-panel";
 import { useMe } from "@/lib/use-me";
 import { formatDate } from "@/lib/format-date";
+import { useConfirm } from "@/components/ui/confirm-dialog";
+import { formatCurrency } from "@/lib/format-currency";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useApi } from "@/lib/use-api";
+import { Badge } from "@/components/ui/badge";
+import { Field } from "@/components/ui/field";
 
 interface Supplier {
   id: string;
@@ -86,12 +93,16 @@ interface ApAgingReport {
 
 export function VendorBillsPanel() {
   const t = useTranslations("purchaseOrders");
+  const confirm = useConfirm();
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
   const { data: me } = useMe();
 
-  const [bills, setBills] = useState<VendorBill[] | null>(null);
-  const [aging, setAging] = useState<ApAgingReport | null>(null);
-  const [disbursementCalendar, setDisbursementCalendar] = useState<DisbursementCalendar | null>(null);
+  const { data: bills = null, error: billsError, reload: reloadBillList } = useApi<VendorBill[]>("/materials/vendor-bills");
+  const { data: aging = null, reload: reloadAging } = useApi<ApAgingReport>("/materials/vendor-bills/aging-report");
+  const { data: disbursementCalendar = null, reload: reloadDisbursementCalendar } = useApi<DisbursementCalendar>(
+    "/materials/vendor-bills/disbursement-calendar",
+  );
   const [scheduleDrafts, setScheduleDrafts] = useState<Record<string, string>>({});
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [orders, setOrders] = useState<PurchaseOrderSummary[]>([]);
@@ -104,18 +115,17 @@ export function VendorBillsPanel() {
   const [billSubmitting, setBillSubmitting] = useState(false);
 
   function loadBills() {
-    apiFetch<VendorBill[]>("/materials/vendor-bills").then(setBills);
-    apiFetch<ApAgingReport>("/materials/vendor-bills/aging-report").then(setAging);
-    apiFetch<DisbursementCalendar>("/materials/vendor-bills/disbursement-calendar").then(setDisbursementCalendar);
+    void reloadBillList();
+    void reloadAging();
+    void reloadDisbursementCalendar();
   }
 
   useEffect(() => {
-    loadBills();
     apiFetch<Supplier[]>("/materials/suppliers").then((s) => {
       setSuppliers(s);
       if (s[0]) setBillSupplierId(s[0].id);
-    });
-    apiFetch<PurchaseOrderSummary[]>("/materials/purchase-orders").then(setOrders);
+    }).catch(notifyApiError);
+    apiFetch<PurchaseOrderSummary[]>("/materials/purchase-orders").then(setOrders).catch(notifyApiError);
   }, []);
 
   function addBillLine() {
@@ -170,28 +180,34 @@ export function VendorBillsPanel() {
   }
 
   async function voidBill(billId: string) {
-    const reason = window.prompt(t("voidBillReasonPrompt"));
-    if (!reason) return;
-    await apiFetch(`/materials/vendor-bills/${billId}/void`, { method: "POST", body: JSON.stringify({ reason }) });
-    loadBills();
+    await confirm({
+      title: t("voidBill"),
+      tone: "danger",
+      verb: "void",
+      reason: { label: t("voidBillReasonPrompt"), required: true },
+      action: async (reason) => {
+        await apiFetch(`/materials/vendor-bills/${billId}/void`, { method: "POST", body: JSON.stringify({ reason }) });
+        loadBills();
+      },
+    });
   }
 
   return (
     <div className="mt-10">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("vendorBillsTitle")}</h2>
-      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("vendorBillsHint")}</p>
+      <h2 className="mb-1 text-sm font-semibold text-fg-muted">{t("vendorBillsTitle")}</h2>
+      <p className="mb-3 text-xs text-fg-subtle">{t("vendorBillsHint")}</p>
 
       <SageApExportPanel />
 
       {aging && aging.grandTotal > 0 && (
         <div className="card mb-4">
-          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("apAgingTitle")}</h3>
+          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-fg-subtle">{t("apAgingTitle")}</h3>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
             {(["current", "days1to30", "days31to60", "days61to90", "over90"] as const).map((bucket) => (
               <div key={bucket}>
-                <div className="text-xs text-gray-500 dark:text-gray-400">{t(`agingBucket_${bucket}`)}</div>
-                <div className="mt-1 text-sm font-semibold text-gray-900 dark:text-gray-50">
-                  {aging.totalsByBucket[bucket] ?? 0} {me?.company.currency}
+                <div className="text-xs text-fg-subtle">{t(`agingBucket_${bucket}`)}</div>
+                <div className="mt-1 text-sm font-semibold text-fg">
+                  {formatCurrency(aging.totalsByBucket[bucket] ?? 0, me?.company.currency)}
                 </div>
               </div>
             ))}
@@ -202,7 +218,7 @@ export function VendorBillsPanel() {
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
         <div className="card lg:col-span-1">
           <div className="mb-4 flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("newVendorBill")}</h3>
+            <h3 className="text-sm font-semibold text-fg-muted">{t("newVendorBill")}</h3>
             {!addingBill && (
               <button onClick={() => setAddingBill(true)} className="btn-secondary px-2.5 py-1 text-xs">
                 {tc("create")}
@@ -211,14 +227,14 @@ export function VendorBillsPanel() {
           </div>
           {addingBill && (
             <form onSubmit={submitBill} className="flex flex-col gap-3">
-              <select className="input" value={billSupplierId} onChange={(e) => setBillSupplierId(e.target.value)}>
+              <select aria-label={t("supplier")} className="input" value={billSupplierId} onChange={(e) => setBillSupplierId(e.target.value)}>
                 {suppliers.map((s) => (
                   <option key={s.id} value={s.id}>
                     {s.name}
                   </option>
                 ))}
               </select>
-              <select className="input" value={billPurchaseOrderId} onChange={(e) => setBillPurchaseOrderId(e.target.value)}>
+              <select aria-label={ta("purchaseOrder")} className="input" value={billPurchaseOrderId} onChange={(e) => setBillPurchaseOrderId(e.target.value)}>
                 <option value="">{t("noLinkedPurchaseOrder")}</option>
                 {orders
                   .filter((po) => po.supplier.id === billSupplierId)
@@ -230,18 +246,17 @@ export function VendorBillsPanel() {
               </select>
               <input
                 required
-                placeholder={t("billNumberPlaceholder")}
+                placeholder={t("billNumberPlaceholder")} aria-label={t("billNumberPlaceholder")}
                 className="input"
                 value={billNumber}
                 onChange={(e) => setBillNumber(e.target.value)}
               />
-              <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
-                {t("dueDate")}
-                <input type="date" className="input mt-1" value={billDueDate} onChange={(e) => setBillDueDate(e.target.value)} />
-              </label>
+              <Field label={t("dueDate")} size="sm">
+                <input type="date" className="input" value={billDueDate} onChange={(e) => setBillDueDate(e.target.value)} />
+              </Field>
 
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">{t("billLines")}</span>
+                <span className="text-xs font-semibold text-fg-subtle">{t("billLines")}</span>
                 <button type="button" onClick={addBillLine} className="btn-secondary px-2 py-1 text-xs">
                   + {t("addLine")}
                 </button>
@@ -250,7 +265,7 @@ export function VendorBillsPanel() {
                 <div key={i} className="flex gap-2">
                   <input
                     required
-                    placeholder={t("lineDescriptionPlaceholder")}
+                    placeholder={t("lineDescriptionPlaceholder")} aria-label={t("lineDescriptionPlaceholder")}
                     className="input"
                     value={line.description}
                     onChange={(e) => setBillLines((ls) => ls.map((l, j) => (j === i ? { ...l, description: e.target.value } : l)))}
@@ -259,7 +274,7 @@ export function VendorBillsPanel() {
                     type="number"
                     step="0.01"
                     min="0.01"
-                    placeholder={t("quantity")}
+                    placeholder={t("quantity")} aria-label={t("quantity")}
                     className="input w-20"
                     value={line.quantity}
                     onChange={(e) => setBillLines((ls) => ls.map((l, j) => (j === i ? { ...l, quantity: e.target.value } : l)))}
@@ -268,7 +283,7 @@ export function VendorBillsPanel() {
                     type="number"
                     step="0.01"
                     min="0"
-                    placeholder={t("unitPrice")}
+                    placeholder={t("unitPrice")} aria-label={t("unitPrice")}
                     className="input w-20"
                     value={line.unitPrice}
                     onChange={(e) => setBillLines((ls) => ls.map((l, j) => (j === i ? { ...l, unitPrice: e.target.value } : l)))}
@@ -290,9 +305,9 @@ export function VendorBillsPanel() {
 
         <div className="lg:col-span-2">
           {!bills ? (
-            <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
+            billsError ? <ErrorState error={billsError} onRetry={reloadBillList} compact /> : <Skeleton lines={3} />
           ) : bills.length === 0 ? (
-            <p className="text-gray-500 dark:text-gray-400">{t("noVendorBills")}</p>
+            <p className="text-fg-subtle">{t("noVendorBills")}</p>
           ) : (
             <ul className="flex flex-col gap-2">
               {bills.map((bill) => (
@@ -303,41 +318,27 @@ export function VendorBillsPanel() {
                     </div>
                     <div className="flex items-center gap-2">
                       {bill.match.status !== "no_po" && (
-                        <span
-                          className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                            bill.match.status === "variance" ? "bg-error-50 dark:bg-error-500/15 text-error-700 dark:text-error-500" : "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500"
-                          }`}
-                        >
+                        <Badge tone={bill.match.status === "variance" ? "danger" : "success"}>
                           {t(`matchStatus_${bill.match.status}`)}
-                        </span>
+                        </Badge>
                       )}
-                      <span
-                        className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                          bill.status === "paid"
-                            ? "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500"
-                            : bill.status === "approved"
-                              ? "bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-400"
-                              : bill.status === "void"
-                                ? "bg-error-50 dark:bg-error-500/15 text-error-700 dark:text-error-500"
-                                : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
-                        }`}
-                      >
+                      <Badge tone={bill.status === "paid" ? "success" : bill.status === "approved" ? "brand" : bill.status === "void" ? "danger" : "neutral"}>
                         {t(`billStatus_${bill.status}`)}
-                      </span>
+                      </Badge>
                     </div>
                   </div>
-                  <ul className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                  <ul className="mt-2 text-sm text-fg-subtle">
                     {bill.lines.map((l) => (
                       <li key={l.id}>
-                        {l.description} × {l.quantity} @ {l.unitPrice} {me?.company.currency}
+                        {l.description} × {l.quantity} @ {formatCurrency(l.unitPrice, me?.company.currency, { maximumFractionDigits: 4 })}
                       </li>
                     ))}
                   </ul>
-                  {bill.dueDate && <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">{t("dueDate")}: {formatDate(new Date(bill.dueDate))}</p>}
+                  {bill.dueDate && <p className="mt-1 text-xs text-fg-subtle">{t("dueDate")}: {formatDate(new Date(bill.dueDate))}</p>}
                   {bill.scheduledPaymentDate && (
-                    <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">{t("scheduledPaymentDate")}: {formatDate(new Date(bill.scheduledPaymentDate))}</p>
+                    <p className="mt-1 text-xs text-fg-subtle">{t("scheduledPaymentDate")}: {formatDate(new Date(bill.scheduledPaymentDate))}</p>
                   )}
-                  {bill.status === "void" && bill.voidReason && <p className="mt-1 text-xs text-error-600">{t("voidReasonLabel")}: {bill.voidReason}</p>}
+                  {bill.status === "void" && bill.voidReason && <p className="mt-1 text-xs text-danger-fg">{t("voidReasonLabel")}: {bill.voidReason}</p>}
                   <div className="mt-3 flex flex-wrap items-center gap-2">
                     {bill.status === "draft" && (
                       <button onClick={() => approveBill(bill.id)} className="btn-secondary px-2 py-1 text-xs">
@@ -345,7 +346,7 @@ export function VendorBillsPanel() {
                       </button>
                     )}
                     {(bill.status === "approved" || bill.status === "paid") && (
-                      <button onClick={() => voidBill(bill.id)} className="btn-secondary px-2 py-1 text-xs text-error-600">
+                      <button onClick={() => voidBill(bill.id)} className="btn-secondary px-2 py-1 text-xs text-danger-fg">
                         {t("voidBill")}
                       </button>
                     )}
@@ -354,7 +355,7 @@ export function VendorBillsPanel() {
                         <button onClick={() => payBill(bill.id)} className="btn-secondary px-2 py-1 text-xs">
                           {t("markPaid")}
                         </button>
-                        <input
+                        <input aria-label={ta("scheduledPaymentDate")}
                           type="date"
                           className="input py-1 text-xs"
                           value={scheduleDrafts[bill.id] ?? ""}
@@ -378,14 +379,14 @@ export function VendorBillsPanel() {
 
         {disbursementCalendar && disbursementCalendar.buckets.some((b) => b.total > 0) && (
           <div className="card mt-4 lg:col-span-3">
-            <h3 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("disbursementCalendar")}</h3>
-            <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("disbursementCalendarHint")}</p>
-            <div className="overflow-x-auto">
+            <h3 className="mb-1 text-sm font-semibold text-fg-muted">{t("disbursementCalendar")}</h3>
+            <p className="mb-3 text-xs text-fg-subtle">{t("disbursementCalendarHint")}</p>
+            <div tabIndex={0} className="overflow-x-auto">
               <table className="w-full min-w-[480px] border-collapse text-sm">
                 <thead>
-                  <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
-                    <th className="py-1">{t("weekOf")}</th>
-                    <th className="text-right">{t("totalDue")}</th>
+                  <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
+                    <th scope="col" className="py-1">{t("weekOf")}</th>
+                    <th scope="col" className="text-right">{t("totalDue")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -393,7 +394,7 @@ export function VendorBillsPanel() {
                     <tr key={b.weekStart} className="border-b border-gray-100 dark:border-gray-700">
                       <td className="py-1">{formatDate(new Date(b.weekStart))}</td>
                       <td className="text-right tabular-nums">
-                        {b.total.toFixed(2)} {me?.company.currency}
+                        {formatCurrency(b.total, me?.company.currency)}
                       </td>
                     </tr>
                   ))}
@@ -401,8 +402,8 @@ export function VendorBillsPanel() {
               </table>
             </div>
             {disbursementCalendar.unscheduledTotal > 0 && (
-              <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                {t("unscheduledTotal", { amount: disbursementCalendar.unscheduledTotal.toFixed(2), currency: me?.company.currency ?? "" })}
+              <p className="mt-2 text-xs text-fg-subtle">
+                {t("unscheduledTotal", { amount: formatCurrency(disbursementCalendar.unscheduledTotal, me?.company.currency) })}
               </p>
             )}
           </div>

@@ -1,12 +1,16 @@
-import { NotFoundException } from "@nestjs/common";
+import { BadRequestException, NotFoundException } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import { WorkersService } from "./workers.service";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService } from "../common/audit/audit.service";
 import { RateLimiterService } from "../common/rate-limiter/rate-limiter.service";
+import { JwtService } from "@nestjs/jwt";
+import * as bcrypt from "bcryptjs";
+import { verifyKioskToken } from "./kiosk-token";
 
 const COMPANY_A = "company-a";
 const ACTOR = { userId: "user-1", name: "PM" };
+const WAGE_CLASS = "0b9d6a0e-1f5c-4c3e-9d84-5f2a7d3c1e01";
 
 describe("WorkersService certifications", () => {
   let service: WorkersService;
@@ -24,7 +28,7 @@ describe("WorkersService certifications", () => {
     audit = { record: jest.fn() };
 
     const module = await Test.createTestingModule({
-      providers: [WorkersService, { provide: PrismaService, useValue: prisma }, { provide: AuditService, useValue: audit }, { provide: RateLimiterService, useValue: new RateLimiterService() }],
+      providers: [WorkersService, { provide: PrismaService, useValue: prisma }, { provide: AuditService, useValue: audit }, { provide: RateLimiterService, useValue: new RateLimiterService() }, { provide: JwtService, useValue: new JwtService({ secret: "test-secret" }) }],
     }).compile();
 
     service = module.get(WorkersService);
@@ -100,11 +104,13 @@ describe("WorkersService — PTO and onboarding", () => {
     workerOnboardingTask: { createMany: jest.Mock; findMany: jest.Mock; findFirst: jest.Mock; update: jest.Mock };
     offboardingTemplateItem: { findMany: jest.Mock };
     workerOffboardingTask: { createMany: jest.Mock; findMany: jest.Mock; findFirst: jest.Mock; update: jest.Mock; count: jest.Mock };
+    wageClassification: { findFirst: jest.Mock };
   };
   let audit: { record: jest.Mock };
 
   beforeEach(async () => {
     prisma = {
+      wageClassification: { findFirst: jest.fn().mockResolvedValue({ id: WAGE_CLASS }) },
       worker: { findFirst: jest.fn(), create: jest.fn(), update: jest.fn() },
       onboardingTemplateItem: { findMany: jest.fn() },
       workerOnboardingTask: { createMany: jest.fn(), findMany: jest.fn(), findFirst: jest.fn(), update: jest.fn() },
@@ -114,7 +120,7 @@ describe("WorkersService — PTO and onboarding", () => {
     audit = { record: jest.fn() };
 
     const module = await Test.createTestingModule({
-      providers: [WorkersService, { provide: PrismaService, useValue: prisma }, { provide: AuditService, useValue: audit }, { provide: RateLimiterService, useValue: new RateLimiterService() }],
+      providers: [WorkersService, { provide: PrismaService, useValue: prisma }, { provide: AuditService, useValue: audit }, { provide: RateLimiterService, useValue: new RateLimiterService() }, { provide: JwtService, useValue: new JwtService({ secret: "test-secret" }) }],
     }).compile();
 
     service = module.get(WorkersService);
@@ -145,6 +151,44 @@ describe("WorkersService — PTO and onboarding", () => {
       await service.create(COMPANY_A, { name: "Sam" });
 
       expect(prisma.workerOnboardingTask.createMany).not.toHaveBeenCalled();
+    });
+
+    it("refuses a wage classification from another company", async () => {
+      prisma.wageClassification.findFirst.mockResolvedValue(null);
+
+      await expect(service.create(COMPANY_A, { name: "Sam", wageClassificationId: WAGE_CLASS })).rejects.toThrow(BadRequestException);
+
+      expect(prisma.wageClassification.findFirst).toHaveBeenCalledWith({ where: { id: WAGE_CLASS, companyId: COMPANY_A }, select: { id: true } });
+      expect(prisma.worker.create).not.toHaveBeenCalled();
+    });
+
+    it("accepts the company's own wage classification", async () => {
+      prisma.worker.create.mockResolvedValue({ id: "worker-1", name: "Sam" });
+      prisma.onboardingTemplateItem.findMany.mockResolvedValue([]);
+
+      await service.create(COMPANY_A, { name: "Sam", wageClassificationId: WAGE_CLASS });
+
+      expect(prisma.worker.create).toHaveBeenCalled();
+    });
+  });
+
+  describe("update() — wage classification", () => {
+    it("refuses to point a worker at another company's wage classification", async () => {
+      prisma.worker.findFirst.mockResolvedValue({ id: "worker-1", name: "Sam", active: true, clockInPinHash: null });
+      prisma.wageClassification.findFirst.mockResolvedValue(null);
+
+      await expect(service.update(COMPANY_A, ACTOR, "worker-1", { wageClassificationId: WAGE_CLASS })).rejects.toThrow(BadRequestException);
+      expect(prisma.worker.update).not.toHaveBeenCalled();
+    });
+
+    it("lets a worker's wage classification be cleared without a lookup", async () => {
+      prisma.worker.findFirst.mockResolvedValue({ id: "worker-1", name: "Sam", active: true, clockInPinHash: null });
+      prisma.worker.update.mockResolvedValue({ id: "worker-1", name: "Sam", active: true, clockInPinHash: null });
+
+      await service.update(COMPANY_A, ACTOR, "worker-1", { wageClassificationId: null });
+
+      expect(prisma.wageClassification.findFirst).not.toHaveBeenCalled();
+      expect(prisma.worker.update).toHaveBeenCalled();
     });
   });
 
@@ -276,7 +320,7 @@ describe("WorkersService kiosk PIN", () => {
     audit = { record: jest.fn() };
 
     const module = await Test.createTestingModule({
-      providers: [WorkersService, { provide: PrismaService, useValue: prisma }, { provide: AuditService, useValue: audit }, { provide: RateLimiterService, useValue: new RateLimiterService() }],
+      providers: [WorkersService, { provide: PrismaService, useValue: prisma }, { provide: AuditService, useValue: audit }, { provide: RateLimiterService, useValue: new RateLimiterService() }, { provide: JwtService, useValue: new JwtService({ secret: "test-secret" }) }],
     }).compile();
 
     service = module.get(WorkersService);
@@ -306,18 +350,36 @@ describe("WorkersService kiosk PIN", () => {
 
       await service.setClockInPin(COMPANY_A, ACTOR, "worker-1", "1234");
       const storedHash = prisma.worker.update.mock.calls[0][0].data.clockInPinHash;
-      prisma.worker.findFirst.mockResolvedValue({ id: "worker-1", companyId: COMPANY_A, clockInPinHash: storedHash });
+      prisma.worker.findFirst.mockResolvedValue({ id: "worker-1", companyId: COMPANY_A, active: true, clockInPinHash: storedHash });
 
-      const correct = await service.verifyClockInPin(COMPANY_A, "worker-1", "1234");
-      const wrong = await service.verifyClockInPin(COMPANY_A, "worker-1", "9999");
+      const correct = await service.verifyClockInPin(COMPANY_A, "kiosk-user", "worker-1", "1234");
+      const wrong = await service.verifyClockInPin(COMPANY_A, "kiosk-user", "worker-1", "9999");
 
-      expect(correct).toEqual({ valid: true });
+      expect(correct).toEqual({ valid: true, kioskToken: expect.any(String) });
       expect(wrong).toEqual({ valid: false });
+    });
+
+    it("returns a kiosk token naming this worker, company and kiosk session for a correct PIN", async () => {
+      const hash = await bcrypt.hash("1234", 4);
+      prisma.worker.findFirst.mockResolvedValue({ id: "worker-1", companyId: COMPANY_A, active: true, clockInPinHash: hash });
+
+      const result = await service.verifyClockInPin(COMPANY_A, "kiosk-user", "worker-1", "1234");
+
+      if (!result.valid) throw new Error("expected a valid PIN");
+      const jwt = new JwtService({ secret: "test-secret" });
+      expect(verifyKioskToken(jwt, result.kioskToken, { companyId: COMPANY_A, userId: "kiosk-user" })).toBe("worker-1");
+    });
+
+    it("refuses a correct PIN for an inactive worker", async () => {
+      const hash = await bcrypt.hash("1234", 4);
+      prisma.worker.findFirst.mockResolvedValue({ id: "worker-1", companyId: COMPANY_A, active: false, clockInPinHash: hash });
+
+      await expect(service.verifyClockInPin(COMPANY_A, "kiosk-user", "worker-1", "1234")).resolves.toEqual({ valid: false });
     });
 
     it("returns invalid without comparing when no PIN has been set", async () => {
       prisma.worker.findFirst.mockResolvedValue({ id: "worker-1", companyId: COMPANY_A, clockInPinHash: null });
-      const result = await service.verifyClockInPin(COMPANY_A, "worker-1", "1234");
+      const result = await service.verifyClockInPin(COMPANY_A, "kiosk-user", "worker-1", "1234");
       expect(result).toEqual({ valid: false });
     });
 
@@ -325,19 +387,19 @@ describe("WorkersService kiosk PIN", () => {
       prisma.worker.findFirst.mockResolvedValue({ id: "worker-1", companyId: COMPANY_A, clockInPinHash: "$2b$10$hashvalue" });
 
       for (let i = 0; i < 10; i++) {
-        await service.verifyClockInPin(COMPANY_A, "worker-1", "0000");
+        await service.verifyClockInPin(COMPANY_A, "kiosk-user", "worker-1", "0000");
       }
 
-      await expect(service.verifyClockInPin(COMPANY_A, "worker-1", "0000")).rejects.toMatchObject({ status: 429 });
+      await expect(service.verifyClockInPin(COMPANY_A, "kiosk-user", "worker-1", "0000")).rejects.toMatchObject({ status: 429 });
     });
 
     it("does not rate-limit a different worker's PIN", async () => {
       prisma.worker.findFirst.mockResolvedValue({ id: "worker-1", companyId: COMPANY_A, clockInPinHash: "$2b$10$hashvalue" });
       for (let i = 0; i < 10; i++) {
-        await service.verifyClockInPin(COMPANY_A, "worker-1", "0000");
+        await service.verifyClockInPin(COMPANY_A, "kiosk-user", "worker-1", "0000");
       }
 
-      await expect(service.verifyClockInPin(COMPANY_A, "worker-2", "0000")).resolves.toEqual({ valid: false });
+      await expect(service.verifyClockInPin(COMPANY_A, "kiosk-user", "worker-2", "0000")).resolves.toEqual({ valid: false });
     });
   });
 
@@ -401,7 +463,7 @@ describe("WorkersService.loadedRate()", () => {
     };
 
     const module = await Test.createTestingModule({
-      providers: [WorkersService, { provide: PrismaService, useValue: prisma }, { provide: AuditService, useValue: { record: jest.fn() } }, { provide: RateLimiterService, useValue: new RateLimiterService() }],
+      providers: [WorkersService, { provide: PrismaService, useValue: prisma }, { provide: AuditService, useValue: { record: jest.fn() } }, { provide: RateLimiterService, useValue: new RateLimiterService() }, { provide: JwtService, useValue: new JwtService({ secret: "test-secret" }) }],
     }).compile();
 
     service = module.get(WorkersService);

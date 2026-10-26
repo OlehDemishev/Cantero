@@ -1,7 +1,6 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Res, StreamableFile, UploadedFile, UseInterceptors } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UploadedFile, UseInterceptors } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { MAX_UPLOAD_BYTES } from "../common/upload-limits";
-import type { Response } from "express";
 import {
   createDrawingSheetSchema,
   updateDrawingSheetSchema,
@@ -14,6 +13,7 @@ import { DrawingSheetsService } from "./drawing-sheets.service";
 import { ProjectResource } from "../common/project-access/project-resource.decorator";
 import { OpenToAllRoles } from "../common/decorators/roles.decorator";
 import { Requires } from "../common/decorators/permissions.decorator";
+import { storedFileResponse } from "../common/http/file-response";
 
 @ProjectResource("DrawingSheet")
 @Requires("site.manage")
@@ -88,9 +88,8 @@ export class DrawingSheetsController {
 
   @OpenToAllRoles("every member reads these to do their own site work")
   @Get("drawing-sheets/:id/file")
-  async file(@CurrentUser() user: AuthUser, @Param("id") id: string, @Res({ passthrough: true }) res: Response) {
+  async file(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     const { buffer, mimeType } = await this.service.download(user.companyId, id);
-    res.set({ "Content-Type": mimeType });
-    return new StreamableFile(buffer);
+    return storedFileResponse(buffer, mimeType);
   }
 }

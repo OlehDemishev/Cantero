@@ -3,7 +3,11 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, notifyApiError } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface HazardousMaterial {
   id: string;
@@ -18,22 +22,23 @@ interface InventoryItem {
 
 export function HazmatInventoryPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("hazmat");
-  const tc = useTranslations("common");
+  const confirm = useConfirm();
+  const td = useTranslations("dialog");
+  const ta = useTranslations("a11y");
 
-  const [items, setItems] = useState<InventoryItem[] | null>(null);
+  const { data: items = null, reload: reloadItems, error: itemsError } = useApi<InventoryItem[]>(`/projects/${projectId}/hazmat-inventory`);
   const [materials, setMaterials] = useState<HazardousMaterial[]>([]);
   const [form, setForm] = useState({ hazardousMaterialId: "", quantity: "", location: "" });
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<InventoryItem[]>(`/projects/${projectId}/hazmat-inventory`).then(setItems);
+    void reloadItems();
   }
-  useEffect(load, [projectId]);
   useEffect(() => {
     apiFetch<HazardousMaterial[]>("/hazmat/materials").then((list) => {
       setMaterials(list);
       if (list[0]) setForm((f) => ({ ...f, hazardousMaterialId: f.hazardousMaterialId || list[0].id }));
-    });
+    }).catch(notifyApiError);
   }, []);
 
   async function addItem(e: React.FormEvent) {
@@ -53,6 +58,7 @@ export function HazmatInventoryPanel({ projectId }: { projectId: string }) {
   }
 
   async function removeItem(id: string) {
+    if (!(await confirm({ message: td("deleteHazmatItem"), tone: "danger", verb: "delete" }))) return;
     setBusy(true);
     try {
       await apiFetch(`/hazmat-inventory/${id}`, { method: "DELETE" });
@@ -66,13 +72,13 @@ export function HazmatInventoryPanel({ projectId }: { projectId: string }) {
 
   return (
     <div className="mt-10">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("inventoryTitle")}</h2>
-      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("inventoryHint")}</p>
+      <h2 className="mb-1 text-sm font-semibold text-fg-muted">{t("inventoryTitle")}</h2>
+      <p className="mb-3 text-xs text-fg-subtle">{t("inventoryHint")}</p>
 
       {!items ? (
-        <p className="text-sm text-gray-500 dark:text-gray-400">{tc("loading")}</p>
+        itemsError ? <ErrorState error={itemsError} onRetry={reloadItems} compact /> : <Skeleton lines={3} />
       ) : items.length === 0 ? (
-        <p className="mb-3 text-sm text-gray-400 dark:text-gray-500">{t("noInventory")}</p>
+        <p className="mb-3 text-sm text-fg-subtle">{t("noInventory")}</p>
       ) : (
         <ul className="mb-3 flex flex-col gap-1.5">
           {items.map((item) => (
@@ -81,10 +87,10 @@ export function HazmatInventoryPanel({ projectId }: { projectId: string }) {
                 <Link href={`/hazmat?materialId=${item.hazardousMaterial.id}`} className="text-brand-700 dark:text-brand-400 hover:underline">
                   {item.hazardousMaterial.name}
                 </Link>
-                {item.quantity && <span className="ml-1.5 text-xs text-gray-400 dark:text-gray-500">{item.quantity}</span>}
-                {item.location && <span className="ml-1.5 text-xs text-gray-400 dark:text-gray-500">— {item.location}</span>}
+                {item.quantity && <span className="ml-1.5 text-xs text-fg-subtle">{item.quantity}</span>}
+                {item.location && <span className="ml-1.5 text-xs text-fg-subtle">— {item.location}</span>}
               </span>
-              <button onClick={() => removeItem(item.id)} disabled={busy} className="text-xs text-error-700 dark:text-error-500 hover:underline">
+              <button aria-label={ta("removeItem", { name: item.hazardousMaterial.name })} onClick={() => removeItem(item.id)} disabled={busy} className="text-xs text-danger-fg hover:underline">
                 ×
               </button>
             </li>
@@ -93,7 +99,7 @@ export function HazmatInventoryPanel({ projectId }: { projectId: string }) {
       )}
 
       <form onSubmit={addItem} className="flex flex-wrap items-end gap-2">
-        <select className="input" value={form.hazardousMaterialId} onChange={(e) => setForm((f) => ({ ...f, hazardousMaterialId: e.target.value }))}>
+        <select aria-label={ta("material")} className="input" value={form.hazardousMaterialId} onChange={(e) => setForm((f) => ({ ...f, hazardousMaterialId: e.target.value }))}>
           {materials.map((m) => (
             <option key={m.id} value={m.id}>
               {m.name}
@@ -101,13 +107,13 @@ export function HazmatInventoryPanel({ projectId }: { projectId: string }) {
           ))}
         </select>
         <input
-          placeholder={t("quantityPlaceholder")}
+          placeholder={t("quantityPlaceholder")} aria-label={t("quantityPlaceholder")}
           className="input w-auto"
           value={form.quantity}
           onChange={(e) => setForm((f) => ({ ...f, quantity: e.target.value }))}
         />
         <input
-          placeholder={t("locationPlaceholder")}
+          placeholder={t("locationPlaceholder")} aria-label={t("locationPlaceholder")}
           className="input w-auto"
           value={form.location}
           onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))}

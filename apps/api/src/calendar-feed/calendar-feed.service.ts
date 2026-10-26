@@ -31,20 +31,24 @@ export class CalendarFeedService {
   constructor(private readonly prisma: PrismaService) {}
 
   async buildFeed(token: string): Promise<string> {
-    const company = await this.prisma.company.findUnique({ where: { calendarFeedToken: token } });
+    const company = await this.prisma.company.findUnique({ where: { calendarFeedToken: token }, select: { id: true, name: true } });
     if (!company) throw new NotFoundException("Calendar feed not found");
 
+    // The feed URL belongs to no one in particular — whoever holds it reads it without signing in —
+    // so it leaves out every members-only (restricted) project rather than guessing whose access
+    // to apply.
+    const openProject = { companyId: company.id, restrictedToMembers: false };
     const [tasks, milestones, serviceVisits] = await Promise.all([
       this.prisma.task.findMany({
-        where: { project: { companyId: company.id }, dueDate: { not: null } },
+        where: { project: openProject, dueDate: { not: null } },
         include: { project: { select: { name: true } } },
       }),
       this.prisma.milestone.findMany({
-        where: { project: { companyId: company.id }, dueDate: { not: null } },
+        where: { project: openProject, dueDate: { not: null } },
         include: { project: { select: { name: true } } },
       }),
       this.prisma.serviceVisit.findMany({
-        where: { companyId: company.id },
+        where: { companyId: company.id, serviceContract: { project: openProject } },
         include: { serviceContract: { select: { title: true } } },
       }),
     ]);

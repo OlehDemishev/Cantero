@@ -1,10 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import type { InspectionResult, PermitStatus } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate } from "@/lib/format-date";
+import { useConfirm } from "@/components/ui/confirm-dialog";
+import { Badge } from "@/components/ui/badge";
+import { statusTone, TONE_TEXT_CLASSES } from "@/lib/status-tone";
+import { Field } from "@/components/ui/field";
 
 interface Permit {
   id: string;
@@ -28,49 +35,39 @@ interface Inspection {
 
 const PERMIT_STATUSES: PermitStatus[] = ["draft", "submitted", "approved", "rejected", "expired"];
 
-const STATUS_STYLES: Record<PermitStatus, string> = {
-  draft: "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300",
-  submitted: "bg-warning-50 dark:bg-warning-500/15 text-warning-700 dark:text-warning-500",
-  approved: "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500",
-  rejected: "bg-error-50 dark:bg-error-500/15 text-error-700 dark:text-error-500",
-  expired: "bg-error-50 dark:bg-error-500/15 text-error-700 dark:text-error-500",
-};
-const RESULT_STYLES: Record<InspectionResult, string> = {
-  pending: "text-gray-500 dark:text-gray-400",
-  passed: "text-success-700 dark:text-success-500",
-  failed: "text-error-700 dark:text-error-500",
-  cancelled: "text-gray-400 dark:text-gray-500",
-};
 
 export function PermitsPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("permits");
+  const confirm = useConfirm();
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
 
-  const [permits, setPermits] = useState<Permit[] | null>(null);
+  const { data: permits = null, reload: reloadPermits, error: permitsError } = useApi<Permit[]>(`/projects/${projectId}/permits`);
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [inspections, setInspections] = useState<Inspection[] | null>(null);
+  const {
+    data: inspections = null,
+    error: inspectionsError,
+    reload: reloadInspections,
+  } = useApi<Inspection[]>(expandedId ? `/permits/${expandedId}/inspections` : null);
   const [permitForm, setPermitForm] = useState({ permitType: "", permitNumber: "", authorityName: "", expiresAt: "" });
   const [inspectionForm, setInspectionForm] = useState({ inspectionType: "", scheduledDate: "", inspectorName: "" });
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<Permit[]>(`/projects/${projectId}/permits`).then(setPermits);
+    void reloadPermits();
   }
-  useEffect(load, [projectId]);
 
-  function loadInspections(permitId: string) {
-    apiFetch<Inspection[]>(`/permits/${permitId}/inspections`).then(setInspections);
+  /** After a change to the open permit's inspections. */
+  function loadInspections() {
+    void reloadInspections();
   }
 
   function toggleExpand(id: string) {
     if (expandedId === id) {
       setExpandedId(null);
-      setInspections(null);
       return;
     }
     setExpandedId(id);
-    setInspections(null);
-    loadInspections(id);
   }
 
   async function createPermit(e: React.FormEvent) {
@@ -105,7 +102,7 @@ export function PermitsPanel({ projectId }: { projectId: string }) {
   }
 
   async function deletePermit(id: string) {
-    if (!window.confirm(t("confirmDeletePermit"))) return;
+    if (!(await confirm({ message: t("confirmDeletePermit"), tone: "danger", verb: "delete" }))) return;
     await apiFetch(`/permits/${id}`, { method: "DELETE" });
     if (expandedId === id) setExpandedId(null);
     load();
@@ -125,7 +122,7 @@ export function PermitsPanel({ projectId }: { projectId: string }) {
         }),
       });
       setInspectionForm({ inspectionType: "", scheduledDate: "", inspectorName: "" });
-      loadInspections(permitId);
+      loadInspections();
     } finally {
       setBusy(false);
     }
@@ -135,7 +132,7 @@ export function PermitsPanel({ projectId }: { projectId: string }) {
     setBusy(true);
     try {
       await apiFetch(`/permits/${permitId}/inspections/${inspectionId}/result`, { method: "POST", body: JSON.stringify({ result }) });
-      loadInspections(permitId);
+      loadInspections();
     } finally {
       setBusy(false);
     }
@@ -143,13 +140,13 @@ export function PermitsPanel({ projectId }: { projectId: string }) {
 
   return (
     <div className="mt-10">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
-      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("hint")}</p>
+      <h2 className="mb-1 text-sm font-semibold text-fg-muted">{t("title")}</h2>
+      <p className="mb-3 text-xs text-fg-subtle">{t("hint")}</p>
 
       {!permits ? (
-        <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
+        permitsError ? <ErrorState error={permitsError} onRetry={reloadPermits} compact /> : <Skeleton lines={3} />
       ) : permits.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noPermits")}</p>
+        <p className="text-sm text-fg-subtle">{t("noPermits")}</p>
       ) : (
         <ul className="mb-4 flex flex-col gap-2">
           {permits.map((p) => {
@@ -157,15 +154,15 @@ export function PermitsPanel({ projectId }: { projectId: string }) {
             return (
               <li key={p.id} className="card">
                 <button onClick={() => toggleExpand(p.id)} className="flex w-full items-center justify-between text-left">
-                  <span className="text-sm font-medium text-gray-900 dark:text-gray-50">
-                    {p.permitType} {p.permitNumber && <span className="text-gray-400 dark:text-gray-500">({p.permitNumber})</span>}
+                  <span className="text-sm font-medium text-fg">
+                    {p.permitType} {p.permitNumber && <span className="text-fg-subtle">({p.permitNumber})</span>}
                   </span>
-                  <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[p.status]}`}>{t(`status_${p.status}`)}</span>
+                  <Badge tone={statusTone(p.status)}>{t(`status_${p.status}`)}</Badge>
                 </button>
 
                 {expanded && (
                   <div className="mt-3 flex flex-col gap-3 border-t border-gray-100 dark:border-gray-700 pt-3">
-                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                    <div className="text-xs text-fg-subtle">
                       {p.authorityName && <div>{t("authority")}: {p.authorityName}</div>}
                       {p.expiresAt && <div>{t("expires")}: {formatDate(new Date(p.expiresAt))}</div>}
                     </div>
@@ -181,34 +178,34 @@ export function PermitsPanel({ projectId }: { projectId: string }) {
                           {t(`status_${s}`)}
                         </button>
                       ))}
-                      <button onClick={() => deletePermit(p.id)} className="text-xs text-gray-400 dark:text-gray-500 hover:text-error-600">
+                      <button onClick={() => deletePermit(p.id)} className="text-xs text-fg-subtle hover:text-danger-fg">
                         {tc("delete")}
                       </button>
                     </div>
 
                     <div>
-                      <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("inspections")}</h3>
+                      <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-fg-subtle">{t("inspections")}</h3>
                       {!inspections ? (
-                        <p className="text-xs text-gray-400 dark:text-gray-500">{tc("loading")}</p>
+                        inspectionsError ? <ErrorState error={inspectionsError} onRetry={reloadInspections} compact /> : <Skeleton lines={3} />
                       ) : inspections.length === 0 ? (
-                        <p className="text-xs text-gray-400 dark:text-gray-500">{t("noInspections")}</p>
+                        <p className="text-xs text-fg-subtle">{t("noInspections")}</p>
                       ) : (
                         <ul className="mb-2 flex flex-col gap-1.5">
                           {inspections.map((i) => (
                             <li key={i.id} className="flex items-center justify-between text-xs">
                               <span>
                                 {i.inspectionType}
-                                {i.scheduledDate && <span className="text-gray-400 dark:text-gray-500"> · {formatDate(new Date(i.scheduledDate))}</span>}
-                                {i.inspectorName && <span className="text-gray-400 dark:text-gray-500"> · {i.inspectorName}</span>}
+                                {i.scheduledDate && <span className="text-fg-subtle"> · {formatDate(new Date(i.scheduledDate))}</span>}
+                                {i.inspectorName && <span className="text-fg-subtle"> · {i.inspectorName}</span>}
                               </span>
                               <span className="flex items-center gap-1.5">
-                                <span className={RESULT_STYLES[i.result]}>{t(`result_${i.result}`)}</span>
+                                <span className={TONE_TEXT_CLASSES[statusTone(i.result, "inspectionResult")]}>{t(`result_${i.result}`)}</span>
                                 {i.result === "pending" && (
                                   <>
-                                    <button onClick={() => recordResult(p.id, i.id, "passed")} className="text-success-700 dark:text-success-500 hover:underline">
+                                    <button onClick={() => recordResult(p.id, i.id, "passed")} className="text-success-fg hover:underline">
                                       {t("result_passed")}
                                     </button>
-                                    <button onClick={() => recordResult(p.id, i.id, "failed")} className="text-error-700 dark:text-error-500 hover:underline">
+                                    <button onClick={() => recordResult(p.id, i.id, "failed")} className="text-danger-fg hover:underline">
                                       {t("result_failed")}
                                     </button>
                                   </>
@@ -221,19 +218,19 @@ export function PermitsPanel({ projectId }: { projectId: string }) {
                       <form onSubmit={(e) => createInspection(e, p.id)} className="flex flex-wrap items-end gap-2">
                         <input
                           required
-                          placeholder={t("inspectionTypePlaceholder")}
+                          placeholder={t("inspectionTypePlaceholder")} aria-label={t("inspectionTypePlaceholder")}
                           className="input w-auto"
                           value={inspectionForm.inspectionType}
                           onChange={(e) => setInspectionForm((f) => ({ ...f, inspectionType: e.target.value }))}
                         />
-                        <input
+                        <input aria-label={ta("scheduledDate")}
                           type="date"
                           className="input w-auto"
                           value={inspectionForm.scheduledDate}
                           onChange={(e) => setInspectionForm((f) => ({ ...f, scheduledDate: e.target.value }))}
                         />
                         <input
-                          placeholder={t("inspectorNamePlaceholder")}
+                          placeholder={t("inspectorNamePlaceholder")} aria-label={t("inspectorNamePlaceholder")}
                           className="input w-auto"
                           value={inspectionForm.inspectorName}
                           onChange={(e) => setInspectionForm((f) => ({ ...f, inspectorName: e.target.value }))}
@@ -254,32 +251,31 @@ export function PermitsPanel({ projectId }: { projectId: string }) {
       <form onSubmit={createPermit} className="flex flex-wrap items-end gap-2 border-t border-gray-100 pt-3 dark:border-gray-800">
         <input
           required
-          placeholder={t("permitTypePlaceholder")}
+          placeholder={t("permitTypePlaceholder")} aria-label={t("permitTypePlaceholder")}
           className="input"
           value={permitForm.permitType}
           onChange={(e) => setPermitForm((f) => ({ ...f, permitType: e.target.value }))}
         />
         <input
-          placeholder={t("permitNumberPlaceholder")}
+          placeholder={t("permitNumberPlaceholder")} aria-label={t("permitNumberPlaceholder")}
           className="input"
           value={permitForm.permitNumber}
           onChange={(e) => setPermitForm((f) => ({ ...f, permitNumber: e.target.value }))}
         />
         <input
-          placeholder={t("authorityPlaceholder")}
+          placeholder={t("authorityPlaceholder")} aria-label={t("authorityPlaceholder")}
           className="input"
           value={permitForm.authorityName}
           onChange={(e) => setPermitForm((f) => ({ ...f, authorityName: e.target.value }))}
         />
-        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
-          {t("expires")}
+        <Field label={t("expires")} size="sm">
           <input
             type="date"
             className="input"
             value={permitForm.expiresAt}
             onChange={(e) => setPermitForm((f) => ({ ...f, expiresAt: e.target.value }))}
           />
-        </label>
+        </Field>
         <button type="submit" disabled={busy} className="btn-secondary shrink-0">
           {t("addPermit")}
         </button>

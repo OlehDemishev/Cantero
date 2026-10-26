@@ -140,10 +140,10 @@ export function AutodeskViewer({ projectId, urn, language }: { projectId: string
   return (
     <div className="relative h-[520px] w-full overflow-hidden rounded-md border border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-900">
       <div ref={container} className="absolute inset-0" />
-      {loading && !error && <p className="absolute left-3 top-3 text-xs text-gray-500 dark:text-gray-400">{t("loading")}</p>}
+      {loading && !error && <p className="absolute left-3 top-3 text-xs text-fg-subtle">{t("loading")}</p>}
       {error && (
         <div className="absolute inset-0 flex items-center justify-center p-6 text-center">
-          <p className="max-w-md text-sm text-error-600">{error}</p>
+          <p className="max-w-md text-sm text-danger-fg">{error}</p>
         </div>
       )}
     </div>

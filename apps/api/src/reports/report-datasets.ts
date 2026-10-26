@@ -2,10 +2,15 @@ import type { ReportDataset } from "@cantero/shared";
 import type { PrismaService } from "../common/prisma/prisma.service";
 import type { ReportsService } from "./reports.service";
 import type { LaborCostService } from "../team/labor-cost.service";
+import type { ProjectAccessService, ProjectViewer } from "../common/project-access/project-access.service";
 
 export interface ReportField {
   key: string;
+  /** English column name — what the CSV export writes, and the fallback for API clients. */
   label: string;
+  /** Built-in fields only: the message key the web translates the column name with
+   * (messages: reportFields.<labelKey>). Custom fields have none; their label is the user's own. */
+  labelKey?: string;
 }
 
 export interface DatasetFilter {
@@ -18,10 +23,11 @@ export interface DatasetDeps {
   prisma: PrismaService;
   reports: ReportsService;
   laborCost: LaborCostService;
+  projectAccess: ProjectAccessService;
 }
 
 /** Each dataset has exactly one built-in date field it filters on — keeps the builder's date-range filter simple instead of letting the user pick which field. */
-export const DATASET_FIELDS: Record<ReportDataset, ReportField[]> = {
+const BUILT_IN_FIELDS: Record<ReportDataset, Omit<ReportField, "labelKey">[]> = {
   projects: [
     { key: "name", label: "Name" },
     { key: "address", label: "Address" },
@@ -89,6 +95,10 @@ export const DATASET_FIELDS: Record<ReportDataset, ReportField[]> = {
   ],
 };
 
+export const DATASET_FIELDS = Object.fromEntries(
+  Object.entries(BUILT_IN_FIELDS).map(([dataset, fields]) => [dataset, fields.map((f) => ({ ...f, labelKey: f.key }))]),
+) as Record<ReportDataset, ReportField[]>;
+
 /** Datasets with no status field — statusEquals is silently ignored for these. */
 const NO_STATUS_DATASETS = new Set<ReportDataset>(["projects", "time_entries"]);
 
@@ -107,19 +117,28 @@ export async function fieldsFor(prisma: PrismaService, companyId: string, datase
   return [...base, ...customFields.map((f) => ({ key: `custom_${f.id}`, label: f.name }))];
 }
 
+/**
+ * Rows of `dataset` as `viewer` may see them: rows of restricted projects the viewer isn't a member
+ * of (or projects outside their own scope) are left out, same as the interactive lists and
+ * reports. An empty viewer is an internal caller and sees everything — callers acting for a
+ * person must always pass one.
+ */
 export async function fetchDatasetRows(
   deps: DatasetDeps,
   companyId: string,
   dataset: ReportDataset,
   filter: DatasetFilter,
+  viewer: ProjectViewer,
 ): Promise<Record<string, unknown>[]> {
-  const { prisma } = deps;
+  const { prisma, projectAccess } = deps;
   const statusEquals = NO_STATUS_DATASETS.has(dataset) ? undefined : filter.statusEquals;
+  const visible = (model: "Project" | "Invoice" | "Estimate" | "TimeEntry" | "PunchListItem" | "Rfi") =>
+    projectAccess.visibleWhere(companyId, model, viewer.userId, viewer.role);
 
   switch (dataset) {
     case "projects": {
       const rows = await prisma.project.findMany({
-        where: { companyId, createdAt: dateRange(filter) },
+        where: { AND: [{ companyId, createdAt: dateRange(filter) }, await visible("Project")] },
         include: { client: { select: { name: true } } },
       });
       const customFields = await prisma.customFieldDefinition.findMany({ where: { companyId, entityType: "project" } });
@@ -151,7 +170,7 @@ export async function fetchDatasetRows(
     }
     case "invoices": {
       const rows = await prisma.invoice.findMany({
-        where: { companyId, createdAt: dateRange(filter), status: statusEquals ? (statusEquals as never) : undefined },
+        where: { AND: [{ companyId, createdAt: dateRange(filter), status: statusEquals ? (statusEquals as never) : undefined }, await visible("Invoice")] },
         include: { client: { select: { name: true } }, project: { select: { name: true } } },
       });
       return rows.map((r) => ({
@@ -168,7 +187,7 @@ export async function fetchDatasetRows(
     }
     case "estimates": {
       const rows = await prisma.estimate.findMany({
-        where: { companyId, createdAt: dateRange(filter), status: statusEquals ? (statusEquals as never) : undefined },
+        where: { AND: [{ companyId, createdAt: dateRange(filter), status: statusEquals ? (statusEquals as never) : undefined }, await visible("Estimate")] },
         include: { project: { select: { name: true } } },
       });
       return rows.map((r) => ({
@@ -181,7 +200,7 @@ export async function fetchDatasetRows(
     }
     case "time_entries": {
       const rows = await prisma.timeEntry.findMany({
-        where: { companyId, date: dateRange(filter) },
+        where: { AND: [{ companyId, date: dateRange(filter) }, await visible("TimeEntry")] },
         include: { worker: { select: { name: true } }, project: { select: { name: true } }, task: { select: { name: true } } },
       });
       return rows.map((r) => ({
@@ -194,7 +213,7 @@ export async function fetchDatasetRows(
     }
     case "punch_list": {
       const rows = await prisma.punchListItem.findMany({
-        where: { companyId, createdAt: dateRange(filter), status: statusEquals ? (statusEquals as never) : undefined },
+        where: { AND: [{ companyId, createdAt: dateRange(filter), status: statusEquals ? (statusEquals as never) : undefined }, await visible("PunchListItem")] },
         include: { project: { select: { name: true } } },
       });
       return rows.map((r) => ({
@@ -207,7 +226,7 @@ export async function fetchDatasetRows(
     }
     case "rfis": {
       const rows = await prisma.rfi.findMany({
-        where: { companyId, createdAt: dateRange(filter), status: statusEquals ? (statusEquals as never) : undefined },
+        where: { AND: [{ companyId, createdAt: dateRange(filter), status: statusEquals ? (statusEquals as never) : undefined }, await visible("Rfi")] },
         include: { project: { select: { name: true } } },
       });
       return rows.map((r) => ({
@@ -223,7 +242,7 @@ export async function fetchDatasetRows(
       return deps.reports.revenueTrend(companyId);
     }
     case "project_margins": {
-      return deps.reports.projectMargins(companyId);
+      return deps.reports.projectMargins(companyId, viewer);
     }
     case "labor_utilization": {
       const report = await deps.laborCost.report(companyId, {});

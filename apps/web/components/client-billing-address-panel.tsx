@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { SUPPORTED_LOCALES } from "@cantero/shared";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, notifyApiError } from "@/lib/api-client";
+import { Field } from "@/components/ui/field";
 
 interface Client {
   street: string | null;
@@ -51,7 +52,7 @@ export function ClientBillingAddressPanel({ clientId }: { clientId: string }) {
         paymentTermsDays: c.paymentTermsDays?.toString() ?? "",
         preferredLocale: c.preferredLocale ?? "",
       });
-    });
+    }).catch(notifyApiError);
   }, [clientId]);
 
   async function saveBilling(e: React.FormEvent) {
@@ -82,31 +83,31 @@ export function ClientBillingAddressPanel({ clientId }: { clientId: string }) {
 
   return (
     <div className="mt-6 card max-w-md">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("billingAddress")}</h2>
-      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("billingAddressHint")}</p>
+      <h2 className="mb-1 text-sm font-semibold text-fg-muted">{t("billingAddress")}</h2>
+      <p className="mb-3 text-xs text-fg-subtle">{t("billingAddressHint")}</p>
       <form onSubmit={saveBilling} className="flex flex-col gap-2">
         <input
           className="input"
-          placeholder={t("street")}
+          placeholder={t("street")} aria-label={t("street")}
           value={billingForm.street}
           onChange={(e) => setBillingForm((f) => ({ ...f, street: e.target.value }))}
         />
         <div className="flex gap-2">
           <input
             className="input flex-1"
-            placeholder={t("city")}
+            placeholder={t("city")} aria-label={t("city")}
             value={billingForm.city}
             onChange={(e) => setBillingForm((f) => ({ ...f, city: e.target.value }))}
           />
           <input
             className="input w-24"
-            placeholder={t("postalCode")}
+            placeholder={t("postalCode")} aria-label={t("postalCode")}
             value={billingForm.postalCode}
             onChange={(e) => setBillingForm((f) => ({ ...f, postalCode: e.target.value }))}
           />
           <input
             className="input w-16"
-            placeholder={t("countryCode")}
+            placeholder={t("countryCode")} aria-label={t("countryCode")}
             maxLength={2}
             value={billingForm.country}
             onChange={(e) => setBillingForm((f) => ({ ...f, country: e.target.value.toUpperCase() }))}
@@ -114,32 +115,31 @@ export function ClientBillingAddressPanel({ clientId }: { clientId: string }) {
         </div>
         <input
           className="input"
-          placeholder={t("vatIdPlaceholder")}
+          placeholder={t("vatIdPlaceholder")} aria-label={t("vatIdPlaceholder")}
           value={billingForm.vatId}
           onChange={(e) => setBillingForm((f) => ({ ...f, vatId: e.target.value }))}
         />
         <input
           className="input"
-          placeholder={t("datevDebitorNumber")}
+          placeholder={t("datevDebitorNumber")} aria-label={t("datevDebitorNumber")}
           value={billingForm.datevDebitorNumber}
           onChange={(e) => setBillingForm((f) => ({ ...f, datevDebitorNumber: e.target.value.replace(/\D/g, "") }))}
         />
         <div className="flex gap-2">
           <input
             className="input w-24"
-            placeholder={t("peppolScheme")}
+            placeholder={t("peppolScheme")} aria-label={t("peppolScheme")}
             value={billingForm.peppolScheme}
             onChange={(e) => setBillingForm((f) => ({ ...f, peppolScheme: e.target.value }))}
           />
           <input
             className="input flex-1"
-            placeholder={t("peppolParticipantId")}
+            placeholder={t("peppolParticipantId")} aria-label={t("peppolParticipantId")}
             value={billingForm.peppolParticipantId}
             onChange={(e) => setBillingForm((f) => ({ ...f, peppolParticipantId: e.target.value }))}
           />
         </div>
-        <label className="flex w-40 flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
-          {t("paymentTermsDays")}
+        <Field label={t("paymentTermsDays")} size="sm" className="w-40">
           <input
             type="number"
             min="0"
@@ -149,9 +149,8 @@ export function ClientBillingAddressPanel({ clientId }: { clientId: string }) {
             value={billingForm.paymentTermsDays}
             onChange={(e) => setBillingForm((f) => ({ ...f, paymentTermsDays: e.target.value }))}
           />
-        </label>
-        <label className="flex w-40 flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
-          {t("preferredLocale")}
+        </Field>
+        <Field label={t("preferredLocale")} size="sm" className="w-40">
           <select
             className="input"
             value={billingForm.preferredLocale}
@@ -164,12 +163,12 @@ export function ClientBillingAddressPanel({ clientId }: { clientId: string }) {
               </option>
             ))}
           </select>
-        </label>
+        </Field>
         <div className="flex items-center gap-2">
           <button type="submit" disabled={busy} className="btn-secondary self-start">
             {tc("save")}
           </button>
-          {billingSaved && <span className="text-xs text-success-700 dark:text-success-500">{tc("saved")}</span>}
+          {billingSaved && <span className="text-xs text-success-fg">{tc("saved")}</span>}
         </div>
       </form>
     </div>

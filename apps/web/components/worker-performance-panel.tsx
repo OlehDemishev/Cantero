@@ -1,8 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface PerformanceGoal {
   id: string;
@@ -21,19 +24,17 @@ interface PerformanceReview {
 }
 
 export function WorkerPerformancePanel({ workerId }: { workerId: string }) {
-  const tc = useTranslations("common");
   const tp = useTranslations("performance");
-  const [performanceGoals, setPerformanceGoals] = useState<PerformanceGoal[] | null>(null);
-  const [performanceReviews, setPerformanceReviews] = useState<PerformanceReview[] | null>(null);
+  const ta = useTranslations("a11y");
+  const { data: performanceGoals = null, reload: reloadPerformanceGoals, error: performanceGoalsError } = useApi<PerformanceGoal[]>(`/performance/workers/${workerId}/goals`);
+  const { data: performanceReviews = null, reload: reloadPerformanceReviews } = useApi<PerformanceReview[]>(`/performance/workers/${workerId}/reviews`);
   const [goalForm, setGoalForm] = useState({ title: "", targetDate: "" });
   const [goalBusy, setGoalBusy] = useState(false);
 
   function load() {
-    apiFetch<PerformanceGoal[]>(`/performance/workers/${workerId}/goals`).then(setPerformanceGoals);
-    apiFetch<PerformanceReview[]>(`/performance/workers/${workerId}/reviews`).then(setPerformanceReviews);
+    void reloadPerformanceGoals();
+    void reloadPerformanceReviews();
   }
-
-  useEffect(load, [workerId]);
 
   async function addGoal(e: React.FormEvent) {
     e.preventDefault();
@@ -66,20 +67,20 @@ export function WorkerPerformancePanel({ workerId }: { workerId: string }) {
 
   return (
     <>
-      <h2 className="mb-3 mt-8 text-sm font-semibold text-gray-700 dark:text-gray-200">{tp("goals")}</h2>
+      <h2 className="mb-3 mt-8 text-sm font-semibold text-fg-muted">{tp("goals")}</h2>
       {performanceGoals === null ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
+        performanceGoalsError ? <ErrorState error={performanceGoalsError} onRetry={reloadPerformanceGoals} compact /> : <Skeleton lines={3} />
       ) : performanceGoals.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{tp("noGoals")}</p>
+        <p className="text-sm text-fg-subtle">{tp("noGoals")}</p>
       ) : (
         <ul className="mb-3 flex flex-col gap-1.5">
           {performanceGoals.map((goal) => (
             <li key={goal.id} className="card text-sm">
               <div className="flex items-center justify-between">
-                <span className={goal.completedAt ? "text-gray-400 dark:text-gray-500 line-through" : "text-gray-900 dark:text-gray-50"}>{goal.title}</span>
-                <span className="text-xs text-gray-400 dark:text-gray-500">{goal.progressPercent}%</span>
+                <span className={goal.completedAt ? "text-fg-subtle line-through" : "text-fg"}>{goal.title}</span>
+                <span className="text-xs text-fg-subtle">{goal.progressPercent}%</span>
               </div>
-              <input
+              <input aria-label={ta("fieldOf", { field: ta("progress"), item: goal.title })}
                 type="range"
                 min="0"
                 max="100"
@@ -96,13 +97,13 @@ export function WorkerPerformancePanel({ workerId }: { workerId: string }) {
       <form onSubmit={addGoal} className="flex max-w-md flex-col gap-2">
         <input
           required
-          placeholder={tp("goalTitlePlaceholder")}
+          placeholder={tp("goalTitlePlaceholder")} aria-label={tp("goalTitlePlaceholder")}
           className="input"
           value={goalForm.title}
           onChange={(e) => setGoalForm((f) => ({ ...f, title: e.target.value }))}
         />
         <div className="flex gap-2">
-          <input
+          <input aria-label={ta("targetDate")}
             type="date"
             className="input"
             value={goalForm.targetDate}
@@ -116,13 +117,13 @@ export function WorkerPerformancePanel({ workerId }: { workerId: string }) {
 
       {performanceReviews !== null && performanceReviews.length > 0 && (
         <>
-          <h2 className="mb-3 mt-8 text-sm font-semibold text-gray-700 dark:text-gray-200">{tp("reviewHistory")}</h2>
+          <h2 className="mb-3 mt-8 text-sm font-semibold text-fg-muted">{tp("reviewHistory")}</h2>
           <ul className="flex flex-col gap-1.5">
             {performanceReviews.map((r) => (
               <li key={r.id} className="card text-sm">
                 <div className="flex items-center justify-between">
                   <span>{r.cycle.name}</span>
-                  {r.rating && <span className="text-xs font-medium text-gray-500 dark:text-gray-400">{tp(`rating_${r.rating}`)}</span>}
+                  {r.rating && <span className="text-xs font-medium text-fg-subtle">{tp(`rating_${r.rating}`)}</span>}
                 </div>
               </li>
             ))}

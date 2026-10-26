@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { unsentForOtherAccounts, type WaitingElsewhere } from "@/lib/offline-db";
+import { Alert } from "@/components/ui/alert";
 
 /**
  * On a shared tablet: tells whoever is signed in that a colleague's offline entries are still on
@@ -25,10 +26,10 @@ export function OfflineOthersNotice() {
 
   if (waiting.length === 0) return null;
   return (
-    <div role="status" className="mb-4 rounded-lg border border-warning-200 bg-warning-50 px-4 py-3 text-sm text-warning-700 dark:border-warning-500/30 dark:bg-warning-500/15 dark:text-warning-500">
+    <Alert tone="warning" className="mb-4" role="status">
       {waiting.map((w) => (
         <p key={w.accountKey}>{t("unsentForOthers", { name: w.companyName ? `${w.name} (${w.companyName})` : w.name, count: w.count })}</p>
       ))}
-    </div>
+    </Alert>
   );
 }

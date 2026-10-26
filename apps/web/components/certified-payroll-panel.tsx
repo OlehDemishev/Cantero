@@ -4,6 +4,12 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import type { ApprenticeRatioViolation, CertifiedPayrollLine } from "@cantero/shared";
 import { apiFetch, downloadBlob } from "@/lib/api-client";
+import { useMe } from "@/lib/use-me";
+import { formatCurrency, formatNumber } from "@/lib/format-currency";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
+import { Field, FormError } from "@/components/ui/field";
 
 interface Project {
   isPublicWork: boolean;
@@ -33,10 +39,14 @@ function todayIso() {
 export function CertifiedPayrollPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("certifiedPayroll");
   const tc = useTranslations("common");
+  const { data: me } = useMe();
+  const currency = me?.company.currency ?? "";
 
   const [project, setProject] = useState<Project | null>(null);
+  const [projectError, setProjectError] = useState<Error | null>(null);
   const [publicWorkForm, setPublicWorkForm] = useState({ isPublicWork: false, contractNumber: "" });
   const [reports, setReports] = useState<CertifiedPayrollReport[] | null>(null);
+  const [reportsError, setReportsError] = useState<Error | null>(null);
   const [weekEndingDate, setWeekEndingDate] = useState(todayIso());
   const [preview, setPreview] = useState<PreviewResult | null>(null);
   const [signerName, setSignerName] = useState("");
@@ -46,13 +56,19 @@ export function CertifiedPayrollPanel({ projectId }: { projectId: string }) {
 
   function loadProject() {
     apiFetch<Project>(`/projects/${projectId}`).then((p) => {
+      setProjectError(null);
       setProject(p);
       setPublicWorkForm({ isPublicWork: p.isPublicWork, contractNumber: p.contractNumber ?? "" });
-    });
+    }).catch(setProjectError);
   }
 
   function loadReports() {
-    apiFetch<CertifiedPayrollReport[]>(`/projects/${projectId}/certified-payroll`).then(setReports);
+    apiFetch<CertifiedPayrollReport[]>(`/projects/${projectId}/certified-payroll`)
+      .then((result) => {
+        setReportsError(null);
+        setReports(result);
+      })
+      .catch(setReportsError);
   }
 
   useEffect(loadProject, [projectId]);
@@ -147,15 +163,15 @@ export function CertifiedPayrollPanel({ projectId }: { projectId: string }) {
     downloadBlob(blob, `certified-payroll-${reportId}.pdf`);
   }
 
-  if (!project) return null;
+  if (!project) return projectError ? <ErrorState error={projectError} onRetry={loadProject} compact /> : <Skeleton lines={3} />;
 
   return (
     <div className="mt-10">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
-      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("hint")}</p>
+      <h2 className="mb-1 text-sm font-semibold text-fg-muted">{t("title")}</h2>
+      <p className="mb-3 text-xs text-fg-subtle">{t("hint")}</p>
 
       <form onSubmit={savePublicWork} className="mb-4 flex flex-wrap items-end gap-3">
-        <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+        <label className="flex items-center gap-2 text-sm text-fg-muted">
           <input
             type="checkbox"
             checked={publicWorkForm.isPublicWork}
@@ -164,29 +180,27 @@ export function CertifiedPayrollPanel({ projectId }: { projectId: string }) {
           {t("isPublicWork")}
         </label>
         {publicWorkForm.isPublicWork && (
-          <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
-            {t("contractNumber")}
+          <Field label={t("contractNumber")} size="sm">
             <input
               className="input w-48"
               value={publicWorkForm.contractNumber}
               onChange={(e) => setPublicWorkForm((f) => ({ ...f, contractNumber: e.target.value }))}
             />
-          </label>
+          </Field>
         )}
         <button type="submit" disabled={busy} className="btn-secondary">
           {tc("save")}
         </button>
       </form>
 
-      {error && <p className="mb-2 text-xs text-error-600">{error}</p>}
+      {error && <FormError className="mb-2">{error}</FormError>}
 
       {project.isPublicWork && (
         <>
           <div className="mb-4 flex flex-wrap items-end gap-2 border-t border-gray-100 pt-3 dark:border-gray-800">
-            <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
-              {t("weekEndingDate")}
+            <Field label={t("weekEndingDate")} size="sm">
               <input type="date" className="input w-40" value={weekEndingDate} onChange={(e) => setWeekEndingDate(e.target.value)} />
-            </label>
+            </Field>
             <button type="button" onClick={loadPreview} disabled={busy} className="btn-secondary">
               {t("preview")}
             </button>
@@ -199,87 +213,87 @@ export function CertifiedPayrollPanel({ projectId }: { projectId: string }) {
           </div>
 
           {preview && (
-            <div className="mb-4 overflow-x-auto">
+            <div tabIndex={0} className="mb-4 overflow-x-auto">
               {preview.apprenticeRatioViolations.filter((v) => !v.compliant).length > 0 && (
                 <ul className="mb-3 flex flex-col gap-1">
                   {preview.apprenticeRatioViolations
                     .filter((v) => !v.compliant)
                     .map((v) => (
-                      <li key={v.trade} className="rounded-md bg-error-50 dark:bg-error-500/15 px-2.5 py-1.5 text-xs text-error-700 dark:text-error-500">
+                      <li key={v.trade} className="rounded-md bg-error-50 dark:bg-error-500/15 px-2.5 py-1.5 text-xs text-danger-fg">
                         {t("apprenticeRatioViolation", { trade: v.trade, apprenticeCount: v.apprenticeCount, maxAllowed: v.maxAllowedApprentices, ratio: v.ratio })}
                       </li>
                     ))}
                 </ul>
               )}
               {preview.lines.length === 0 ? (
-                <p className="text-sm text-gray-400 dark:text-gray-500">{t("noHoursThisWeek")}</p>
+                <p className="text-sm text-fg-subtle">{t("noHoursThisWeek")}</p>
               ) : (
                 <table className="min-w-[640px] text-sm">
                   <thead>
-                    <tr className="text-left text-xs text-gray-400 dark:text-gray-500">
-                      <th className="pb-1 pr-3">{t("employee")}</th>
-                      <th className="pb-1 pr-3">{t("classification")}</th>
-                      <th className="pb-1 pr-3">{t("regularHours")}</th>
-                      <th className="pb-1 pr-3">{t("overtimeHours")}</th>
-                      <th className="pb-1 pr-3">{t("rate")}</th>
-                      <th className="pb-1 pr-3">{t("fringe")}</th>
-                      <th className="pb-1 pr-3">{t("grossPay")}</th>
+                    <tr className="text-left text-xs text-fg-subtle">
+                      <th scope="col" className="pb-1 pr-3">{t("employee")}</th>
+                      <th scope="col" className="pb-1 pr-3">{t("classification")}</th>
+                      <th scope="col" className="pb-1 pr-3">{t("regularHours")}</th>
+                      <th scope="col" className="pb-1 pr-3">{t("overtimeHours")}</th>
+                      <th scope="col" className="pb-1 pr-3">{t("rate")}</th>
+                      <th scope="col" className="pb-1 pr-3">{t("fringe")}</th>
+                      <th scope="col" className="pb-1 pr-3">{t("grossPay")}</th>
                     </tr>
                   </thead>
                   <tbody>
                     {preview.lines.map((line) => (
                       <tr key={line.workerId} className="border-t border-gray-100 dark:border-gray-800">
                         <td className="py-1 pr-3">{line.workerName}</td>
-                        <td className="py-1 pr-3 text-gray-500 dark:text-gray-400">
+                        <td className="py-1 pr-3 text-fg-subtle">
                           {line.trade ?? t("unclassified")}
-                          {line.isApprentice && <span className="ml-1 rounded-full bg-brand-50 dark:bg-brand-500/15 px-1.5 py-0.5 text-xs text-brand-700 dark:text-brand-400">{t("apprentice")}</span>}
+                          {line.isApprentice && <Badge tone="brand" size="sm" className="ml-1">{t("apprentice")}</Badge>}
                         </td>
-                        <td className="py-1 pr-3">{line.regularHours.toFixed(2)}</td>
-                        <td className="py-1 pr-3">{line.overtimeHours.toFixed(2)}</td>
-                        <td className="py-1 pr-3">{line.ratePerHour !== null ? line.ratePerHour.toFixed(2) : "—"}</td>
-                        <td className="py-1 pr-3 text-gray-500 dark:text-gray-400">
-                          {line.fringeRate.toFixed(2)}
+                        <td className="py-1 pr-3">{formatNumber(line.regularHours, { fractionDigits: 2 })}</td>
+                        <td className="py-1 pr-3">{formatNumber(line.overtimeHours, { fractionDigits: 2 })}</td>
+                        <td className="py-1 pr-3">{line.ratePerHour !== null ? formatCurrency(line.ratePerHour, currency) : "—"}</td>
+                        <td className="py-1 pr-3 text-fg-subtle">
+                          {formatCurrency(line.fringeRate, currency)}
                           {line.fringeBreakdown.length > 0 && (
-                            <span className="ml-1 text-xs text-gray-400 dark:text-gray-500" title={line.fringeBreakdown.map((f) => `${f.name}: ${f.amount.toFixed(2)}`).join(", ")}>
+                            <span className="ml-1 text-xs text-fg-subtle" title={line.fringeBreakdown.map((f) => `${f.name}: ${formatCurrency(f.amount, currency)}`).join(", ")}>
                               ({line.fringeBreakdown.length})
                             </span>
                           )}
                         </td>
                         <td className="py-1 pr-3">
-                          {line.grossPay !== null ? line.grossPay.toFixed(2) : "—"}
-                          {line.belowPrevailingRate && <span className="ml-1 text-error-600" title={t("belowPrevailingRate")}>⚠</span>}
+                          {line.grossPay !== null ? formatCurrency(line.grossPay, currency) : "—"}
+                          {line.belowPrevailingRate && <span className="ml-1 text-danger-fg" title={t("belowPrevailingRate")}>⚠</span>}
                         </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               )}
-              <p className="mt-2 text-sm font-medium text-gray-700 dark:text-gray-300">
-                {t("totalGrossPay")}: {preview.totalGrossPay.toFixed(2)}
+              <p className="mt-2 text-sm font-medium text-fg-muted">
+                {t("totalGrossPay")}: {formatCurrency(preview.totalGrossPay, currency)}
               </p>
             </div>
           )}
 
           {!reports ? (
-            <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
+            reportsError ? <ErrorState error={reportsError} onRetry={loadReports} compact /> : <Skeleton lines={3} />
           ) : reports.length === 0 ? (
-            <p className="text-sm text-gray-400 dark:text-gray-500">{t("noReports")}</p>
+            <p className="text-sm text-fg-subtle">{t("noReports")}</p>
           ) : (
             <ul className="flex flex-col gap-2 border-t border-gray-100 pt-3 dark:border-gray-800">
               {reports.map((r) => (
                 <li key={r.id} className="flex flex-wrap items-center justify-between gap-2 text-sm">
-                  <span className="text-gray-700 dark:text-gray-300">
+                  <span className="text-fg-muted">
                     #{r.payrollNumber} — {r.weekEndingDate.slice(0, 10)}
-                    {r.noWorkPerformed ? ` (${t("noWorkPerformed")})` : ` — ${Number(r.totalGrossPay ?? 0).toFixed(2)}`}
+                    {r.noWorkPerformed ? ` (${t("noWorkPerformed")})` : ` — ${formatCurrency(r.totalGrossPay ?? 0, currency)}`}
                   </span>
                   <span className="flex items-center gap-2">
                     {r.statementSignedAt ? (
-                      <span className="text-xs text-success-700 dark:text-success-500">{t("signedBy", { name: r.statementSignerName ?? "" })}</span>
+                      <span className="text-xs text-success-fg">{t("signedBy", { name: r.statementSignerName ?? "" })}</span>
                     ) : signingId === r.id ? (
                       <>
                         <input
                           className="input w-40 py-1 text-xs"
-                          placeholder={t("signerNamePlaceholder")}
+                          placeholder={t("signerNamePlaceholder")} aria-label={t("signerNamePlaceholder")}
                           value={signerName}
                           onChange={(e) => setSignerName(e.target.value)}
                         />

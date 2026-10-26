@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch, apiUpload, downloadBlob } from "@/lib/api-client";
+import { FormError } from "@/components/ui/field";
 
 interface ImportSummary {
   format: "mspdi" | "xer";
@@ -47,11 +48,11 @@ export function ScheduleFilesPanel({ projectId }: { projectId: string }) {
 
   return (
     <section className="card">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
-      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("hint")}</p>
+      <h2 className="mb-1 text-sm font-semibold text-fg-muted">{t("title")}</h2>
+      <p className="mb-3 text-xs text-fg-subtle">{t("hint")}</p>
 
       <label className="mb-3 flex flex-col gap-1 text-sm">
-        <span className="font-medium text-gray-700 dark:text-gray-200">{t("importLabel")}</span>
+        <span className="font-medium text-fg-muted">{t("importLabel")}</span>
         <input
           ref={fileInputRef}
           type="file"
@@ -64,7 +65,7 @@ export function ScheduleFilesPanel({ projectId }: { projectId: string }) {
           }}
         />
       </label>
-      {error && <p className="mb-2 text-xs text-error-600">{error}</p>}
+      {error && <FormError className="mb-2">{error}</FormError>}
       {result && (
         <p className="mb-3 text-xs text-gray-600 dark:text-gray-300">
           {t("importResult", {

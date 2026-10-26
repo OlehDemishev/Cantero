@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { apiFetch, ApiError } from "@/lib/api-client";
+import { Alert } from "@/components/ui/alert";
+import { Field } from "@/components/ui/field";
 
 export default function ResetPasswordPage() {
   const t = useTranslations("auth");
@@ -37,11 +39,11 @@ export default function ResetPasswordPage() {
           <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-500 text-sm font-semibold text-white">
             C
           </span>
-          <span className="text-lg font-semibold tracking-tight text-gray-900 dark:text-gray-50">Cantero</span>
+          <span className="text-lg font-semibold tracking-tight text-fg">Cantero</span>
         </div>
 
         <div className="card">
-          <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-50">{t("resetPasswordTitle")}</h1>
+          <h1 className="text-xl font-semibold text-fg">{t("resetPasswordTitle")}</h1>
 
           {done ? (
             <>
@@ -51,13 +53,12 @@ export default function ResetPasswordPage() {
               </a>
             </>
           ) : !token ? (
-            <p className="mt-4 text-sm text-error-700 dark:text-error-500">{t("resetPasswordInvalidLink")}</p>
+            <p className="mt-4 text-sm text-danger-fg">{t("resetPasswordInvalidLink")}</p>
           ) : (
             <>
-              {error && <p className="mt-4 rounded-lg bg-error-50 dark:bg-error-500/15 px-3 py-2 text-sm text-error-700 dark:text-error-500">{error}</p>}
+              {error && <Alert tone="danger" className="mt-4">{error}</Alert>}
               <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
-                <label className="flex flex-col gap-1.5 text-sm">
-                  <span className="font-medium text-gray-700 dark:text-gray-200">{t("newPassword")}</span>
+                <Field label={t("newPassword")}>
                   <input
                     required
                     minLength={8}
@@ -66,7 +67,7 @@ export default function ResetPasswordPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                   />
-                </label>
+                </Field>
                 <button type="submit" disabled={submitting} className="btn-primary mt-2">
                   {submitting ? tc("loading") : t("resetPassword")}
                 </button>

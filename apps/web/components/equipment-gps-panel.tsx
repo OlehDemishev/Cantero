@@ -2,7 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, notifyApiError } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
+import { FormError } from "@/components/ui/field";
 
 interface GpsPing {
   id: string;
@@ -19,17 +21,15 @@ const PADDING = 20;
  * external map/tiles provider behind it, just a normalized polyline over the day's points. */
 export function EquipmentGpsPanel({ equipmentId }: { equipmentId: string }) {
   const t = useTranslations("equipment");
-  const [pings, setPings] = useState<GpsPing[] | null>(null);
+  const { data: pings = null, reload: reloadPings } = useApi<GpsPing[]>(`/equipment/${equipmentId}/gps-pings`);
   const [tracking, setTracking] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const watchIdRef = useRef<number | null>(null);
   const lastSentAtRef = useRef(0);
 
   function load() {
-    apiFetch<GpsPing[]>(`/equipment/${equipmentId}/gps-pings`).then(setPings);
+    void reloadPings();
   }
-
-  useEffect(load, [equipmentId]);
 
   useEffect(() => {
     return () => {
@@ -51,7 +51,7 @@ export function EquipmentGpsPanel({ equipmentId }: { equipmentId: string }) {
         apiFetch(`/equipment/${equipmentId}/gps-pings`, {
           method: "POST",
           body: JSON.stringify({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-        }).then(load);
+        }).then(load).catch(notifyApiError);
       },
       () => setError(t("gpsDenied")),
       { enableHighAccuracy: true, maximumAge: 10_000 },
@@ -90,18 +90,18 @@ export function EquipmentGpsPanel({ equipmentId }: { equipmentId: string }) {
     <section className="card lg:col-span-2">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("gpsTracking")}</h2>
-          <p className="text-xs text-gray-500 dark:text-gray-400">{t("gpsTrackingHint")}</p>
+          <h2 className="text-sm font-semibold text-fg-muted">{t("gpsTracking")}</h2>
+          <p className="text-xs text-fg-subtle">{t("gpsTrackingHint")}</p>
         </div>
         <button onClick={tracking ? stopTracking : startTracking} className={tracking ? "btn-secondary" : "btn-primary"}>
           {t(tracking ? "gpsStop" : "gpsStart")}
         </button>
       </div>
-      {error && <p className="mt-2 text-xs text-error-600">{error}</p>}
+      {error && <FormError className="mt-2">{error}</FormError>}
 
       <div className="mt-4">
         {!points ? (
-          <p className="text-sm text-gray-400 dark:text-gray-500">{t("gpsNoRoute")}</p>
+          <p className="text-sm text-fg-subtle">{t("gpsNoRoute")}</p>
         ) : (
           <svg viewBox={`0 0 ${VIEWBOX_SIZE} ${VIEWBOX_SIZE}`} className="h-64 w-full rounded-lg bg-gray-50 dark:bg-white/5">
             <polyline points={points.join(" ")} fill="none" stroke="var(--color-brand-500, #465fff)" strokeWidth="2" />

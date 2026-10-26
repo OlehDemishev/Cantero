@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch, downloadBlob } from "@/lib/api-client";
+import { Field, FormError } from "@/components/ui/field";
 
 /** AP invoice export for Sage 300 CRE's "Import Invoices" — see sage-300-cre.ts for what the file
  * contains and what it leaves blank. The API refuses with a per-bill list when a supplier still
@@ -32,22 +33,20 @@ export function SageApExportPanel() {
 
   return (
     <div className="card mb-4">
-      <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("title")}</h3>
-      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("hint")}</p>
+      <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-fg-subtle">{t("title")}</h3>
+      <p className="mb-3 text-xs text-fg-subtle">{t("hint")}</p>
       <div className="flex flex-wrap items-end gap-2">
-        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
-          {t("expenseAccount")}
+        <Field label={t("expenseAccount")} size="sm">
           <input className="input" value={expenseAccount} onChange={(e) => setExpenseAccount(e.target.value)} placeholder="50-1000" />
-        </label>
-        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
-          {t("apAccount")}
+        </Field>
+        <Field label={t("apAccount")} size="sm">
           <input className="input" value={apAccount} onChange={(e) => setApAccount(e.target.value)} placeholder="20-1000" />
-        </label>
+        </Field>
         <button onClick={exportFile} disabled={busy} className="btn-secondary px-2.5 py-1.5 text-xs">
           {t("export")}
         </button>
       </div>
-      {error && <p className="mt-2 whitespace-pre-line text-xs text-error-600">{error}</p>}
+      {error && <FormError className="mt-2 whitespace-pre-line">{error}</FormError>}
     </div>
   );
 }

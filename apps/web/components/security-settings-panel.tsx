@@ -3,8 +3,9 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { MEMBERSHIP_ROLES_MANAGEABLE, type MembershipRole } from "@cantero/shared";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, notifyApiError } from "@/lib/api-client";
 import { HelpTooltip } from "@/components/help-tooltip";
+import { Field } from "@/components/ui/field";
 
 interface Company {
   sessionTimeoutMinutes: number | null;
@@ -37,7 +38,7 @@ export function SecuritySettingsPanel({ canManage }: { canManage: boolean }) {
         passwordRequireSymbol: c.passwordRequireSymbol,
         hideCostDataFromRoles: c.hideCostDataFromRoles,
       });
-    });
+    }).catch(notifyApiError);
   }
 
   useEffect(load, []);
@@ -75,11 +76,11 @@ export function SecuritySettingsPanel({ canManage }: { canManage: boolean }) {
 
   return (
     <section className="card">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
-      <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">{t("hint")}</p>
+      <h2 className="mb-1 text-sm font-semibold text-fg-muted">{t("title")}</h2>
+      <p className="mb-4 text-xs text-fg-subtle">{t("hint")}</p>
 
       <form onSubmit={save} className="flex flex-col gap-4">
-        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+        <label className="flex flex-col gap-1 text-xs text-fg-subtle">
           <span className="flex items-center gap-1.5">
             {t("sessionTimeout")}
             <HelpTooltip text={t("sessionTimeoutTooltip")} />
@@ -96,10 +97,9 @@ export function SecuritySettingsPanel({ canManage }: { canManage: boolean }) {
         </label>
 
         <div className="border-t border-gray-100 dark:border-gray-700 pt-4">
-          <p className="mb-2 text-xs font-medium text-gray-700 dark:text-gray-200">{t("passwordPolicy")}</p>
+          <p className="mb-2 text-xs font-medium text-fg-muted">{t("passwordPolicy")}</p>
           <div className="flex flex-wrap items-end gap-3">
-            <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
-              {t("passwordMinLength")}
+            <Field label={t("passwordMinLength")} size="sm">
               <input
                 type="number"
                 min="8"
@@ -108,8 +108,8 @@ export function SecuritySettingsPanel({ canManage }: { canManage: boolean }) {
                 value={form.passwordMinLength}
                 onChange={(e) => setForm((f) => ({ ...f, passwordMinLength: e.target.value }))}
               />
-            </label>
-            <label className="flex items-center gap-2 pb-2 text-xs text-gray-700 dark:text-gray-200">
+            </Field>
+            <label className="flex items-center gap-2 pb-2 text-xs text-fg-muted">
               <input
                 type="checkbox"
                 checked={form.passwordRequireSymbol}
@@ -121,13 +121,13 @@ export function SecuritySettingsPanel({ canManage }: { canManage: boolean }) {
         </div>
 
         <div className="border-t border-gray-100 dark:border-gray-700 pt-4">
-          <p className="mb-1 flex items-center gap-1.5 text-xs font-medium text-gray-700 dark:text-gray-200">
+          <p className="mb-1 flex items-center gap-1.5 text-xs font-medium text-fg-muted">
             {t("hideCostData")}
             <HelpTooltip text={t("hideCostDataTooltip")} />
           </p>
           <div className="flex flex-wrap gap-3">
             {COST_HIDABLE_ROLES.map((role) => (
-              <label key={role} className="flex items-center gap-1.5 text-xs text-gray-700 dark:text-gray-200">
+              <label key={role} className="flex items-center gap-1.5 text-xs text-fg-muted">
                 <input
                   type="checkbox"
                   checked={form.hideCostDataFromRoles.includes(role)}
@@ -143,7 +143,7 @@ export function SecuritySettingsPanel({ canManage }: { canManage: boolean }) {
           <button type="submit" disabled={busy} className="btn-secondary self-start">
             {tc("save")}
           </button>
-          {saved && <span className="text-xs text-success-700 dark:text-success-500">{tc("saved")}</span>}
+          {saved && <span className="text-xs text-success-fg">{tc("saved")}</span>}
         </div>
       </form>
     </section>

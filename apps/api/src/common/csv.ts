@@ -1,4 +1,14 @@
-export function csvEscape(value: string): string {
+/** A plain number, which a spreadsheet reads as a number rather than a formula even with a sign. */
+const PLAIN_NUMBER = /^[+-]?\d+(?:[.,]\d+)?$/;
+
+/**
+ * Quotes a cell when it needs it and defuses spreadsheet formula injection: a cell starting with
+ * =, +, -, @, tab or CR (a lead's name from the public form, say) gets a leading `'`, which
+ * Excel/LibreOffice/Sheets treat as "this is text". Plain signed numbers ("-12.50") are left as
+ * they are so number columns stay numbers.
+ */
+export function csvEscape(raw: string): string {
+  const value = /^[=+\-@\t\r]/.test(raw) && !PLAIN_NUMBER.test(raw) ? `'${raw}` : raw;
   if (/[",\r\n]/.test(value)) {
     return `"${value.replace(/"/g, '""')}"`;
   }

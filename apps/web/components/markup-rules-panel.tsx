@@ -1,9 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { MARKUP_COST_TYPES, type MarkupCostType } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useConfirm } from "@/components/ui/confirm-dialog";
+import { formatNumber } from "@/lib/format-currency";
 
 interface MarkupRule {
   id: string;
@@ -13,16 +18,18 @@ interface MarkupRule {
 
 export function MarkupRulesPanel() {
   const t = useTranslations("markupRules");
+  const confirm = useConfirm();
+  const td = useTranslations("dialog");
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
 
-  const [rules, setRules] = useState<MarkupRule[] | null>(null);
+  const { data: rules = null, reload: reloadRules, error: rulesError } = useApi<MarkupRule[]>("/markup-rules");
   const [form, setForm] = useState({ costType: "materials" as MarkupCostType, markupPercent: "" });
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<MarkupRule[]>("/markup-rules").then(setRules);
+    void reloadRules();
   }
-  useEffect(load, []);
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
@@ -41,27 +48,28 @@ export function MarkupRulesPanel() {
   }
 
   async function remove(id: string) {
+    if (!(await confirm({ message: td("deleteMarkupRule"), tone: "danger", verb: "delete" }))) return;
     await apiFetch(`/markup-rules/${id}`, { method: "DELETE" });
     load();
   }
 
   return (
     <section className="card">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
-      <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">{t("hint")}</p>
+      <h2 className="mb-1 text-sm font-semibold text-fg-muted">{t("title")}</h2>
+      <p className="mb-4 text-xs text-fg-subtle">{t("hint")}</p>
 
       {!rules ? (
-        <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
+        rulesError ? <ErrorState error={rulesError} onRetry={reloadRules} compact /> : <Skeleton lines={3} />
       ) : rules.length === 0 ? (
-        <p className="mb-4 text-sm text-gray-400 dark:text-gray-500">{t("noRules")}</p>
+        <p className="mb-4 text-sm text-fg-subtle">{t("noRules")}</p>
       ) : (
         <ul className="mb-4 flex flex-col gap-1.5">
           {rules.map((r) => (
             <li key={r.id} className="flex items-center justify-between text-sm">
-              <span className="text-gray-700 dark:text-gray-300">
-                {t(`costType_${r.costType}`)} — {Number(r.markupPercent).toFixed(2)}%
+              <span className="text-fg-muted">
+                {t(`costType_${r.costType}`)} — {formatNumber(r.markupPercent)}%
               </span>
-              <button onClick={() => remove(r.id)} className="text-gray-400 dark:text-gray-500 hover:text-error-600">
+              <button aria-label={ta("remove")} onClick={() => remove(r.id)} className="text-fg-subtle hover:text-danger-fg">
                 ×
               </button>
             </li>
@@ -70,7 +78,7 @@ export function MarkupRulesPanel() {
       )}
 
       <form onSubmit={save} className="flex flex-wrap items-end gap-2 border-t border-gray-100 pt-3 dark:border-gray-800">
-        <select className="input" value={form.costType} onChange={(e) => setForm((f) => ({ ...f, costType: e.target.value as MarkupCostType }))}>
+        <select aria-label={ta("costType")} className="input" value={form.costType} onChange={(e) => setForm((f) => ({ ...f, costType: e.target.value as MarkupCostType }))}>
           {MARKUP_COST_TYPES.map((ct) => (
             <option key={ct} value={ct}>
               {t(`costType_${ct}`)}
@@ -83,7 +91,7 @@ export function MarkupRulesPanel() {
           step="0.01"
           min="0"
           max="500"
-          placeholder={t("markupPercentPlaceholder")}
+          placeholder={t("markupPercentPlaceholder")} aria-label={t("markupPercentPlaceholder")}
           className="input w-32"
           value={form.markupPercent}
           onChange={(e) => setForm((f) => ({ ...f, markupPercent: e.target.value }))}

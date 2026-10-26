@@ -5,6 +5,7 @@ import { JwtAuthGuard } from "./jwt-auth.guard";
 import { SessionsService } from "../sessions/sessions.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { PermissionsService } from "../permissions/permissions.service";
+import { signKioskToken } from "../../team/kiosk-token";
 
 function makeContext(request: Record<string, unknown>, isPublic = false) {
   const reflector = { getAllAndOverride: jest.fn().mockReturnValue(isPublic) } as unknown as Reflector;
@@ -59,6 +60,22 @@ describe("JwtAuthGuard", () => {
     jwt.verifyAsync.mockResolvedValue({ userId: "u1", companyId: "c1", kind: "client_portal" });
     const { context } = makeContext({ headers: { authorization: "Bearer x" } });
     await expect(guard.canActivate(context)).rejects.toThrow(UnauthorizedException);
+  });
+
+  it("rejects a kiosk clock-in token used as an access token", async () => {
+    const realJwt = new JwtService({ secret: "test-secret" });
+    const kioskToken = signKioskToken(realJwt, { companyId: "c1", workerId: "w1", userId: "u1" });
+    const realGuard = new JwtAuthGuard(
+      realJwt,
+      { getAllAndOverride: jest.fn().mockReturnValue(false) } as unknown as Reflector,
+      sessions as unknown as SessionsService,
+      prisma as unknown as PrismaService,
+      permissions as unknown as PermissionsService,
+    );
+    prisma.membership.findUnique.mockResolvedValue({ role: "OWNER", customRole: null });
+    const { context } = makeContext({ headers: { authorization: `Bearer ${kioskToken}` } });
+
+    await expect(realGuard.canActivate(context)).rejects.toThrow(UnauthorizedException);
   });
 
   it("rejects a token whose session was revoked", async () => {

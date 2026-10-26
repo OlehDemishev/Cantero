@@ -1,10 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { HR_CASE_ACTION_TYPES, HR_CASE_CATEGORIES, type HrCaseActionType, type HrCaseCategory, type HrCaseStatus } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate } from "@/lib/format-date";
+import { Badge } from "@/components/ui/badge";
 
 interface HrCaseAction {
   id: string;
@@ -29,8 +33,9 @@ interface HrCaseDetail extends HrCase {
 export function WorkerHrCasesPanel({ workerId }: { workerId: string }) {
   const tc = useTranslations("common");
   const th = useTranslations("hrCases");
+  const ta = useTranslations("a11y");
 
-  const [hrCases, setHrCases] = useState<HrCase[] | null>(null);
+  const { data: hrCases = null, reload: reloadHrCases, error: hrCasesError } = useApi<HrCase[]>(`/workers/${workerId}/hr-cases`);
   const [hrCaseExpandedId, setHrCaseExpandedId] = useState<string | null>(null);
   const [hrCaseDetail, setHrCaseDetail] = useState<HrCaseDetail | null>(null);
   const [hrCaseForm, setHrCaseForm] = useState({ category: "attendance" as HrCaseCategory, description: "" });
@@ -39,10 +44,8 @@ export function WorkerHrCasesPanel({ workerId }: { workerId: string }) {
   const [hrCaseBusy, setHrCaseBusy] = useState(false);
 
   function load() {
-    apiFetch<HrCase[]>(`/workers/${workerId}/hr-cases`).then(setHrCases);
+    void reloadHrCases();
   }
-
-  useEffect(load, [workerId]);
 
   async function openHrCase(e: React.FormEvent) {
     e.preventDefault();
@@ -103,7 +106,7 @@ export function WorkerHrCasesPanel({ workerId }: { workerId: string }) {
   return (
     <>
       <div className="mb-3 mt-8 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{th("title")}</h2>
+        <h2 className="text-sm font-semibold text-fg-muted">{th("title")}</h2>
         {!addingHrCase && (
           <button onClick={() => setAddingHrCase(true)} className="btn-secondary px-2 py-1 text-xs">
             {th("openCase")}
@@ -113,7 +116,7 @@ export function WorkerHrCasesPanel({ workerId }: { workerId: string }) {
 
       {addingHrCase && (
         <form onSubmit={openHrCase} className="card mb-3 flex flex-col gap-2">
-          <select className="input" value={hrCaseForm.category} onChange={(e) => setHrCaseForm((f) => ({ ...f, category: e.target.value as HrCaseCategory }))}>
+          <select aria-label={ta("category")} className="input" value={hrCaseForm.category} onChange={(e) => setHrCaseForm((f) => ({ ...f, category: e.target.value as HrCaseCategory }))}>
             {HR_CASE_CATEGORIES.map((c) => (
               <option key={c} value={c}>
                 {th(`category_${c}`)}
@@ -123,7 +126,7 @@ export function WorkerHrCasesPanel({ workerId }: { workerId: string }) {
           <textarea
             required
             rows={2}
-            placeholder={th("descriptionPlaceholder")}
+            placeholder={th("descriptionPlaceholder")} aria-label={th("descriptionPlaceholder")}
             className="input"
             value={hrCaseForm.description}
             onChange={(e) => setHrCaseForm((f) => ({ ...f, description: e.target.value }))}
@@ -140,9 +143,9 @@ export function WorkerHrCasesPanel({ workerId }: { workerId: string }) {
       )}
 
       {hrCases === null ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
+        hrCasesError ? <ErrorState error={hrCasesError} onRetry={reloadHrCases} compact /> : <Skeleton lines={3} />
       ) : hrCases.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{th("noCases")}</p>
+        <p className="text-sm text-fg-subtle">{th("noCases")}</p>
       ) : (
         <ul className="flex flex-col gap-1.5">
           {hrCases.map((c) => {
@@ -151,15 +154,11 @@ export function WorkerHrCasesPanel({ workerId }: { workerId: string }) {
               <li key={c.id} className="card text-sm">
                 <button onClick={() => toggleHrCaseExpand(c.id)} className="flex w-full items-center justify-between text-left">
                   <span>{th(`category_${c.category}`)}</span>
-                  <span
-                    className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                      c.status === "closed" || c.status === "resolved" ? "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500" : "bg-warning-50 dark:bg-warning-500/15 text-warning-700 dark:text-warning-500"
-                    }`}
-                  >
+                  <Badge tone={c.status === "closed" || c.status === "resolved" ? "success" : "warning"}>
                     {th(`caseStatus_${c.status}`)}
-                  </span>
+                  </Badge>
                 </button>
-                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{c.description}</p>
+                <p className="mt-1 text-xs text-fg-subtle">{c.description}</p>
 
                 {expanded && hrCaseDetail && hrCaseDetail.id === c.id && (
                   <div className="mt-2 flex flex-col gap-2 border-t border-gray-100 dark:border-gray-700 pt-2">
@@ -177,13 +176,13 @@ export function WorkerHrCasesPanel({ workerId }: { workerId: string }) {
                     <ul className="flex flex-col gap-1">
                       {hrCaseDetail.actions.map((a) => (
                         <li key={a.id} className="text-xs">
-                          <span className="font-medium text-gray-700 dark:text-gray-200">{th(`actionType_${a.type}`)}</span> — {a.description}
-                          <span className="text-gray-400 dark:text-gray-500"> ({a.createdByName}, {formatDate(new Date(a.actionDate))})</span>
+                          <span className="font-medium text-fg-muted">{th(`actionType_${a.type}`)}</span> — {a.description}
+                          <span className="text-fg-subtle"> ({a.createdByName}, {formatDate(new Date(a.actionDate))})</span>
                         </li>
                       ))}
                     </ul>
                     <div className="flex flex-wrap items-end gap-2">
-                      <select
+                      <select aria-label={ta("actionType")}
                         className="input w-auto"
                         value={hrActionForm.type}
                         onChange={(e) => setHrActionForm((f) => ({ ...f, type: e.target.value as HrCaseActionType }))}
@@ -195,7 +194,7 @@ export function WorkerHrCasesPanel({ workerId }: { workerId: string }) {
                         ))}
                       </select>
                       <input
-                        placeholder={th("actionDescriptionPlaceholder")}
+                        placeholder={th("actionDescriptionPlaceholder")} aria-label={th("actionDescriptionPlaceholder")}
                         className="input flex-1"
                         value={hrActionForm.description}
                         onChange={(e) => setHrActionForm((f) => ({ ...f, description: e.target.value }))}

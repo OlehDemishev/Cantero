@@ -1,8 +1,10 @@
 import type { SVGProps } from "react";
 
+/** Decorative: every use sits next to a text label or inside a control that has its own name. */
 function Icon(props: SVGProps<SVGSVGElement>) {
   return (
     <svg
+      aria-hidden="true"
       width="20"
       height="20"
       viewBox="0 0 20 20"

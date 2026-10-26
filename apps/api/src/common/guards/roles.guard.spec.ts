@@ -2,16 +2,17 @@ import { ExecutionContext, ForbiddenException } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
 import { RolesGuard } from "./roles.guard";
 import { REQUIRES_KEY, type Requirement } from "../decorators/permissions.decorator";
+import { IS_PUBLIC_KEY } from "../decorators/public.decorator";
 
 function makeContext(
   role: string | undefined,
   requiredRoles: string[] | undefined,
   additionalRoles?: string[],
   openReason?: string,
-  extra: { requirement?: Requirement; permissions?: string[]; method?: string } = {},
+  extra: { requirement?: Requirement; permissions?: string[]; method?: string; isPublic?: boolean } = {},
 ) {
   const reflector = {
-    getAllAndOverride: jest.fn((key: string) => (key === REQUIRES_KEY ? extra.requirement : requiredRoles)),
+    getAllAndOverride: jest.fn((key: string) => (key === IS_PUBLIC_KEY ? extra.isPublic : key === REQUIRES_KEY ? extra.requirement : requiredRoles)),
     get: jest.fn().mockReturnValue(openReason),
   } as unknown as Reflector;
   const user = role ? { role, additionalRoles, permissions: extra.permissions } : undefined;
@@ -24,6 +25,16 @@ function makeContext(
 }
 
 describe("RolesGuard", () => {
+  it("lets a public handler through with no user, even under a controller-level @Requires", () => {
+    const { reflector, context } = makeContext(undefined, undefined, undefined, undefined, { requirement: "site.manage" as Requirement, isPublic: true, method: "POST" });
+    expect(new RolesGuard(reflector).canActivate(context)).toBe(true);
+  });
+
+  it("still refuses a non-public route with no user under @Requires", () => {
+    const { reflector, context } = makeContext(undefined, undefined, undefined, undefined, { requirement: "site.manage" as Requirement, method: "POST" });
+    expect(new RolesGuard(reflector).canActivate(context)).toBe(false);
+  });
+
   it("blocks a worker from an owner/admin-restricted route", () => {
     const { reflector, context } = makeContext("worker", ["owner", "admin"]);
     const guard = new RolesGuard(reflector);

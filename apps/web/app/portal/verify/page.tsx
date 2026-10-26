@@ -5,12 +5,13 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { portalApiFetch, setPortalToken } from "@/lib/portal-api-client";
 import { ApiError } from "@/lib/api-client";
+import { PublicLinkError } from "@/components/public-link-error";
 
 export default function PortalVerifyPage() {
   const t = useTranslations("portal");
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<unknown>(null);
 
   useEffect(() => {
     const token = searchParams.get("token");
@@ -19,24 +20,28 @@ export default function PortalVerifyPage() {
           setPortalToken(res.accessToken);
           router.replace("/portal");
         })
-      : Promise.reject(null);
-    verified.catch((err) => setError(err instanceof ApiError ? err.message : t("verifyError")));
+      : Promise.reject(new ApiError(400, "missing token"));
+    verified.catch(setError);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  if (error) {
+    return (
+      <PublicLinkError
+        error={error}
+        action={
+          <a href="/portal/login" className="btn-primary inline-block">
+            {t("backToLogin")}
+          </a>
+        }
+      />
+    );
+  }
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-700 px-6 py-12">
       <div className="w-full max-w-sm text-center">
-        {error ? (
-          <div className="card">
-            <p className="text-sm text-error-700 dark:text-error-500">{error}</p>
-            <a href="/portal/login" className="btn-primary mt-4 inline-block">
-              {t("backToLogin")}
-            </a>
-          </div>
-        ) : (
-          <p className="text-sm text-gray-500 dark:text-gray-400">{t("verifying")}</p>
-        )}
+        <p className="text-sm text-fg-subtle">{t("verifying")}</p>
       </div>
     </main>
   );

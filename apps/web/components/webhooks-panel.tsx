@@ -1,10 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { WEBHOOK_EVENTS, WEBHOOK_TEMPLATES, type WebhookEvent } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { formatDateTime } from "@/lib/format-date";
+import { useConfirm } from "@/components/ui/confirm-dialog";
+import { Badge } from "@/components/ui/badge";
+import { Alert } from "@/components/ui/alert";
+import { Field } from "@/components/ui/field";
 
 interface WebhookEndpoint {
   id: string;
@@ -26,8 +31,10 @@ interface WebhookDelivery {
 
 export function WebhooksPanel() {
   const t = useTranslations("settings");
+  const confirm = useConfirm();
   const tc = useTranslations("common");
-  const [webhooks, setWebhooks] = useState<WebhookEndpoint[] | null>(null);
+  const ta = useTranslations("a11y");
+  const { data: webhooks = null, reload: reloadWebhooks } = useApi<WebhookEndpoint[]>("/company/webhooks");
   const [webhookForm, setWebhookForm] = useState<{ url: string; events: WebhookEvent[] }>({ url: "", events: [] });
   const [createdWebhookSecret, setCreatedWebhookSecret] = useState<string | null>(null);
   const [webhookSecretCopied, setWebhookSecretCopied] = useState(false);
@@ -37,10 +44,8 @@ export function WebhooksPanel() {
   const [error, setError] = useState<string | null>(null);
 
   function load() {
-    apiFetch<WebhookEndpoint[]>("/company/webhooks").then(setWebhooks);
+    void reloadWebhooks();
   }
-
-  useEffect(load, []);
 
   function toggleWebhookEvent(event: WebhookEvent) {
     setWebhookForm((f) => ({
@@ -87,7 +92,7 @@ export function WebhooksPanel() {
   }
 
   async function deleteWebhook(id: string) {
-    if (!window.confirm(t("confirmDeleteWebhook"))) return;
+    if (!(await confirm({ message: t("confirmDeleteWebhook"), tone: "danger", verb: "delete" }))) return;
     await apiFetch(`/company/webhooks/${id}`, { method: "DELETE" });
     if (expandedWebhookId === id) setExpandedWebhookId(null);
     load();
@@ -106,41 +111,41 @@ export function WebhooksPanel() {
 
   return (
     <section id="webhooks" className="card lg:col-span-2">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("webhooks")}</h2>
-      <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">{t("webhooksHint")}</p>
-      {error && <p className="mb-3 rounded-md bg-red-50 dark:bg-red-500/15 px-3 py-2 text-sm text-red-700 dark:text-red-400">{error}</p>}
+      <h2 className="mb-1 text-sm font-semibold text-fg-muted">{t("webhooks")}</h2>
+      <p className="mb-4 text-xs text-fg-subtle">{t("webhooksHint")}</p>
+      {error && <Alert tone="danger" className="mb-3">{error}</Alert>}
 
       {createdWebhookSecret && (
-        <div className="mb-4 rounded-md border border-warning-200 bg-warning-50 dark:bg-warning-500/15 px-3 py-2">
-          <p className="text-xs text-warning-700 dark:text-warning-500">{t("webhookSecretShownOnce")}</p>
+        <Alert tone="warning" className="mb-4">
+          <p className="text-xs text-warning-fg">{t("webhookSecretShownOnce")}</p>
           <div className="mt-2 flex items-center gap-2">
             <code className="flex-1 truncate rounded bg-white dark:bg-gray-800 px-2 py-1 text-xs">{createdWebhookSecret}</code>
             <button onClick={copyWebhookSecret} className="btn-secondary shrink-0 px-3 py-1 text-xs">
               {webhookSecretCopied ? tc("saved") : t("copySecret")}
             </button>
           </div>
-        </div>
+        </Alert>
       )}
 
       {!webhooks || webhooks.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noWebhooks")}</p>
+        <p className="text-sm text-fg-subtle">{t("noWebhooks")}</p>
       ) : (
         <ul className="mb-4 flex flex-col gap-2">
           {webhooks.map((w) => (
             <li key={w.id} className="rounded-md border border-gray-200 dark:border-gray-700 px-3 py-2">
               <div className="flex items-center justify-between gap-2">
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-medium text-gray-800 dark:text-gray-100">{w.url}</p>
+                  <p className="truncate text-sm font-medium text-fg">{w.url}</p>
                   <p className="mt-0.5 flex flex-wrap gap-1">
                     {w.events.map((ev) => (
-                      <span key={ev} className="rounded-full bg-gray-100 dark:bg-gray-700 px-2 py-0.5 text-xs text-gray-600 dark:text-gray-300">
+                      <Badge tone="neutral" key={ev}>
                         {t(`webhookEvent_${ev.replace(".", "_")}`)}
-                      </span>
+                      </Badge>
                     ))}
                   </p>
-                  <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
+                  <p className="mt-1 text-xs text-fg-subtle">
                     {w.lastDeliveryAt ? (
-                      <span className={w.lastDeliveryStatus === "success" ? "text-success-600" : "text-error-600"}>
+                      <span className={w.lastDeliveryStatus === "success" ? "text-success-fg" : "text-danger-fg"}>
                         {t("lastDelivery")}: {t(w.lastDeliveryStatus === "success" ? "webhookSuccess" : "webhookFailed")} ·{" "}
                         {formatDateTime(new Date(w.lastDeliveryAt))}
                       </span>
@@ -150,9 +155,9 @@ export function WebhooksPanel() {
                   </p>
                 </div>
                 <div className="flex shrink-0 flex-col items-end gap-1">
-                  <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${w.active ? "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500" : "bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400"}`}>
+                  <Badge tone={w.active ? "success" : "neutral"}>
                     {w.active ? t("active") : t("inactive")}
-                  </span>
+                  </Badge>
                   <div className="flex gap-1">
                     <button onClick={() => toggleWebhookLog(w.id)} className="btn-secondary px-2 py-1 text-xs">
                       {t("viewLog")}
@@ -173,17 +178,17 @@ export function WebhooksPanel() {
               {expandedWebhookId === w.id && (
                 <div className="mt-2 border-t border-gray-100 dark:border-gray-700 pt-2">
                   {!webhookDeliveries ? (
-                    <p className="text-xs text-gray-400 dark:text-gray-500">{tc("loading")}</p>
+                    <p className="text-xs text-fg-subtle">{tc("loading")}</p>
                   ) : webhookDeliveries.length === 0 ? (
-                    <p className="text-xs text-gray-400 dark:text-gray-500">{t("noDeliveries")}</p>
+                    <p className="text-xs text-fg-subtle">{t("noDeliveries")}</p>
                   ) : (
                     <ul className="flex flex-col gap-1">
                       {webhookDeliveries.map((d) => (
                         <li key={d.id} className="flex items-center justify-between text-xs">
-                          <span className={d.success ? "text-success-600" : "text-error-600"}>
+                          <span className={d.success ? "text-success-fg" : "text-danger-fg"}>
                             {d.event} {d.statusCode ? `· HTTP ${d.statusCode}` : d.error ? `· ${d.error}` : ""}
                           </span>
-                          <span className="text-gray-400 dark:text-gray-500">{formatDateTime(new Date(d.createdAt))}</span>
+                          <span className="text-fg-subtle">{formatDateTime(new Date(d.createdAt))}</span>
                         </li>
                       ))}
                     </ul>
@@ -196,7 +201,7 @@ export function WebhooksPanel() {
       )}
 
       <form onSubmit={createWebhook} className="flex flex-col gap-2">
-        <input
+        <input aria-label={ta("url")}
           required
           type="url"
           placeholder={t("webhookUrlPlaceholder")}
@@ -204,8 +209,7 @@ export function WebhooksPanel() {
           value={webhookForm.url}
           onChange={(e) => setWebhookForm((f) => ({ ...f, url: e.target.value }))}
         />
-        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
-          {t("webhookTemplate")}
+        <Field label={t("webhookTemplate")} size="sm">
           <select
             className="input w-auto"
             value=""
@@ -221,7 +225,7 @@ export function WebhooksPanel() {
               </option>
             ))}
           </select>
-        </label>
+        </Field>
         <div className="flex flex-wrap gap-2">
           {WEBHOOK_EVENTS.map((ev) => (
             <label key={ev} className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-300">

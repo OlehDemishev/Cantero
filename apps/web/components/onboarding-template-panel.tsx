@@ -1,8 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface OnboardingTemplateItem {
   id: string;
@@ -12,17 +16,17 @@ interface OnboardingTemplateItem {
 
 export function OnboardingTemplatePanel() {
   const t = useTranslations("team");
+  const confirm = useConfirm();
+  const td = useTranslations("dialog");
   const tc = useTranslations("common");
 
-  const [items, setItems] = useState<OnboardingTemplateItem[] | null>(null);
+  const { data: items = null, reload: reloadItems, error: itemsError } = useApi<OnboardingTemplateItem[]>("/company/onboarding-template");
   const [title, setTitle] = useState("");
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<OnboardingTemplateItem[]>("/company/onboarding-template").then(setItems);
+    void reloadItems();
   }
-
-  useEffect(load, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -38,6 +42,7 @@ export function OnboardingTemplatePanel() {
   }
 
   async function remove(id: string) {
+    if (!(await confirm({ message: td("removeTemplateItem"), tone: "danger", verb: "remove" }))) return;
     setBusy(true);
     try {
       await apiFetch(`/company/onboarding-template/${id}`, { method: "DELETE" });
@@ -49,13 +54,13 @@ export function OnboardingTemplatePanel() {
 
   return (
     <div className="mt-10">
-      <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("onboardingTemplate")}</h2>
-      <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">{t("onboardingTemplateHint")}</p>
+      <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("onboardingTemplate")}</h2>
+      <p className="mb-4 text-sm text-fg-subtle">{t("onboardingTemplateHint")}</p>
 
       <form onSubmit={handleSubmit} className="flex max-w-md gap-2">
         <input
           required
-          placeholder={t("onboardingTaskTitlePlaceholder")}
+          placeholder={t("onboardingTaskTitlePlaceholder")} aria-label={t("onboardingTaskTitlePlaceholder")}
           className="input flex-1"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
@@ -65,22 +70,22 @@ export function OnboardingTemplatePanel() {
         </button>
       </form>
 
-      <ul className="mt-4 flex max-w-md flex-col gap-1.5">
-        {items === null ? (
-          <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
-        ) : items.length === 0 ? (
-          <p className="text-sm text-gray-400 dark:text-gray-500">{t("noOnboardingTasks")}</p>
-        ) : (
-          items.map((item) => (
+      {items === null ? (
+        <div className="mt-4 max-w-md">{itemsError ? <ErrorState error={itemsError} onRetry={reloadItems} compact /> : <Skeleton lines={3} />}</div>
+      ) : items.length === 0 ? (
+        <p className="mt-4 text-sm text-fg-subtle">{t("noOnboardingTasks")}</p>
+      ) : (
+        <ul className="mt-4 flex max-w-md flex-col gap-1.5">
+          {items.map((item) => (
             <li key={item.id} className="card flex items-center justify-between text-sm">
               <span>{item.title}</span>
-              <button onClick={() => remove(item.id)} disabled={busy} className="text-xs text-error-700 dark:text-error-500 hover:underline">
+              <button onClick={() => remove(item.id)} disabled={busy} className="text-xs text-danger-fg hover:underline">
                 {tc("delete")}
               </button>
             </li>
-          ))
-        )}
-      </ul>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

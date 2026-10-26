@@ -28,7 +28,7 @@ export class ScheduledReportsController {
     @CurrentUser() user: AuthUser,
     @Body(new ZodValidationPipe(createScheduledReportSchema)) body: CreateScheduledReportInput,
   ) {
-    return this.service.create(user.companyId, body);
+    return this.service.create(user.companyId, user, body);
   }
 
   @Patch(":id")
@@ -37,7 +37,7 @@ export class ScheduledReportsController {
     @Param("id") id: string,
     @Body(new ZodValidationPipe(updateScheduledReportSchema)) body: UpdateScheduledReportInput,
   ) {
-    return this.service.update(user.companyId, id, body);
+    return this.service.update(user.companyId, user, id, body);
   }
 
   @Delete(":id")

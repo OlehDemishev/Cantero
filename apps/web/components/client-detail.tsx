@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { CustomFieldsValuesPanel } from "@/components/custom-fields-values-panel";
 import { ClientDealPanel } from "@/components/client-deal-panel";
 import { ClientBillingAddressPanel } from "@/components/client-billing-address-panel";
@@ -11,9 +10,16 @@ import { ClientTaxPanel } from "@/components/client-tax-panel";
 import { ClientActivityPanel } from "@/components/client-activity-panel";
 import { ClientRemindersPanel } from "@/components/client-reminders-panel";
 import { apiFetch, ApiError } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useMe } from "@/lib/use-me";
 import { goBack } from "@/lib/back-navigation";
 import { useCan } from "@/lib/permissions";
+import { formatCurrency } from "@/lib/format-currency";
+import { Badge } from "@/components/ui/badge";
+import { FormError } from "@/components/ui/field";
+import { PageHeader } from "@/components/ui/page-header";
 
 type ClientStage = "lead" | "contacted" | "qualified" | "won" | "lost";
 const STAGES: ClientStage[] = ["lead", "contacted", "qualified", "won", "lost"];
@@ -37,7 +43,7 @@ export function ClientDetail({ clientId }: { clientId: string }) {
   const currency = me?.company.currency ?? "";
   const isManager = useCan()("clients.manage");
 
-  const [client, setClient] = useState<Client | null>(null);
+  const { data: client = null, error: loadError, reload: reloadClient } = useApi<Client>(`/clients/${clientId}`);
   const [busy, setBusy] = useState(false);
   const [losingStage, setLosingStage] = useState(false);
   const [lostReasonDraft, setLostReasonDraft] = useState("");
@@ -46,10 +52,8 @@ export function ClientDetail({ clientId }: { clientId: string }) {
   const [convertForm, setConvertForm] = useState({ name: "", address: "" });
 
   function load() {
-    apiFetch<Client>(`/clients/${clientId}`).then(setClient);
+    void reloadClient();
   }
-
-  useEffect(load, [clientId]);
 
   async function moveStage(stage: ClientStage) {
     if (stage === "lost") {
@@ -104,31 +108,25 @@ export function ClientDetail({ clientId }: { clientId: string }) {
   }
 
   if (!client) {
-    return (
-      <AuthenticatedShell>
-        <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
-      </AuthenticatedShell>
-    );
+    return loadError ? <ErrorState error={loadError} onRetry={reloadClient} backHref="/clients" /> : <Skeleton variant="block" height="h-64" />;
   }
 
   return (
-    <AuthenticatedShell>
-      <button onClick={() => goBack(router, "/clients")} className="text-sm text-gray-500 dark:text-gray-400 hover:underline">
-        ← {t("title")}
-      </button>
-      <div className="mt-2 flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">{client.name}</h1>
-        <span className="rounded-full bg-brand-50 dark:bg-brand-500/15 px-3 py-1 text-xs font-medium text-brand-700 dark:text-brand-400">{t(client.stage)}</span>
-      </div>
-      <p className="text-sm text-gray-500 dark:text-gray-400">{client.email ?? client.phone ?? "—"}</p>
+    <>
+      <PageHeader
+        back={{ onClick: () => goBack(router, "/clients"), label: t("title") }}
+        title={client.name}
+        description={client.email ?? client.phone ?? "—"}
+        actions={<Badge tone="brand">{t(client.stage)}</Badge>}
+      />
       {client.estimatedValue != null && (
-        <p className="mt-1 text-sm font-medium text-gray-700 dark:text-gray-200">
-          {t("estimatedValue")}: {client.estimatedValue} {currency}
+        <p className="mt-1 text-sm font-medium text-fg-muted">
+          {t("estimatedValue")}: {formatCurrency(client.estimatedValue, currency)}
         </p>
       )}
-      {client.owner && <p className="text-xs text-gray-400 dark:text-gray-500">{t("ownedBy", { name: client.owner.name })}</p>}
+      {client.owner && <p className="text-xs text-fg-subtle">{t("ownedBy", { name: client.owner.name })}</p>}
       {client.stage === "lost" && client.lostReason && (
-        <p className="mt-1 text-xs text-error-600">
+        <p className="mt-1 text-xs text-danger-fg">
           {t("lostReason")}: {client.lostReason}
         </p>
       )}
@@ -138,7 +136,7 @@ export function ClientDetail({ clientId }: { clientId: string }) {
           <textarea
             rows={2}
             className="input"
-            placeholder={t("lostReasonPlaceholder")}
+            placeholder={t("lostReasonPlaceholder")} aria-label={t("lostReasonPlaceholder")}
             value={lostReasonDraft}
             onChange={(e) => setLostReasonDraft(e.target.value)}
           />
@@ -156,7 +154,7 @@ export function ClientDetail({ clientId }: { clientId: string }) {
           <input
             required
             className="input"
-            placeholder={t("projectName")}
+            placeholder={t("projectName")} aria-label={t("projectName")}
             value={convertForm.name}
             onChange={(e) => setConvertForm((f) => ({ ...f, name: e.target.value }))}
           />
@@ -175,7 +173,7 @@ export function ClientDetail({ clientId }: { clientId: string }) {
               {tc("cancel")}
             </button>
           </div>
-          {convertError && <p className="text-xs text-error-700 dark:text-error-500">{convertError}</p>}
+          {convertError && <FormError>{convertError}</FormError>}
         </form>
       ) : (
         <div className="mt-4 flex flex-wrap gap-1">
@@ -204,6 +202,6 @@ export function ClientDetail({ clientId }: { clientId: string }) {
         <ClientActivityPanel clientId={clientId} />
         <ClientRemindersPanel clientId={clientId} />
       </div>
-    </AuthenticatedShell>
+    </>
   );
 }

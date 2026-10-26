@@ -1,9 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate } from "@/lib/format-date";
+import { Badge } from "@/components/ui/badge";
+import { Field } from "@/components/ui/field";
 
 interface SlumpTest {
   id: string;
@@ -38,7 +43,7 @@ export function ConcreteQcPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("concreteQc");
   const tc = useTranslations("common");
 
-  const [pours, setPours] = useState<ConcretePour[] | null>(null);
+  const { data: pours = null, reload: reloadPours, error: poursError } = useApi<ConcretePour[]>(`/projects/${projectId}/concrete-pours`);
   const [adding, setAdding] = useState(false);
   const [form, setForm] = useState({ location: "", pourDate: "", mixDesign: "", volume: "", specifiedStrength: "", specifiedSlump: "", supplierName: "" });
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -48,9 +53,8 @@ export function ConcreteQcPanel({ projectId }: { projectId: string }) {
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<ConcretePour[]>(`/projects/${projectId}/concrete-pours`).then(setPours);
+    void reloadPours();
   }
-  useEffect(load, [projectId]);
 
   async function createPour(e: React.FormEvent) {
     e.preventDefault();
@@ -130,33 +134,32 @@ export function ConcreteQcPanel({ projectId }: { projectId: string }) {
   return (
     <div className="mt-10">
       <div className="mb-1 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
+        <h2 className="text-sm font-semibold text-fg-muted">{t("title")}</h2>
         {!adding && (
           <button onClick={() => setAdding(true)} className="btn-secondary px-2.5 py-1 text-xs">
             {t("logPour")}
           </button>
         )}
       </div>
-      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("hint")}</p>
+      <p className="mb-3 text-xs text-fg-subtle">{t("hint")}</p>
 
       {adding && (
         <form onSubmit={createPour} className="card mb-3 flex flex-col gap-2">
           <div className="flex flex-wrap gap-2">
             <input
               required
-              placeholder={t("locationPlaceholder")}
+              placeholder={t("locationPlaceholder")} aria-label={t("locationPlaceholder")}
               className="input flex-1"
               value={form.location}
               onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))}
             />
-            <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
-              {t("pourDate")}
+            <Field label={t("pourDate")} size="sm">
               <input required type="date" className="input" value={form.pourDate} onChange={(e) => setForm((f) => ({ ...f, pourDate: e.target.value }))} />
-            </label>
+            </Field>
           </div>
           <div className="flex flex-wrap gap-2">
             <input
-              placeholder={t("mixDesignPlaceholder")}
+              placeholder={t("mixDesignPlaceholder")} aria-label={t("mixDesignPlaceholder")}
               className="input flex-1"
               value={form.mixDesign}
               onChange={(e) => setForm((f) => ({ ...f, mixDesign: e.target.value }))}
@@ -164,13 +167,13 @@ export function ConcreteQcPanel({ projectId }: { projectId: string }) {
             <input
               type="number"
               step="0.01"
-              placeholder={t("volumePlaceholder")}
+              placeholder={t("volumePlaceholder")} aria-label={t("volumePlaceholder")}
               className="input w-32"
               value={form.volume}
               onChange={(e) => setForm((f) => ({ ...f, volume: e.target.value }))}
             />
             <input
-              placeholder={t("supplierPlaceholder")}
+              placeholder={t("supplierPlaceholder")} aria-label={t("supplierPlaceholder")}
               className="input flex-1"
               value={form.supplierName}
               onChange={(e) => setForm((f) => ({ ...f, supplierName: e.target.value }))}
@@ -180,7 +183,7 @@ export function ConcreteQcPanel({ projectId }: { projectId: string }) {
             <input
               type="number"
               step="0.01"
-              placeholder={t("specifiedStrengthPlaceholder")}
+              placeholder={t("specifiedStrengthPlaceholder")} aria-label={t("specifiedStrengthPlaceholder")}
               className="input w-40"
               value={form.specifiedStrength}
               onChange={(e) => setForm((f) => ({ ...f, specifiedStrength: e.target.value }))}
@@ -188,7 +191,7 @@ export function ConcreteQcPanel({ projectId }: { projectId: string }) {
             <input
               type="number"
               step="0.01"
-              placeholder={t("specifiedSlumpPlaceholder")}
+              placeholder={t("specifiedSlumpPlaceholder")} aria-label={t("specifiedSlumpPlaceholder")}
               className="input w-40"
               value={form.specifiedSlump}
               onChange={(e) => setForm((f) => ({ ...f, specifiedSlump: e.target.value }))}
@@ -206,9 +209,9 @@ export function ConcreteQcPanel({ projectId }: { projectId: string }) {
       )}
 
       {!pours ? (
-        <p className="text-sm text-gray-500 dark:text-gray-400">{tc("loading")}</p>
+        poursError ? <ErrorState error={poursError} onRetry={reloadPours} compact /> : <Skeleton lines={3} />
       ) : pours.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noPours")}</p>
+        <p className="text-sm text-fg-subtle">{t("noPours")}</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {pours.map((pour) => {
@@ -217,13 +220,13 @@ export function ConcreteQcPanel({ projectId }: { projectId: string }) {
             return (
               <li key={pour.id} className="card">
                 <button onClick={() => setExpandedId(expanded ? null : pour.id)} className="flex w-full items-center justify-between text-left">
-                  <span className="text-sm font-medium text-gray-900 dark:text-gray-50">
+                  <span className="text-sm font-medium text-fg">
                     {pour.location} — {formatDate(new Date(pour.pourDate))}
-                    {pour.mixDesign && <span className="ml-1.5 text-xs text-gray-400 dark:text-gray-500">({pour.mixDesign})</span>}
+                    {pour.mixDesign && <span className="ml-1.5 text-xs text-fg-subtle">({pour.mixDesign})</span>}
                   </span>
-                  {anyFail && <span className="rounded-full bg-error-50 dark:bg-error-500/15 px-2 py-0.5 text-xs font-medium text-error-700 dark:text-error-500">{t("hasFailure")}</span>}
+                  {anyFail && <Badge tone="danger">{t("hasFailure")}</Badge>}
                 </button>
-                <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
+                <p className="mt-1 text-xs text-fg-subtle">
                   {pour.specifiedStrength && `${t("specifiedStrength")}: ${pour.specifiedStrength}`}
                   {pour.specifiedSlump && ` · ${t("specifiedSlump")}: ${pour.specifiedSlump}`}
                   {pour.supplierName && ` · ${pour.supplierName}`}
@@ -232,12 +235,12 @@ export function ConcreteQcPanel({ projectId }: { projectId: string }) {
                 {expanded && (
                   <div className="mt-3 flex flex-col gap-4 border-t border-gray-100 dark:border-gray-700 pt-3">
                     <div>
-                      <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("slumpTests")}</h3>
+                      <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-fg-subtle">{t("slumpTests")}</h3>
                       {pour.slumpTests.length > 0 && (
                         <ul className="mb-2 flex flex-col gap-1 text-xs">
                           {pour.slumpTests.map((st) => (
                             <li key={st.id}>
-                              <span className={st.withinSpec ? "text-success-700 dark:text-success-500" : "font-medium text-error-700 dark:text-error-500"}>
+                              <span className={st.withinSpec ? "text-success-fg" : "font-medium text-danger-fg"}>
                                 {st.slumpValue} — {st.withinSpec ? t("withinSpec") : t("outOfSpec")}
                               </span>{" "}
                               ({st.testedByName}, {formatDate(new Date(st.testedAt))})
@@ -249,7 +252,7 @@ export function ConcreteQcPanel({ projectId }: { projectId: string }) {
                         <input
                           type="number"
                           step="0.01"
-                          placeholder={t("slumpValuePlaceholder")}
+                          placeholder={t("slumpValuePlaceholder")} aria-label={t("slumpValuePlaceholder")}
                           className="input w-32"
                           value={slumpForm.slumpValue}
                           onChange={(e) => setSlumpForm((f) => ({ ...f, slumpValue: e.target.value }))}
@@ -259,7 +262,7 @@ export function ConcreteQcPanel({ projectId }: { projectId: string }) {
                           {t("withinSpec")}
                         </label>
                         <input
-                          placeholder={t("testedByPlaceholder")}
+                          placeholder={t("testedByPlaceholder")} aria-label={t("testedByPlaceholder")}
                           className="input w-32"
                           value={slumpForm.testedByName}
                           onChange={(e) => setSlumpForm((f) => ({ ...f, testedByName: e.target.value }))}
@@ -271,7 +274,7 @@ export function ConcreteQcPanel({ projectId }: { projectId: string }) {
                     </div>
 
                     <div>
-                      <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("cylinderBreaks")}</h3>
+                      <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-fg-subtle">{t("cylinderBreaks")}</h3>
                       {pour.cylinderBreaks.length > 0 && (
                         <ul className="mb-2 flex flex-col gap-1.5 text-xs">
                           {pour.cylinderBreaks.map((cb) => (
@@ -282,21 +285,21 @@ export function ConcreteQcPanel({ projectId }: { projectId: string }) {
                                   {cb.breakStrength !== null && ` — ${cb.breakStrength}`}
                                 </span>
                                 {cb.result ? (
-                                  <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${cb.result === "pass" ? "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500" : "bg-error-50 dark:bg-error-500/15 text-error-700 dark:text-error-500"}`}>
+                                  <Badge tone={cb.result === "pass" ? "success" : "danger"}>
                                     {t(`result_${cb.result}`)}
-                                  </span>
+                                  </Badge>
                                 ) : cb.breakStrength === null ? (
                                   <span className="flex items-center gap-1.5">
                                     <input
                                       type="number"
                                       step="0.01"
-                                      placeholder={t("breakStrengthPlaceholder")}
+                                      placeholder={t("breakStrengthPlaceholder")} aria-label={t("breakStrengthPlaceholder")}
                                       className="input w-28 py-0.5 text-xs"
                                       value={resultDraft[cb.id]?.breakStrength ?? ""}
                                       onChange={(e) => setResultDraft((d) => ({ ...d, [cb.id]: { breakStrength: e.target.value, testedByName: d[cb.id]?.testedByName ?? "" } }))}
                                     />
                                     <input
-                                      placeholder={t("testedByPlaceholder")}
+                                      placeholder={t("testedByPlaceholder")} aria-label={t("testedByPlaceholder")}
                                       className="input w-24 py-0.5 text-xs"
                                       value={resultDraft[cb.id]?.testedByName ?? ""}
                                       onChange={(e) => setResultDraft((d) => ({ ...d, [cb.id]: { breakStrength: d[cb.id]?.breakStrength ?? "", testedByName: e.target.value } }))}
@@ -306,7 +309,7 @@ export function ConcreteQcPanel({ projectId }: { projectId: string }) {
                                     </button>
                                   </span>
                                 ) : (
-                                  <span className="text-gray-400 dark:text-gray-500">{t("noSpecToCompare")}</span>
+                                  <span className="text-fg-subtle">{t("noSpecToCompare")}</span>
                                 )}
                               </div>
                             </li>
@@ -315,22 +318,21 @@ export function ConcreteQcPanel({ projectId }: { projectId: string }) {
                       )}
                       <div className="flex flex-wrap items-end gap-2">
                         <input
-                          placeholder={t("cylinderLabelPlaceholder")}
+                          placeholder={t("cylinderLabelPlaceholder")} aria-label={t("cylinderLabelPlaceholder")}
                           className="input w-32"
                           value={cylForm.cylinderLabel}
                           onChange={(e) => setCylForm((f) => ({ ...f, cylinderLabel: e.target.value }))}
                         />
                         <input
                           type="number"
-                          placeholder={t("breakAgeDaysPlaceholder")}
+                          placeholder={t("breakAgeDaysPlaceholder")} aria-label={t("breakAgeDaysPlaceholder")}
                           className="input w-24"
                           value={cylForm.breakAgeDays}
                           onChange={(e) => setCylForm((f) => ({ ...f, breakAgeDays: e.target.value }))}
                         />
-                        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
-                          {t("breakDate")}
+                        <Field label={t("breakDate")} size="sm">
                           <input type="date" className="input" value={cylForm.breakDate} onChange={(e) => setCylForm((f) => ({ ...f, breakDate: e.target.value }))} />
-                        </label>
+                        </Field>
                         <button onClick={() => addCylinderBreak(pour.id)} disabled={busy} className="btn-secondary shrink-0 px-2.5 py-1 text-xs">
                           {t("scheduleBreak")}
                         </button>

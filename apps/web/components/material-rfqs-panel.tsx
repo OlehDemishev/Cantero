@@ -3,8 +3,13 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import type { MaterialRfqStatus } from "@cantero/shared";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, notifyApiError } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
+import { formatCurrency } from "@/lib/format-currency";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useApi } from "@/lib/use-api";
+import { Badge } from "@/components/ui/badge";
 
 interface MaterialCatalogItem {
   id: string;
@@ -55,10 +60,11 @@ interface LineDraft {
 export function MaterialRfqsPanel() {
   const t = useTranslations("materialRfqs");
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
 
-  const [rfqs, setRfqs] = useState<RfqSummary[] | null>(null);
+  const { data: rfqs = null, error: rfqsError, reload: reloadRfqs } = useApi<RfqSummary[]>("/materials/rfqs");
   const [detail, setDetail] = useState<Rfq | null>(null);
   const [materials, setMaterials] = useState<MaterialCatalogItem[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -71,11 +77,11 @@ export function MaterialRfqsPanel() {
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<RfqSummary[]>("/materials/rfqs").then(setRfqs);
+    void reloadRfqs();
   }
 
   function loadDetail(id: string) {
-    apiFetch<Rfq>(`/materials/rfqs/${id}`).then(setDetail);
+    apiFetch<Rfq>(`/materials/rfqs/${id}`).then(setDetail).catch(notifyApiError);
   }
 
   function toggleExpand(id: string) {
@@ -90,13 +96,12 @@ export function MaterialRfqsPanel() {
   }
 
   useEffect(() => {
-    load();
     apiFetch<MaterialCatalogItem[]>("/materials/catalog").then((items) => {
       setMaterials(items);
       setLines([{ materialCatalogItemId: items[0]?.id ?? "", quantity: "1" }]);
-    });
-    apiFetch<Project[]>("/projects").then(setProjects);
-    apiFetch<Supplier[]>("/materials/suppliers").then(setSuppliers);
+    }).catch(notifyApiError);
+    apiFetch<Project[]>("/projects").then(setProjects).catch(notifyApiError);
+    apiFetch<Supplier[]>("/materials/suppliers").then(setSuppliers).catch(notifyApiError);
   }, []);
 
   function addLine() {
@@ -173,26 +178,26 @@ export function MaterialRfqsPanel() {
   return (
     <div className="mt-10">
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
+        <h2 className="text-sm font-semibold text-fg-muted">{t("title")}</h2>
         {!creating && (
           <button onClick={() => setCreating(true)} className="btn-secondary px-3 py-1 text-xs">
             {t("newRfq")}
           </button>
         )}
       </div>
-      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("hint")}</p>
+      <p className="mb-3 text-xs text-fg-subtle">{t("hint")}</p>
 
       {creating && (
         <form onSubmit={submitRfq} className="card mb-4 flex flex-col gap-3">
           <div className="flex gap-3">
             <input
               required
-              placeholder={t("rfqTitlePlaceholder")}
+              placeholder={t("rfqTitlePlaceholder")} aria-label={t("rfqTitlePlaceholder")}
               className="input flex-1"
               value={form.title}
               onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
             />
-            <select className="input w-auto" value={form.projectId} onChange={(e) => setForm((f) => ({ ...f, projectId: e.target.value }))}>
+            <select aria-label={ta("project")} className="input w-auto" value={form.projectId} onChange={(e) => setForm((f) => ({ ...f, projectId: e.target.value }))}>
               <option value="">{t("companyWide")}</option>
               {projects.map((p) => (
                 <option key={p.id} value={p.id}>
@@ -204,7 +209,7 @@ export function MaterialRfqsPanel() {
           <div className="flex flex-col gap-2">
             {lines.map((line, i) => (
               <div key={i} className="flex items-center gap-2">
-                <select
+                <select aria-label={ta("material")}
                   className="input flex-1"
                   value={line.materialCatalogItemId}
                   onChange={(e) => updateLine(i, "materialCatalogItemId", e.target.value)}
@@ -215,7 +220,7 @@ export function MaterialRfqsPanel() {
                     </option>
                   ))}
                 </select>
-                <input
+                <input aria-label={ta("quantity")}
                   type="number"
                   step="0.01"
                   min="0.01"
@@ -224,7 +229,7 @@ export function MaterialRfqsPanel() {
                   onChange={(e) => updateLine(i, "quantity", e.target.value)}
                 />
                 {lines.length > 1 && (
-                  <button type="button" onClick={() => removeLine(i)} className="text-gray-400 dark:text-gray-500 hover:text-error-600">
+                  <button aria-label={ta("remove")} type="button" onClick={() => removeLine(i)} className="text-fg-subtle hover:text-danger-fg">
                     ×
                   </button>
                 )}
@@ -246,9 +251,9 @@ export function MaterialRfqsPanel() {
       )}
 
       {rfqs === null ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
+        rfqsError ? <ErrorState error={rfqsError} onRetry={reloadRfqs} compact /> : <Skeleton lines={3} />
       ) : rfqs.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noRfqs")}</p>
+        <p className="text-sm text-fg-subtle">{t("noRfqs")}</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {rfqs.map((rfq) => {
@@ -257,37 +262,33 @@ export function MaterialRfqsPanel() {
               <li key={rfq.id} className="card">
                 <button onClick={() => toggleExpand(rfq.id)} className="flex w-full items-center justify-between text-left">
                   <div>
-                    <span className="text-sm font-medium text-gray-900 dark:text-gray-50">{rfq.title}</span>{" "}
-                    <span className="text-xs text-gray-500 dark:text-gray-400">{rfq.project ? rfq.project.name : t("companyWide")}</span>
+                    <span className="text-sm font-medium text-fg">{rfq.title}</span>{" "}
+                    <span className="text-xs text-fg-subtle">{rfq.project ? rfq.project.name : t("companyWide")}</span>
                   </div>
-                  <span
-                    className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                      rfq.status === "open" ? "bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-400" : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
-                    }`}
-                  >
+                  <Badge tone={rfq.status === "open" ? "brand" : "neutral"}>
                     {t(rfq.status)}
-                  </span>
+                  </Badge>
                 </button>
 
-                {expanded && !detail && <p className="mt-3 text-xs text-gray-400 dark:text-gray-500">{tc("loading")}</p>}
+                {expanded && !detail && <p className="mt-3 text-xs text-fg-subtle">{tc("loading")}</p>}
 
                 {expanded && detail && detail.id === rfq.id && (
                   <div className="mt-3 flex flex-col gap-4 border-t border-gray-100 dark:border-gray-700 pt-3">
                     {detail.lines.map((line) => (
                       <div key={line.id}>
-                        <div className="mb-1 text-xs font-semibold text-gray-700 dark:text-gray-200">
+                        <div className="mb-1 text-xs font-semibold text-fg-muted">
                           {line.materialCatalogItem.name} — {line.quantity} {line.materialCatalogItem.unit}
                         </div>
                         {line.quotes.length === 0 ? (
-                          <p className="text-xs text-gray-400 dark:text-gray-500">{t("noQuotesYet")}</p>
+                          <p className="text-xs text-fg-subtle">{t("noQuotesYet")}</p>
                         ) : (
                           <ul className="flex flex-col gap-1">
                             {line.quotes.map((q, i) => (
                               <li key={q.id} className="flex items-center justify-between text-xs">
-                                <span className={i === 0 ? "font-medium text-success-700 dark:text-success-500" : "text-gray-600 dark:text-gray-300"}>
-                                  {q.supplier.name} — {q.unitPrice} {currency}/{line.materialCatalogItem.unit}
-                                  {" "}({(Number(q.unitPrice) * Number(line.quantity)).toFixed(2)} {currency})
-                                  {q.isAwarded && <span className="ml-1.5 rounded-full bg-success-50 dark:bg-success-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-success-700 dark:text-success-500">{t("awarded")}</span>}
+                                <span className={i === 0 ? "font-medium text-success-fg" : "text-gray-600 dark:text-gray-300"}>
+                                  {q.supplier.name} — {formatCurrency(q.unitPrice, currency, { maximumFractionDigits: 4 })}/{line.materialCatalogItem.unit}
+                                  {" "}({formatCurrency((Number(q.unitPrice) * Number(line.quantity)), currency)})
+                                  {q.isAwarded && <Badge tone="success" size="sm" className="ml-1.5">{t("awarded")}</Badge>}
                                 </span>
                                 {detail.status === "open" && !q.isAwarded && (
                                   <button onClick={() => award(detail.id, q.id)} className="text-brand-700 dark:text-brand-400 hover:underline">
@@ -300,7 +301,7 @@ export function MaterialRfqsPanel() {
                         )}
                         {detail.status === "open" && (
                           <div className="mt-1.5 flex items-center gap-1.5">
-                            <select
+                            <select aria-label={ta("supplier")}
                               className="input py-1 text-xs"
                               value={quoteForms[line.id]?.supplierId ?? ""}
                               onChange={(e) => setQuoteForms((f) => ({ ...f, [line.id]: { ...f[line.id], supplierId: e.target.value, unitPrice: f[line.id]?.unitPrice ?? "" } }))}
@@ -316,7 +317,7 @@ export function MaterialRfqsPanel() {
                               type="number"
                               step="0.0001"
                               min="0"
-                              placeholder={t("unitPricePlaceholder")}
+                              placeholder={t("unitPricePlaceholder")} aria-label={t("unitPricePlaceholder")}
                               className="input w-24 py-1 text-xs"
                               value={quoteForms[line.id]?.unitPrice ?? ""}
                               onChange={(e) => setQuoteForms((f) => ({ ...f, [line.id]: { ...f[line.id], unitPrice: e.target.value, supplierId: f[line.id]?.supplierId ?? "" } }))}
@@ -329,7 +330,7 @@ export function MaterialRfqsPanel() {
                       </div>
                     ))}
                     {detail.status === "open" && (
-                      <button onClick={() => close(detail.id)} disabled={busy} className="w-fit text-xs text-gray-400 dark:text-gray-500 hover:text-error-600">
+                      <button onClick={() => close(detail.id)} disabled={busy} className="w-fit text-xs text-fg-subtle hover:text-danger-fg">
                         {t("closeRfq")}
                       </button>
                     )}

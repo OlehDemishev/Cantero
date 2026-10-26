@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, notifyApiError } from "@/lib/api-client";
 import { formatDate } from "@/lib/format-date";
 import { RevisionDiffPanel } from "@/components/revision-diff-panel";
+import { formatCurrency } from "@/lib/format-currency";
+import { Badge } from "@/components/ui/badge";
 
 interface RateCatalogItem {
   code: string;
@@ -107,7 +109,7 @@ export function EstimateRevisionHistoryPanel({
   const [loadingRevision, setLoadingRevision] = useState(false);
 
   useEffect(() => {
-    apiFetch<RevisionSummary[]>(`/estimates/${estimateId}/revisions`).then(setRevisions);
+    apiFetch<RevisionSummary[]>(`/estimates/${estimateId}/revisions`).then(setRevisions).catch(notifyApiError);
   }, [estimateId, refreshSignal]);
 
   async function viewRevision(revisionId: string) {
@@ -127,7 +129,7 @@ export function EstimateRevisionHistoryPanel({
 
   return (
     <div className="mt-10">
-      <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("revisionHistory")}</h2>
+      <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("revisionHistory")}</h2>
       <ul className="flex flex-col gap-2">
         {revisions.map((rev) => (
           <li key={rev.id}>
@@ -140,55 +142,45 @@ export function EstimateRevisionHistoryPanel({
               <span className="text-sm font-medium">
                 {t("version")} {rev.versionNumber}
               </span>
-              <span className="text-xs text-gray-500 dark:text-gray-400">
-                {formatDate(new Date(rev.createdAt))} · {rev.grandTotal} {currency}
+              <span className="text-xs text-fg-subtle">
+                {formatDate(new Date(rev.createdAt))} · {formatCurrency(rev.grandTotal, currency)}
               </span>
             </button>
           </li>
         ))}
       </ul>
 
-      {loadingRevision && <p className="mt-3 text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>}
+      {loadingRevision && <p className="mt-3 text-sm text-fg-subtle">{tc("loading")}</p>}
 
       {comparison && selectedRevision && (
         <div className="mt-4">
-          <h3 className="mb-2 text-xs font-semibold text-gray-500 dark:text-gray-400">
+          <h3 className="mb-2 text-xs font-semibold text-fg-subtle">
             {t("compareToCurrent", { version: selectedRevision.versionNumber })}
           </h3>
-          <div className="overflow-x-auto">
+          <div tabIndex={0} className="overflow-x-auto">
           <table className="w-full border-collapse text-sm">
             <thead>
-              <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
-                <th className="py-1">{t("rateItem")}</th>
-                <th>{t("version")} {selectedRevision.versionNumber}</th>
-                <th>{tc("status")}</th>
-                <th>{t("current")}</th>
+              <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
+                <th scope="col" className="py-1">{t("rateItem")}</th>
+                <th scope="col">{t("version")} {selectedRevision.versionNumber}</th>
+                <th scope="col">{tc("status")}</th>
+                <th scope="col">{t("current")}</th>
               </tr>
             </thead>
             <tbody>
               {comparison.map((row) => (
                 <tr key={row.code} className="border-b border-gray-100 dark:border-gray-700">
                   <td className="py-1">{row.name}</td>
-                  <td className={row.kind === "removed" ? "text-error-600" : ""}>
-                    {row.revQuantity !== null ? `${row.revQuantity} ${row.unit} · ${row.revTotal} ${currency}` : "—"}
+                  <td className={row.kind === "removed" ? "text-danger-fg" : ""}>
+                    {row.revQuantity !== null ? `${row.revQuantity} ${row.unit} · ${formatCurrency(row.revTotal, currency)}` : "—"}
                   </td>
                   <td>
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                        row.kind === "added"
-                          ? "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500"
-                          : row.kind === "removed"
-                            ? "bg-error-50 dark:bg-error-500/15 text-error-700 dark:text-error-500"
-                            : row.kind === "changed"
-                              ? "bg-warning-50 dark:bg-warning-500/15 text-warning-700 dark:text-warning-500"
-                              : "bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400"
-                      }`}
-                    >
+                    <Badge tone={row.kind === "added" ? "success" : row.kind === "removed" ? "danger" : row.kind === "changed" ? "warning" : "neutral"}>
                       {t(row.kind)}
-                    </span>
+                    </Badge>
                   </td>
-                  <td className={row.kind === "added" ? "text-success-700 dark:text-success-500" : ""}>
-                    {row.curQuantity !== null ? `${row.curQuantity} ${row.unit} · ${row.curTotal} ${currency}` : "—"}
+                  <td className={row.kind === "added" ? "text-success-fg" : ""}>
+                    {row.curQuantity !== null ? `${row.curQuantity} ${row.unit} · ${formatCurrency(row.curTotal, currency)}` : "—"}
                   </td>
                 </tr>
               ))}

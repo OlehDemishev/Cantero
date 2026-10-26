@@ -1,9 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch, downloadBlob } from "@/lib/api-client";
 import { useCan } from "@/lib/permissions";
+import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
+import { formatCurrency } from "@/lib/format-currency";
 
 interface WorkloadRow {
   workerId: string;
@@ -28,17 +32,17 @@ export function TeamWorkloadPanel({ currency }: { currency: string }) {
   const t = useTranslations("reports");
   const tc = useTranslations("common");
   const tt = useTranslations("team");
-  const canExportPayroll = useCan()("hr.payroll");
+  const ta = useTranslations("a11y");
+  const can = useCan();
+  const canExportPayroll = can("hr.payroll");
 
-  const [workload, setWorkload] = useState<LaborCostReport | null>(null);
+  // Hours with their cost: for members who may see pay rates (people.rates).
+  const canSee = can("people.rates");
   const [workloadFrom, setWorkloadFrom] = useState(isoDaysAgo(30));
   const [workloadTo, setWorkloadTo] = useState(isoDaysAgo(0));
-
-  useEffect(() => {
-    apiFetch<LaborCostReport>(
-      `/team/labor-cost-report?from=${new Date(workloadFrom).toISOString()}&to=${new Date(workloadTo).toISOString()}`,
-    ).then(setWorkload);
-  }, [workloadFrom, workloadTo]);
+  const { data: workload, error, reload } = useApi<LaborCostReport>(
+    canSee ? `/team/labor-cost-report?from=${new Date(workloadFrom).toISOString()}&to=${new Date(workloadTo).toISOString()}` : null,
+  );
 
   async function downloadPayrollExport() {
     const blob = await apiFetch<Blob>(
@@ -66,14 +70,16 @@ export function TeamWorkloadPanel({ currency }: { currency: string }) {
     downloadBlob(blob, "incident-report-export.csv");
   }
 
+  if (!canSee) return null;
+
   return (
     <>
       <div className="mb-3 mt-10 flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("teamWorkload")}</h2>
-        <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-          <input type="date" className="input w-auto" value={workloadFrom} onChange={(e) => setWorkloadFrom(e.target.value)} />
+        <h2 className="text-sm font-semibold text-fg-muted">{t("teamWorkload")}</h2>
+        <div className="flex items-center gap-2 text-xs text-fg-subtle">
+          <input aria-label={ta("fromDate")} type="date" className="input w-auto" value={workloadFrom} onChange={(e) => setWorkloadFrom(e.target.value)} />
           <span>–</span>
-          <input type="date" className="input w-auto" value={workloadTo} onChange={(e) => setWorkloadTo(e.target.value)} />
+          <input aria-label={ta("toDate")} type="date" className="input w-auto" value={workloadTo} onChange={(e) => setWorkloadTo(e.target.value)} />
           {canExportPayroll && (
             <>
               <button onClick={downloadPayrollExport} className="btn-secondary px-3 py-1 text-xs">
@@ -87,23 +93,25 @@ export function TeamWorkloadPanel({ currency }: { currency: string }) {
               </button>
             </>
           )}
-          <button onClick={downloadSafetyExport} className="btn-secondary px-3 py-1 text-xs">
-            {t("downloadSafetyExport")}
-          </button>
+          {can("site.manage") && (
+            <button onClick={downloadSafetyExport} className="btn-secondary px-3 py-1 text-xs">
+              {t("downloadSafetyExport")}
+            </button>
+          )}
         </div>
       </div>
       {!workload ? (
-        <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
+        error ? <ErrorState error={error} onRetry={reload} compact /> : <Skeleton variant="table" rows={4} columns={4} />
       ) : workload.byWorker.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noWorkload")}</p>
+        <p className="text-sm text-fg-subtle">{t("noWorkload")}</p>
       ) : (
         <table className="w-full border-collapse text-sm">
           <thead>
-            <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
-              <th className="py-2">{tc("name")}</th>
-              <th>{tt("role")}</th>
-              <th className="text-right">{tt("hours")}</th>
-              <th className="text-right">{tt("cost")}</th>
+            <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
+              <th scope="col" className="py-2">{tc("name")}</th>
+              <th scope="col">{tt("role")}</th>
+              <th scope="col" className="text-right">{tt("hours")}</th>
+              <th scope="col" className="text-right">{tt("cost")}</th>
             </tr>
           </thead>
           <tbody>
@@ -117,7 +125,7 @@ export function TeamWorkloadPanel({ currency }: { currency: string }) {
                 <td>{w.role ?? "—"}</td>
                 <td className="text-right">{w.hours}h</td>
                 <td className="text-right">
-                  {w.cost} {currency}
+                  {formatCurrency(w.cost, currency)}
                 </td>
               </tr>
             ))}

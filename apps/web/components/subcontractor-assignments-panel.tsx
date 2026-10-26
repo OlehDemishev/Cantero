@@ -2,8 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, notifyApiError } from "@/lib/api-client";
 import { formatDate } from "@/lib/format-date";
+import { useConfirm } from "@/components/ui/confirm-dialog";
+import { Alert } from "@/components/ui/alert";
+import { Field } from "@/components/ui/field";
 
 const NEW_SUBCONTRACTOR = "__new__";
 
@@ -21,7 +24,9 @@ interface Assignment {
 
 export function SubcontractorAssignmentsPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("subcontractors");
+  const confirm = useConfirm();
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
 
   const [subcontractors, setSubcontractors] = useState<Subcontractor[]>([]);
   const [assignmentsBySubcontractor, setAssignmentsBySubcontractor] = useState<Record<string, Assignment[]> | null>(null);
@@ -38,7 +43,9 @@ export function SubcontractorAssignmentsPanel({ projectId }: { projectId: string
       list.map((s) =>
         apiFetch<Assignment[]>(`/finance/subcontractors/${s.id}/assignments`).then((rows) => [s.id, rows] as const),
       ),
-    ).then((pairs) => setAssignmentsBySubcontractor(Object.fromEntries(pairs)));
+    )
+      .then((pairs) => setAssignmentsBySubcontractor(Object.fromEntries(pairs)))
+      .catch(notifyApiError);
   }
 
   function load() {
@@ -46,7 +53,7 @@ export function SubcontractorAssignmentsPanel({ projectId }: { projectId: string
       setSubcontractors(list);
       if (list[0]) setSelectedId((id) => id || list[0].id);
       loadAssignments(list);
-    });
+    }).catch(notifyApiError);
   }
 
   useEffect(load, []);
@@ -89,7 +96,7 @@ export function SubcontractorAssignmentsPanel({ projectId }: { projectId: string
   }
 
   async function unassign(subcontractorId: string, assignmentId: string) {
-    if (!window.confirm(t("confirmUnassign"))) return;
+    if (!(await confirm({ message: t("confirmUnassign"), tone: "danger", verb: "remove" }))) return;
     await apiFetch(`/finance/subcontractors/${subcontractorId}/assignments/${assignmentId}`, { method: "DELETE" });
     load();
   }
@@ -103,14 +110,14 @@ export function SubcontractorAssignmentsPanel({ projectId }: { projectId: string
 
   return (
     <div className="mt-10">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("assignmentsTitle")}</h2>
-      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("assignmentsHint")}</p>
-      {error && <p className="mb-3 rounded-md bg-red-50 dark:bg-red-500/15 px-3 py-2 text-sm text-red-700 dark:text-red-400">{error}</p>}
+      <h2 className="mb-1 text-sm font-semibold text-fg-muted">{t("assignmentsTitle")}</h2>
+      <p className="mb-3 text-xs text-fg-subtle">{t("assignmentsHint")}</p>
+      {error && <Alert tone="danger" className="mb-3">{error}</Alert>}
 
       {!assignmentsBySubcontractor ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
+        <p className="text-sm text-fg-subtle">{tc("loading")}</p>
       ) : onThisProject.length === 0 ? (
-        <p className="mb-4 text-sm text-gray-400 dark:text-gray-500">{t("noAssignedSubcontractors")}</p>
+        <p className="mb-4 text-sm text-fg-subtle">{t("noAssignedSubcontractors")}</p>
       ) : (
         <ul className="mb-4 flex flex-col gap-2">
           {onThisProject.map(({ subcontractor, assignment }) => (
@@ -120,9 +127,9 @@ export function SubcontractorAssignmentsPanel({ projectId }: { projectId: string
             >
               <span>
                 {subcontractor.name}
-                {subcontractor.email && <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">{subcontractor.email}</span>}
+                {subcontractor.email && <span className="ml-2 text-xs text-fg-subtle">{subcontractor.email}</span>}
                 {assignment.startDate && assignment.endDate && (
-                  <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">
+                  <span className="ml-2 text-xs text-fg-subtle">
                     {formatDate(new Date(assignment.startDate))} – {formatDate(new Date(assignment.endDate))}
                   </span>
                 )}
@@ -136,7 +143,7 @@ export function SubcontractorAssignmentsPanel({ projectId }: { projectId: string
       )}
 
       <form onSubmit={assign} className="flex flex-wrap items-end gap-2">
-        <select className="input w-auto" value={selectedId} onChange={(e) => setSelectedId(e.target.value)}>
+        <select aria-label={ta("subcontractor")} className="input w-auto" value={selectedId} onChange={(e) => setSelectedId(e.target.value)}>
           {subcontractors.map((s) => (
             <option key={s.id} value={s.id}>
               {s.name}
@@ -148,26 +155,24 @@ export function SubcontractorAssignmentsPanel({ projectId }: { projectId: string
           <>
             <input
               required
-              placeholder={tc("name")}
+              placeholder={tc("name")} aria-label={tc("name")}
               className="input w-auto"
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
             />
             <input
               type="email"
-              placeholder={tc("email")}
+              placeholder={tc("email")} aria-label={tc("email")}
               className="input w-auto"
               value={newEmail}
               onChange={(e) => setNewEmail(e.target.value)}
             />
           </>
         )}
-        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
-          {t("startDate")}
+        <Field label={t("startDate")} size="sm">
           <input type="date" className="input w-auto" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
-        </label>
-        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
-          {t("endDate")}
+        </Field>
+        <Field label={t("endDate")} size="sm">
           <input
             type="date"
             min={startDate || undefined}
@@ -175,7 +180,7 @@ export function SubcontractorAssignmentsPanel({ projectId }: { projectId: string
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
           />
-        </label>
+        </Field>
         <button type="submit" disabled={busy} className="btn-secondary">
           {t("assignToProject")}
         </button>

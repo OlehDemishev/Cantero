@@ -29,20 +29,20 @@ export function WorkerPtoPanel({ workerId, onChanged }: { workerId: string; onCh
 
   return (
     <>
-      <h2 className="mb-3 mt-8 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("ptoBalance")}</h2>
+      <h2 className="mb-3 mt-8 text-sm font-semibold text-fg-muted">{t("ptoBalance")}</h2>
       <form onSubmit={adjustPto} className="card flex flex-col gap-2">
         <input
           required
           type="number"
           step="0.5"
-          placeholder={t("ptoDeltaHoursPlaceholder")}
+          placeholder={t("ptoDeltaHoursPlaceholder")} aria-label={t("ptoDeltaHoursPlaceholder")}
           className="input"
           value={ptoForm.deltaHours}
           onChange={(e) => setPtoForm((f) => ({ ...f, deltaHours: e.target.value }))}
         />
         <input
           required
-          placeholder={t("ptoReasonPlaceholder")}
+          placeholder={t("ptoReasonPlaceholder")} aria-label={t("ptoReasonPlaceholder")}
           className="input"
           value={ptoForm.reason}
           onChange={(e) => setPtoForm((f) => ({ ...f, reason: e.target.value }))}

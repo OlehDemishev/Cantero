@@ -4,8 +4,8 @@ import { useEffect, useRef, useState, type SVGProps } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { clearToken, getToken } from "@/lib/api-client";
-import { useMe } from "@/lib/use-me";
+import { clearToken, signOutSession } from "@/lib/api-client";
+import { useMe, type MeResponse } from "@/lib/use-me";
 import { OfflineOthersNotice } from "@/components/offline-others-notice";
 import { useCan } from "@/lib/permissions";
 import { permissionsFor } from "@/lib/route-access";
@@ -168,20 +168,22 @@ function useVisibleNavItems(hiddenNavItems: string[]): (item: NavItem) => boolea
 
 const COLLAPSED_NAV_GROUPS_STORAGE_KEY = "cantero:collapsedNavGroups";
 
+/**
+ * The signed-in app's frame — menu, header, command palette — rendered once by app/(app)/layout.tsx
+ * around every page in it, so moving between pages swaps only the content. The frame draws at once;
+ * the page itself waits for /me (MeProvider) and an active subscription, so a signed-out visit goes
+ * to /login without any of the page's own requests going out.
+ */
 export function AuthenticatedShell({ children }: { children: React.ReactNode }) {
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
   const router = useRouter();
-  const { data, loading, unauthorized } = useMe();
+  const { data, unauthorized } = useMe();
   const { isExpanded, isMobileOpen } = useSidebar();
 
   useEffect(() => {
-    if (!getToken()) router.replace("/login");
-  }, [router]);
-
-  useEffect(() => {
-    // A stored token that the API now rejects (expired, or from a database that's since been
-    // reset) leaves `getToken()` above satisfied forever — without this, the page sits on the
-    // loading state indefinitely instead of bouncing back to sign-in.
+    // No stored token, or one the API now rejects (expired, or from a database that's since been
+    // reset): without this the content would sit on its loading state instead of going to sign-in.
     if (unauthorized) {
       clearToken();
       router.replace("/login");
@@ -193,41 +195,70 @@ export function AuthenticatedShell({ children }: { children: React.ReactNode }) 
   }, [data, router]);
 
   const isNavItemVisible = useVisibleNavItems(data?.company.hiddenNavItems ?? []);
-
-  if (loading || !data) {
-    return <div className="flex min-h-screen items-center justify-center text-gray-500 dark:text-gray-400">{tc("loading")}</div>;
-  }
+  const ready = data?.subscriptionStatus === "active";
 
   const mainMargin = isMobileOpen ? "ml-0" : isExpanded ? "lg:ml-[270px]" : "lg:ml-[90px]";
 
   return (
     <div className="min-h-screen xl:flex">
-      <AppSidebar hiddenNavItems={data.company.hiddenNavItems} />
+      {/* First thing Tab reaches: past the ~40 menu links straight to the page. */}
+      <a
+        href="#main"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-99999 focus:rounded-lg focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-fg focus:shadow-theme-md focus:outline-2 focus:outline-brand-600 dark:focus:bg-gray-900"
+      >
+        {ta("skipToContent")}
+      </a>
+      <AppSidebar hiddenNavItems={data?.company.hiddenNavItems ?? null} />
       <SidebarBackdrop />
       <div className={`flex-1 transition-all duration-300 ease-in-out print:ml-0 ${mainMargin}`}>
         <AppHeader me={data} />
-        <div className="mx-auto max-w-(--breakpoint-2xl) p-4 md:p-6 print:max-w-none print:p-0">
-          <OfflineOthersNotice />
-          {children}
-        </div>
+        <main id="main" tabIndex={-1} className="mx-auto max-w-(--breakpoint-2xl) p-4 outline-none md:p-6 print:max-w-none print:p-0">
+          {ready ? (
+            <>
+              <OfflineOthersNotice />
+              {children}
+            </>
+          ) : (
+            <ContentSkeleton label={tc("loading")} />
+          )}
+        </main>
       </div>
-      <CommandPalette navItems={NAV_ITEMS.filter(isNavItemVisible)} />
+      {ready && <CommandPalette navItems={NAV_ITEMS.filter(isNavItemVisible)} />}
       <KeyboardShortcutsHelp />
     </div>
   );
 }
 
-function AppSidebar({ hiddenNavItems }: { hiddenNavItems: string[] }) {
+/** Stands in for the page while /me loads — the frame around it is already there. */
+function ContentSkeleton({ label }: { label: string }) {
+  return (
+    <div role="status" aria-busy="true" className="animate-pulse">
+      <span className="sr-only">{label}</span>
+      <div className="mb-6 h-8 w-56 max-w-full rounded-lg bg-gray-200 dark:bg-gray-800" />
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="h-28 rounded-2xl bg-gray-200 dark:bg-gray-800" />
+        <div className="h-28 rounded-2xl bg-gray-200 dark:bg-gray-800" />
+        <div className="hidden h-28 rounded-2xl bg-gray-200 dark:bg-gray-800 lg:block" />
+      </div>
+      <div className="mt-6 h-72 rounded-2xl bg-gray-200 dark:bg-gray-800" />
+    </div>
+  );
+}
+
+/** `hiddenNavItems` is null while /me loads: the menu then shows placeholders rather than items the
+ * member may turn out not to have. */
+function AppSidebar({ hiddenNavItems }: { hiddenNavItems: string[] | null }) {
   const tn = useTranslations("nav");
+  const ta = useTranslations("a11y");
   const pathname = usePathname();
-  const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
+  const { isExpanded, isMobile, isMobileOpen, isHovered, setIsHovered } = useSidebar();
   const expanded = isExpanded || isHovered || isMobileOpen;
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
 
   // A group that ends up with nothing left to show (every item in it hidden) doesn't render at
   // all — an empty section header would just be dead weight, not a useful "nothing here" signal.
-  const isVisible = useVisibleNavItems(hiddenNavItems);
-  const visibleGroups = NAV_GROUPS.map((group) => ({
+  const isVisible = useVisibleNavItems(hiddenNavItems ?? []);
+  const visibleGroups = (hiddenNavItems ? NAV_GROUPS : []).map((group) => ({
     ...group,
     items: group.items.filter(isVisible),
   })).filter((group) => group.items.length > 0);
@@ -266,20 +297,23 @@ function AppSidebar({ hiddenNavItems }: { hiddenNavItems: string[] }) {
       className={`fixed left-0 top-0 z-50 flex h-screen flex-col border-r border-gray-200 bg-white px-4 transition-all duration-300 ease-in-out print:hidden dark:border-gray-800 dark:bg-gray-900 ${
         expanded ? "w-[270px]" : "w-[90px]"
       } ${isMobileOpen ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0`}
+      // Off-canvas on a phone: out of the Tab order and the accessibility tree, not just out of sight.
+      inert={isMobile && !isMobileOpen}
       onMouseEnter={() => !isExpanded && setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
       <div className={`flex h-16 items-center ${expanded ? "justify-start" : "justify-center"}`}>
         {expanded ? (
-          <span className="text-lg font-semibold tracking-tight text-gray-900 dark:text-white">Cantero</span>
+          <span className="text-lg font-semibold tracking-tight text-fg">Cantero</span>
         ) : (
           <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-500 text-sm font-semibold text-white">
             C
           </span>
         )}
       </div>
-      <nav className="flex flex-1 flex-col overflow-y-auto no-scrollbar">
-        {!expanded && <span className="mb-3 text-center text-xs font-medium uppercase text-gray-400 dark:text-gray-500">···</span>}
+      <nav aria-label={ta("mainNavigation")} className="flex flex-1 flex-col overflow-y-auto no-scrollbar">
+        {!expanded && <span aria-hidden="true" className="mb-3 text-center text-xs font-medium uppercase text-fg-subtle">···</span>}
+        {!hiddenNavItems && <NavSkeleton expanded={expanded} />}
         <div className="flex flex-col gap-1">
           {visibleGroups.map((group, i) => {
             const isCollapsed = collapsedGroups.has(group.key) && group.key !== activeGroupKey;
@@ -287,15 +321,18 @@ function AppSidebar({ hiddenNavItems }: { hiddenNavItems: string[] }) {
               <div key={group.key} className={i > 0 ? (expanded ? "mt-4" : "mt-2 border-t border-gray-100 pt-2 dark:border-gray-800") : ""}>
                 {expanded && (
                   <button
+                    type="button"
                     onClick={() => toggleGroup(group.key)}
-                    className="mb-1 flex w-full items-center justify-between rounded px-1 py-1 text-xs font-medium uppercase tracking-wide text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
+                    aria-expanded={!isCollapsed}
+                    aria-controls={`nav-group-${group.key}`}
+                    className="mb-1 flex w-full items-center justify-between rounded px-1 py-1 text-xs font-medium uppercase tracking-wide text-fg-subtle hover:text-gray-600 dark:hover:text-gray-300"
                   >
                     {tn(`group_${group.key}`)}
                     <ChevronDownIcon className={`transition-transform ${isCollapsed ? "-rotate-90" : ""}`} />
                   </button>
                 )}
                 {!isCollapsed && (
-                  <ul className="flex flex-col gap-1">
+                  <ul id={`nav-group-${group.key}`} className="flex flex-col gap-1">
                     {group.items.map((item) => {
                       const active = pathname.startsWith(item.href);
                       const Icon = item.icon;
@@ -303,6 +340,10 @@ function AppSidebar({ hiddenNavItems }: { hiddenNavItems: string[] }) {
                         <li key={item.href}>
                           <Link
                             href={item.href}
+                            aria-current={active ? "page" : undefined}
+                            // Collapsed to icons: the label is gone, so it becomes the link's name (and tooltip).
+                            aria-label={expanded ? undefined : tn(item.key)}
+                            title={expanded ? undefined : tn(item.key)}
                             className={`group menu-item ${active ? "menu-item-active" : "menu-item-inactive"} ${
                               expanded ? "" : "justify-center"
                             }`}
@@ -324,21 +365,85 @@ function AppSidebar({ hiddenNavItems }: { hiddenNavItems: string[] }) {
   );
 }
 
+function NavSkeleton({ expanded }: { expanded: boolean }) {
+  return (
+    <div aria-hidden="true" className="flex animate-pulse flex-col gap-3 pt-1">
+      {Array.from({ length: 8 }, (_, i) => (
+        <div key={i} className={`h-9 rounded-lg bg-gray-100 dark:bg-gray-800 ${expanded ? "" : "mx-auto w-10"}`} />
+      ))}
+    </div>
+  );
+}
+
 function SidebarBackdrop() {
   const { isMobileOpen, toggleMobileSidebar } = useSidebar();
   if (!isMobileOpen) return null;
-  return <div className="fixed inset-0 z-40 bg-gray-900/50 lg:hidden" onClick={toggleMobileSidebar} />;
+  // A click target for the mouse; keyboard users close the drawer with Escape or the menu button.
+  return <div aria-hidden="true" className="fixed inset-0 z-40 bg-gray-900/50 lg:hidden" onClick={toggleMobileSidebar} />;
 }
 
-function AppHeader({ me }: { me: NonNullable<ReturnType<typeof useMe>["data"]> }) {
+/** `me` is null while /me loads: the header draws at once, with placeholders where the company and
+ * the person go, and the parts that ask the API themselves (search, notifications) wait for it. */
+function AppHeader({ me }: { me: MeResponse | null }) {
+  const { theme, toggleTheme } = useTheme();
+  const { isExpanded, isMobile, isMobileOpen, toggleSidebar, toggleMobileSidebar } = useSidebar();
+  const tl = useTranslations("labels");
+
+  function handleToggle() {
+    if (window.innerWidth >= 1024) toggleSidebar();
+    else toggleMobileSidebar();
+  }
+
+  return (
+    <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-gray-200 bg-white px-4 print:hidden dark:border-gray-800 dark:bg-gray-900 md:px-6">
+      <div className="flex items-center gap-3">
+        <button
+          onClick={handleToggle}
+          aria-label={tl("toggleSidebar")}
+          aria-expanded={isMobile ? isMobileOpen : isExpanded}
+          className="flex h-10 w-10 items-center justify-center rounded-lg text-fg-subtle hover:bg-gray-100 dark:hover:bg-white/5"
+        >
+          {isMobileOpen ? <CloseIcon /> : <MenuIcon />}
+        </button>
+        {me ? (
+          <span className="hidden text-sm font-medium text-fg-subtle sm:block">{me.company.name}</span>
+        ) : (
+          <span aria-hidden="true" className="hidden h-4 w-32 animate-pulse rounded bg-gray-100 dark:bg-gray-800 sm:block" />
+        )}
+      </div>
+
+      <div className="hidden flex-1 justify-center px-4 md:flex">{me && <GlobalSearch />}</div>
+
+      <div className="flex items-center gap-2">
+        {me ? <NotificationBell /> : <span aria-hidden="true" className="h-10 w-10" />}
+
+        <button
+          onClick={toggleTheme}
+          aria-label={tl("toggleTheme")}
+          className="flex h-10 w-10 items-center justify-center rounded-lg text-fg-subtle hover:bg-gray-100 dark:hover:bg-white/5"
+        >
+          {theme === "dark" ? <SunIcon /> : <MoonIcon />}
+        </button>
+
+        {me ? (
+          <UserMenu me={me} />
+        ) : (
+          <span aria-hidden="true" className="mx-2 my-1.5 h-9 w-9 animate-pulse rounded-full bg-gray-100 dark:bg-gray-800" />
+        )}
+      </div>
+    </header>
+  );
+}
+
+function UserMenu({ me }: { me: MeResponse }) {
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
   const tn = useTranslations("nav");
   const ts = useTranslations("settings");
   const router = useRouter();
-  const { theme, toggleTheme } = useTheme();
-  const { isMobileOpen, toggleSidebar, toggleMobileSidebar } = useSidebar();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -348,101 +453,84 @@ function AppHeader({ me }: { me: NonNullable<ReturnType<typeof useMe>["data"]> }
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
-  function handleToggle() {
-    if (window.innerWidth >= 1024) toggleSidebar();
-    else toggleMobileSidebar();
-  }
+  // Escape closes it and puts focus back on the button that opened it.
+  useEffect(() => {
+    if (!menuOpen) return;
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key !== "Escape") return;
+      setMenuOpen(false);
+      buttonRef.current?.focus();
+    }
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [menuOpen]);
 
-  function signOut() {
-    clearToken();
+  async function signOut() {
+    await signOutSession();
     router.replace("/login");
   }
 
   const initial = me.user.name?.[0]?.toUpperCase() ?? "?";
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-gray-200 bg-white px-4 print:hidden dark:border-gray-800 dark:bg-gray-900 md:px-6">
-      <div className="flex items-center gap-3">
-        <button
-          onClick={handleToggle}
-          aria-label="Toggle sidebar"
-          className="flex h-10 w-10 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/5"
-        >
-          {isMobileOpen ? <CloseIcon /> : <MenuIcon />}
-        </button>
-        <span className="hidden text-sm font-medium text-gray-500 dark:text-gray-400 sm:block">{me.company.name}</span>
-      </div>
+    <div className="relative" ref={menuRef}>
+      <button
+        ref={buttonRef}
+        type="button"
+        onClick={() => setMenuOpen((v) => !v)}
+        aria-expanded={menuOpen}
+        aria-controls="user-menu"
+        aria-label={ta("fieldOf", { field: ta("userMenu"), item: me.user.name })}
+        className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-gray-100 dark:hover:bg-white/5"
+      >
+        <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-500 text-sm font-semibold text-white">
+          {initial}
+        </span>
+        <span className="hidden text-left sm:block">
+          <span className="block text-sm font-medium text-fg-muted">{me.user.name}</span>
+        </span>
+        <ChevronDownIcon className={`text-fg-subtle transition-transform ${menuOpen ? "rotate-180" : ""}`} />
+      </button>
 
-      <div className="hidden flex-1 justify-center px-4 md:flex">
-        <GlobalSearch />
-      </div>
-
-      <div className="flex items-center gap-2">
-        <NotificationBell />
-
-        <button
-          onClick={toggleTheme}
-          aria-label="Toggle theme"
-          className="flex h-10 w-10 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/5"
-        >
-          {theme === "dark" ? <SunIcon /> : <MoonIcon />}
-        </button>
-
-        <div className="relative" ref={menuRef}>
-          <button
-            onClick={() => setMenuOpen((v) => !v)}
-            className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-gray-100 dark:hover:bg-white/5"
-          >
-            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-500 text-sm font-semibold text-white">
+      {menuOpen && (
+        <div id="user-menu" className="absolute right-0 mt-2 w-64 rounded-xl border border-gray-200 bg-white p-3 shadow-theme-md dark:border-gray-800 dark:bg-gray-900">
+          <div className="mb-2 flex items-center gap-3 border-b border-gray-100 pb-3 dark:border-gray-800">
+            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-500 text-sm font-semibold text-white">
               {initial}
             </span>
-            <span className="hidden text-left sm:block">
-              <span className="block text-sm font-medium text-gray-700 dark:text-gray-300">{me.user.name}</span>
-            </span>
-            <ChevronDownIcon className={`text-gray-400 dark:text-gray-500 transition-transform ${menuOpen ? "rotate-180" : ""}`} />
-          </button>
-
-          {menuOpen && (
-            <div className="absolute right-0 mt-2 w-64 rounded-xl border border-gray-200 bg-white p-3 shadow-theme-md dark:border-gray-800 dark:bg-gray-900">
-              <div className="mb-2 flex items-center gap-3 border-b border-gray-100 pb-3 dark:border-gray-800">
-                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-500 text-sm font-semibold text-white">
-                  {initial}
-                </span>
-                <div>
-                  <div className="text-sm font-medium text-gray-800 dark:text-white/90">{me.user.name}</div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400">{me.user.email}</div>
-                </div>
-              </div>
-              <Link
-                href="/settings"
-                onClick={() => setMenuOpen(false)}
-                className="flex items-center gap-2 rounded-lg px-2 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5"
-              >
-                <UserCircleIcon className="text-gray-500 dark:text-gray-400" />
-                {tn("settings")}
-              </Link>
-              <Link
-                href="/help"
-                onClick={() => setMenuOpen(false)}
-                className="flex items-center gap-2 rounded-lg px-2 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5"
-              >
-                <HelpIcon className="text-gray-500 dark:text-gray-400" />
-                {tn("help")}
-              </Link>
-              <button
-                onClick={signOut}
-                className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5"
-              >
-                <LogoutIcon className="text-gray-500 dark:text-gray-400" />
-                {tc("signOut")}
-              </button>
-              <div className="mt-2 border-t border-gray-100 pt-2 text-xs text-gray-400 dark:border-gray-800">
-                {ts(me.user.role as never)}
-              </div>
+            <div>
+              <div className="text-sm font-medium text-fg">{me.user.name}</div>
+              <div className="text-xs text-fg-subtle">{me.user.email}</div>
             </div>
-          )}
+          </div>
+          <Link
+            href="/settings"
+            onClick={() => setMenuOpen(false)}
+            className="flex items-center gap-2 rounded-lg px-2 py-2 text-sm text-fg-muted hover:bg-gray-100 dark:hover:bg-white/5"
+          >
+            <UserCircleIcon className="text-fg-subtle" />
+            {tn("settings")}
+          </Link>
+          <Link
+            href="/help"
+            onClick={() => setMenuOpen(false)}
+            className="flex items-center gap-2 rounded-lg px-2 py-2 text-sm text-fg-muted hover:bg-gray-100 dark:hover:bg-white/5"
+          >
+            <HelpIcon className="text-fg-subtle" />
+            {tn("help")}
+          </Link>
+          <button
+            onClick={signOut}
+            className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-sm text-fg-muted hover:bg-gray-100 dark:hover:bg-white/5"
+          >
+            <LogoutIcon className="text-fg-subtle" />
+            {tc("signOut")}
+          </button>
+          <div className="mt-2 border-t border-gray-100 pt-2 text-xs text-fg-subtle dark:border-gray-800">
+            {ts(me.user.role as never)}
+          </div>
         </div>
-      </div>
-    </header>
+      )}
+    </div>
   );
 }

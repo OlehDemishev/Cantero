@@ -1,4 +1,4 @@
-import { Body, Controller, Param, Post } from "@nestjs/common";
+import { Body, Controller, Get, Param, Post } from "@nestjs/common";
 import {
   completeServiceVisitSchema,
   submitServiceVisitFeedbackSchema,
@@ -27,6 +27,12 @@ export class ServiceVisitsController {
     @Body(new ZodValidationPipe(completeServiceVisitSchema)) body: CompleteServiceVisitInput,
   ) {
     return this.service.complete(user.companyId, { userId: user.userId, name: user.name }, id, body);
+  }
+
+  @Public()
+  @Get("feedback/:token")
+  getFeedback(@Param("token") token: string) {
+    return this.service.getFeedbackByToken(token);
   }
 
   @Public()

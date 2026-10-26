@@ -7,7 +7,6 @@ import {
   Header,
   Patch,
   Post,
-  StreamableFile,
   UploadedFile,
   UseInterceptors,
 } from "@nestjs/common";
@@ -27,15 +26,16 @@ import { OpenToAllRoles, Roles } from "../common/decorators/roles.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { CompanyService } from "./company.service";
 import { Requires } from "../common/decorators/permissions.decorator";
+import { storedFileResponse } from "../common/http/file-response";
 
 @Controller("company")
 export class CompanyController {
   constructor(private readonly service: CompanyService) {}
 
-  @OpenToAllRoles("every member reads their own company's profile")
+  @OpenToAllRoles("every member reads their own company's profile; credentials and bank details need settings.company")
   @Get()
   get(@CurrentUser() user: AuthUser) {
-    return this.service.get(user.companyId);
+    return this.service.get(user.companyId, !!user.permissions?.includes("settings.company"));
   }
 
   @OpenToAllRoles("the referral link is shared by any member")
@@ -68,7 +68,7 @@ export class CompanyController {
   @Get("logo")
   async logo(@CurrentUser() user: AuthUser) {
     const { buffer, mimeType } = await this.service.getLogo(user.companyId);
-    return new StreamableFile(buffer, { type: mimeType });
+    return storedFileResponse(buffer, mimeType);
   }
 
   @Roles("owner", "admin")

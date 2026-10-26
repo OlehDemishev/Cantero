@@ -3,10 +3,14 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 export function LeadFormSettingsPanel({ token, canManage, onChange }: { token: string | null; canManage: boolean; onChange: () => void }) {
   const t = useTranslations("leadForm");
+  const confirm = useConfirm();
+  const td = useTranslations("dialog");
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
 
   const [busy, setBusy] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -24,6 +28,7 @@ export function LeadFormSettingsPanel({ token, canManage, onChange }: { token: s
   }
 
   async function disable() {
+    if (!(await confirm({ message: td("disableLeadForm"), tone: "danger", verb: "disable" }))) return;
     setBusy(true);
     try {
       await apiFetch("/company/lead-form", { method: "DELETE" });
@@ -42,13 +47,13 @@ export function LeadFormSettingsPanel({ token, canManage, onChange }: { token: s
 
   return (
     <section className="card lg:col-span-2">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
-      <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">{t("hint")}</p>
+      <h2 className="mb-1 text-sm font-semibold text-fg-muted">{t("title")}</h2>
+      <p className="mb-4 text-xs text-fg-subtle">{t("hint")}</p>
 
       {url ? (
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-2">
-            <input readOnly className="input flex-1 text-xs" value={url} />
+            <input aria-label={ta("shareLink")} readOnly className="input flex-1 text-xs" value={url} />
             <button onClick={copyLink} className="btn-secondary shrink-0 px-3 py-1 text-xs">
               {copied ? tc("saved") : t("copyLink")}
             </button>
@@ -58,7 +63,7 @@ export function LeadFormSettingsPanel({ token, canManage, onChange }: { token: s
               <button onClick={regenerate} disabled={busy} className="btn-secondary px-3 py-1 text-xs">
                 {t("regenerateLink")}
               </button>
-              <button onClick={disable} disabled={busy} className="btn-secondary px-3 py-1 text-xs text-error-600">
+              <button onClick={disable} disabled={busy} className="btn-secondary px-3 py-1 text-xs text-danger-fg">
                 {t("disableForm")}
               </button>
             </div>
@@ -71,7 +76,7 @@ export function LeadFormSettingsPanel({ token, canManage, onChange }: { token: s
           </button>
         )
       )}
-      {!canManage && !url && <p className="text-sm text-gray-400 dark:text-gray-500">{t("notEnabled")}</p>}
+      {!canManage && !url && <p className="text-sm text-fg-subtle">{t("notEnabled")}</p>}
     </section>
   );
 }

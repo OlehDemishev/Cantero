@@ -1,11 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import type { AllowanceStatus } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useMe } from "@/lib/use-me";
 import { formatCurrency } from "@/lib/format-currency";
+import { Badge } from "@/components/ui/badge";
+import { statusTone } from "@/lib/status-tone";
+import { Field } from "@/components/ui/field";
 
 interface AllowanceCharge {
   id: string;
@@ -23,20 +29,14 @@ interface Allowance {
   charges: AllowanceCharge[];
 }
 
-const STATUS_STYLES: Record<AllowanceStatus, string> = {
-  active: "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300",
-  exceeded: "bg-error-50 dark:bg-error-500/15 text-error-700 dark:text-error-500",
-  closed: "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500",
-};
-
 export function AllowancesPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("allowances");
   const tc = useTranslations("common");
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "USD";
-  const money = (amount: number | string) => formatCurrency(amount, currency, me?.company.locale);
+  const money = (amount: number | string) => formatCurrency(amount, currency);
 
-  const [allowances, setAllowances] = useState<Allowance[] | null>(null);
+  const { data: allowances = null, reload: reloadAllowances, error: allowancesError } = useApi<Allowance[]>(`/projects/${projectId}/allowances`);
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState({ name: "", budgetedAmount: "", notes: "" });
   const [chargeForms, setChargeForms] = useState<Record<string, { description: string; amount: string }>>({});
@@ -44,13 +44,8 @@ export function AllowancesPanel({ projectId }: { projectId: string }) {
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<Allowance[]>(`/projects/${projectId}/allowances`).then(setAllowances);
+    void reloadAllowances();
   }
-
-  useEffect(() => {
-    load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projectId]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -98,7 +93,7 @@ export function AllowancesPanel({ projectId }: { projectId: string }) {
   return (
     <div className="mt-10">
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
+        <h2 className="text-sm font-semibold text-fg-muted">{t("title")}</h2>
         {!creating && (
           <button onClick={() => setCreating(true)} className="btn-secondary px-3 py-1 text-xs">
             {t("newAllowance")}
@@ -108,12 +103,10 @@ export function AllowancesPanel({ projectId }: { projectId: string }) {
 
       {creating && (
         <form onSubmit={submit} className="card mb-4 flex flex-col gap-3">
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700 dark:text-gray-200">{t("name")}</span>
+          <Field label={t("name")}>
             <input required className="input" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
-          </label>
-          <label className="flex w-48 flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700 dark:text-gray-200">{t("budgetedAmount")}</span>
+          </Field>
+          <Field label={t("budgetedAmount")} className="w-48">
             <input
               required
               type="number"
@@ -123,11 +116,10 @@ export function AllowancesPanel({ projectId }: { projectId: string }) {
               value={form.budgetedAmount}
               onChange={(e) => setForm((f) => ({ ...f, budgetedAmount: e.target.value }))}
             />
-          </label>
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700 dark:text-gray-200">{t("notes")}</span>
+          </Field>
+          <Field label={t("notes")}>
             <textarea rows={2} className="input" value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} />
-          </label>
+          </Field>
           <div className="flex gap-2">
             <button type="submit" disabled={busy} className="btn-primary">
               {tc("save")}
@@ -140,9 +132,9 @@ export function AllowancesPanel({ projectId }: { projectId: string }) {
       )}
 
       {allowances === null ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
+        allowancesError ? <ErrorState error={allowancesError} onRetry={reloadAllowances} compact /> : <Skeleton lines={3} />
       ) : allowances.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noAllowances")}</p>
+        <p className="text-sm text-fg-subtle">{t("noAllowances")}</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {allowances.map((a) => {
@@ -153,13 +145,13 @@ export function AllowancesPanel({ projectId }: { projectId: string }) {
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-gray-900 dark:text-gray-50">{a.name}</span>
-                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[a.status]}`}>{t(a.status)}</span>
+                      <span className="text-sm font-medium text-fg">{a.name}</span>
+                      <Badge tone={statusTone(a.status, "allowance")}>{t(a.status)}</Badge>
                     </div>
-                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    <p className="mt-1 text-xs text-fg-subtle">
                       {t("spentOfBudget", { spent: money(spent), budget: money(a.budgetedAmount) })}
                     </p>
-                    {a.notes && <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{a.notes}</p>}
+                    {a.notes && <p className="mt-1 text-xs text-fg-subtle">{a.notes}</p>}
                   </div>
                   {a.status !== "closed" && (
                     <button onClick={() => close(a.id)} className="btn-secondary shrink-0 px-2.5 py-1 text-xs">
@@ -186,7 +178,7 @@ export function AllowancesPanel({ projectId }: { projectId: string }) {
                       className="mt-3 flex items-end gap-2 border-t border-gray-100 dark:border-gray-700 pt-3"
                     >
                       <label className="flex flex-1 flex-col gap-1 text-xs">
-                        <span className="font-medium text-gray-700 dark:text-gray-200">{t("chargeDescription")}</span>
+                        <span className="font-medium text-fg-muted">{t("chargeDescription")}</span>
                         <input
                           required
                           className="input py-1 text-xs"
@@ -195,7 +187,7 @@ export function AllowancesPanel({ projectId }: { projectId: string }) {
                         />
                       </label>
                       <label className="flex w-28 flex-col gap-1 text-xs">
-                        <span className="font-medium text-gray-700 dark:text-gray-200">{t("chargeAmount")}</span>
+                        <span className="font-medium text-fg-muted">{t("chargeAmount")}</span>
                         <input
                           required
                           type="number"

@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
-import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { formatDateTime } from "@/lib/format-date";
+import { Badge } from "@/components/ui/badge";
 
 interface Assignment {
   id: string;
@@ -20,25 +20,21 @@ interface Assignment {
 export function EquipmentAssignmentHistoryPanel({ equipmentId }: { equipmentId: string }) {
   const t = useTranslations("equipment");
   const tc = useTranslations("common");
-  const [assignments, setAssignments] = useState<Assignment[] | null>(null);
-
-  useEffect(() => {
-    apiFetch<Assignment[]>(`/equipment/${equipmentId}/assignments`).then(setAssignments);
-  }, [equipmentId]);
+  const { data: assignments = null } = useApi<Assignment[]>(`/equipment/${equipmentId}/assignments`);
 
   return (
     <section className="card lg:col-span-2">
-      <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("assignmentHistory")}</h2>
+      <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("assignmentHistory")}</h2>
       {!assignments || assignments.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noAssignments")}</p>
+        <p className="text-sm text-fg-subtle">{t("noAssignments")}</p>
       ) : (
         <div className="overflow-x-auto">
         <table className="w-full border-collapse text-sm">
           <thead>
-            <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
-              <th className="py-2">{tc("name")}</th>
-              <th>{t("checkedOutAt")}</th>
-              <th>{t("checkedInAt")}</th>
+            <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
+              <th scope="col" className="py-2">{tc("name")}</th>
+              <th scope="col">{t("checkedOutAt")}</th>
+              <th scope="col">{t("checkedInAt")}</th>
             </tr>
           </thead>
           <tbody>
@@ -60,17 +56,17 @@ export function EquipmentAssignmentHistoryPanel({ equipmentId }: { equipmentId: 
                 <td>
                   {formatDateTime(new Date(a.checkedOutAt))}
                   {a.checkOutWithinGeofence === false && (
-                    <span className="ml-1 rounded-full bg-warning-50 dark:bg-warning-500/15 px-1.5 py-0.5 text-[10px] font-medium text-warning-700 dark:text-warning-500">
+                    <Badge tone="warning" size="sm" className="ml-1">
                       {t("offSite")}
-                    </span>
+                    </Badge>
                   )}
                 </td>
                 <td>
                   {a.checkedInAt ? formatDateTime(new Date(a.checkedInAt)) : t("stillOut")}
                   {a.checkInWithinGeofence === false && (
-                    <span className="ml-1 rounded-full bg-warning-50 dark:bg-warning-500/15 px-1.5 py-0.5 text-[10px] font-medium text-warning-700 dark:text-warning-500">
+                    <Badge tone="warning" size="sm" className="ml-1">
                       {t("offSite")}
-                    </span>
+                    </Badge>
                   )}
                 </td>
               </tr>

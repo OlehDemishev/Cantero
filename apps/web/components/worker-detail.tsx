@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { AuthenticatedShell } from "@/components/authenticated-shell";
-import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useMe } from "@/lib/use-me";
 import { goBack } from "@/lib/back-navigation";
 import { WorkerProfilePanel } from "@/components/worker-profile-panel";
@@ -19,6 +19,9 @@ import { WorkerToolCheckoutsPanel } from "@/components/worker-tool-checkouts-pan
 import { WorkerPerformancePanel } from "@/components/worker-performance-panel";
 import { WorkerHrCasesPanel } from "@/components/worker-hr-cases-panel";
 import { useCan } from "@/lib/permissions";
+import { formatCurrency } from "@/lib/format-currency";
+import { Badge } from "@/components/ui/badge";
+import { PageHeader } from "@/components/ui/page-header";
 
 interface ProjectBreakdown {
   projectId: string;
@@ -41,74 +44,60 @@ export function WorkerDetail({ workerId }: { workerId: string }) {
   const can = useCan();
   const isManager = can("people.manage");
 
-  const [summary, setSummary] = useState<Summary | null>(null);
+  const { data: summary = null, error: loadError, reload: reloadSummary } = useApi<Summary>(`/workers/${workerId}/summary`);
 
   function loadSummary() {
-    apiFetch<Summary>(`/workers/${workerId}/summary`).then(setSummary);
+    void reloadSummary();
   }
 
-  useEffect(loadSummary, [workerId]);
-
   if (!summary) {
-    return (
-      <AuthenticatedShell>
-        <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
-      </AuthenticatedShell>
-    );
+    return loadError ? <ErrorState error={loadError} onRetry={reloadSummary} backHref="/team" /> : <Skeleton variant="block" height="h-64" />;
   }
 
   const currency = me?.company.currency ?? "";
 
   return (
-    <AuthenticatedShell>
-      <button onClick={() => goBack(router, "/team")} className="text-sm text-gray-500 dark:text-gray-400 hover:underline">
-        ← {t("title")}
-      </button>
-      <div className="mt-2 flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">{summary.worker.name}</h1>
-        <span
-          className={`rounded-full px-3 py-1 text-xs font-medium ${
-            summary.worker.active ? "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500" : "bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400"
-          }`}
-        >
-          {summary.worker.active ? t("active") : t("inactive")}
-        </span>
-      </div>
-      <p className="text-sm text-gray-500 dark:text-gray-400">{summary.worker.role ?? "—"}</p>
+    <>
+      <PageHeader
+        back={{ onClick: () => goBack(router, "/team"), label: t("title") }}
+        title={summary.worker.name}
+        description={summary.worker.role ?? "—"}
+        actions={<Badge tone={summary.worker.active ? "success" : "neutral"}>{summary.worker.active ? t("active") : t("inactive")}</Badge>}
+      />
 
       <div className="mt-4 flex gap-4 text-sm">
         <div className="card flex-1">
-          <div className="text-xs text-gray-500 dark:text-gray-400">{t("totalHours")}</div>
+          <div className="text-xs text-fg-subtle">{t("totalHours")}</div>
           <div className="mt-1 text-lg font-semibold">{summary.totalHours}h</div>
         </div>
         <div className="card flex-1">
-          <div className="text-xs text-gray-500 dark:text-gray-400">{t("totalCost")}</div>
+          <div className="text-xs text-fg-subtle">{t("totalCost")}</div>
           <div className="mt-1 text-lg font-semibold">
-            {summary.totalCost} {currency}
+            {formatCurrency(summary.totalCost, currency)}
           </div>
         </div>
         <div className="card flex-1">
-          <div className="text-xs text-gray-500 dark:text-gray-400">{t("ptoBalance")}</div>
+          <div className="text-xs text-fg-subtle">{t("ptoBalance")}</div>
           <div className="mt-1 text-lg font-semibold">{summary.worker.ptoBalanceHours}h</div>
         </div>
       </div>
 
       <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-3">
         <div className="lg:col-span-1">
-          <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("profile")}</h2>
+          <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("profile")}</h2>
           {!isManager && (
             <div className="card flex flex-col gap-1.5 text-sm">
               <div>
-                <span className="text-gray-500 dark:text-gray-400">{tc("name")}: </span>
+                <span className="text-fg-subtle">{tc("name")}: </span>
                 {summary.worker.name}
               </div>
               {summary.worker.role && (
                 <div>
-                  <span className="text-gray-500 dark:text-gray-400">{t("role")}: </span>
+                  <span className="text-fg-subtle">{t("role")}: </span>
                   {summary.worker.role}
                 </div>
               )}
-              <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">{t("managerOnlyHint")}</p>
+              <p className="mt-1 text-xs text-fg-subtle">{t("managerOnlyHint")}</p>
             </div>
           )}
           {isManager && <WorkerProfilePanel workerId={workerId} currency={currency} onChanged={loadSummary} />}
@@ -133,17 +122,17 @@ export function WorkerDetail({ workerId }: { workerId: string }) {
         </div>
 
         <div className="lg:col-span-2">
-          <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("projectHistory")}</h2>
+          <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("projectHistory")}</h2>
           {summary.byProject.length === 0 ? (
-            <p className="text-sm text-gray-400 dark:text-gray-500">{t("noProjectHistory")}</p>
+            <p className="text-sm text-fg-subtle">{t("noProjectHistory")}</p>
           ) : (
             <div className="overflow-x-auto">
             <table className="w-full border-collapse text-sm">
               <thead>
-                <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
-                  <th className="py-2">{t("project")}</th>
-                  <th className="text-right">{t("hours")}</th>
-                  <th className="text-right">{t("cost")}</th>
+                <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
+                  <th scope="col" className="py-2">{t("project")}</th>
+                  <th scope="col" className="text-right">{t("hours")}</th>
+                  <th scope="col" className="text-right">{t("cost")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -156,7 +145,7 @@ export function WorkerDetail({ workerId }: { workerId: string }) {
                     </td>
                     <td className="text-right">{p.hours}h</td>
                     <td className="text-right">
-                      {p.cost} {currency}
+                      {formatCurrency(p.cost, currency)}
                     </td>
                   </tr>
                 ))}
@@ -166,6 +155,6 @@ export function WorkerDetail({ workerId }: { workerId: string }) {
           )}
         </div>
       </div>
-    </AuthenticatedShell>
+    </>
   );
 }

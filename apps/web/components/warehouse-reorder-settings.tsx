@@ -2,8 +2,13 @@
 
 import { Fragment, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, notifyApiError } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
+import { useCan } from "@/lib/permissions";
 import { formatDate } from "@/lib/format-date";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Field } from "@/components/ui/field";
 
 interface MaterialCatalogItem {
   id: string;
@@ -36,15 +41,27 @@ interface SupplierPrice {
 export function WarehouseReorderSettings() {
   const t = useTranslations("warehouses");
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
 
   const [materials, setMaterials] = useState<MaterialCatalogItem[] | null>(null);
-  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const canSeeSuppliers = useCan()("purchasing.view");
+  const { data: suppliers = [] } = useApi<Supplier[]>(canSeeSuppliers ? "/materials/suppliers" : null);
   const [drafts, setDrafts] = useState<Record<string, { reorderThreshold: string; reorderQuantity: string; preferredSupplierId: string }>>({});
   const [savingId, setSavingId] = useState<string | null>(null);
   const [savedId, setSavedId] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [priceHistory, setPriceHistory] = useState<PricePoint[] | null>(null);
-  const [supplierPrices, setSupplierPrices] = useState<SupplierPrice[] | null>(null);
+  // The open material's price history and supplier prices (purchasing.view, like the API).
+  const seesPrices = canSeeSuppliers;
+  const {
+    data: priceHistory = null,
+    error: priceHistoryError,
+    reload: reloadPriceHistory,
+  } = useApi<PricePoint[]>(expandedId && seesPrices ? `/materials/catalog/${expandedId}/price-history` : null);
+  const {
+    data: supplierPrices = null,
+    error: supplierPricesError,
+    reload: reloadSupplierPrices,
+  } = useApi<SupplierPrice[]>(expandedId && seesPrices ? `/materials/catalog/${expandedId}/supplier-prices` : null);
   const [barcodeDraft, setBarcodeDraft] = useState("");
   const [barcodeSaving, setBarcodeSaving] = useState(false);
 
@@ -64,12 +81,11 @@ export function WarehouseReorderSettings() {
         }
         return next;
       });
-    });
+    }).catch(notifyApiError);
   }
 
   useEffect(() => {
     load();
-    apiFetch<Supplier[]>("/materials/suppliers").then(setSuppliers);
   }, []);
 
   async function save(materialId: string) {
@@ -99,11 +115,7 @@ export function WarehouseReorderSettings() {
       return;
     }
     setExpandedId(materialId);
-    setPriceHistory(null);
-    setSupplierPrices(null);
     setBarcodeDraft(currentBarcode ?? "");
-    apiFetch<PricePoint[]>(`/materials/catalog/${materialId}/price-history`).then(setPriceHistory);
-    apiFetch<SupplierPrice[]>(`/materials/catalog/${materialId}/supplier-prices`).then(setSupplierPrices);
   }
 
   async function saveBarcode(materialId: string) {
@@ -123,17 +135,17 @@ export function WarehouseReorderSettings() {
 
   return (
     <div className="mt-10">
-      <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("reorderSettings")}</h2>
-      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("reorderSettingsHint")}</p>
+      <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("reorderSettings")}</h2>
+      <p className="mb-3 text-xs text-fg-subtle">{t("reorderSettingsHint")}</p>
       <div className="overflow-x-auto">
       <table className="w-full border-collapse text-sm">
         <thead>
-          <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
-            <th className="py-2">{t("material")}</th>
-            <th>{t("reorderThreshold")}</th>
-            <th>{t("reorderQuantity")}</th>
-            <th>{t("preferredSupplier")}</th>
-            <th></th>
+          <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
+            <th scope="col" className="py-2">{t("material")}</th>
+            <th scope="col">{t("reorderThreshold")}</th>
+            <th scope="col">{t("reorderQuantity")}</th>
+            <th scope="col">{t("preferredSupplier")}</th>
+            <th scope="col"></th>
           </tr>
         </thead>
         <tbody>
@@ -148,7 +160,7 @@ export function WarehouseReorderSettings() {
                   </button>
                 </td>
                 <td>
-                  <input
+                  <input aria-label={ta("fieldOf", { field: t("reorderThreshold"), item: m.name })}
                     type="number"
                     step="0.01"
                     className="input w-24"
@@ -159,7 +171,7 @@ export function WarehouseReorderSettings() {
                   />
                 </td>
                 <td>
-                  <input
+                  <input aria-label={ta("fieldOf", { field: t("reorderQuantity"), item: m.name })}
                     type="number"
                     step="0.01"
                     className="input w-24"
@@ -170,7 +182,7 @@ export function WarehouseReorderSettings() {
                   />
                 </td>
                 <td>
-                  <select
+                  <select aria-label={ta("fieldOf", { field: t("preferredSupplier"), item: m.name })}
                     className="input w-auto"
                     value={draft.preferredSupplierId}
                     onChange={(e) =>
@@ -189,80 +201,88 @@ export function WarehouseReorderSettings() {
                   <button onClick={() => save(m.id)} disabled={savingId === m.id} className="btn-secondary px-3 py-1 text-xs">
                     {tc("save")}
                   </button>
-                  {savedId === m.id && <span className="ml-2 text-xs text-success-700 dark:text-success-500">{tc("saved")}</span>}
+                  {savedId === m.id && <span className="ml-2 text-xs text-success-fg">{tc("saved")}</span>}
                 </td>
               </tr>
               {expandedId === m.id && (
                 <tr className="border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-700">
                   <td colSpan={5} className="py-3">
                     <div className="mb-4 flex items-end gap-2">
-                      <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
-                        {t("barcode")}
+                      <Field label={t("barcode")} size="sm">
                         <input className="input w-40" value={barcodeDraft} onChange={(e) => setBarcodeDraft(e.target.value)} />
-                      </label>
+                      </Field>
                       <button onClick={() => saveBarcode(m.id)} disabled={barcodeSaving} className="btn-secondary px-2.5 py-1 text-xs">
                         {tc("save")}
                       </button>
                     </div>
-                    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                      <div>
-                        <div className="mb-2 text-xs font-semibold text-gray-500 dark:text-gray-400">{t("priceHistory")}</div>
-                        {!priceHistory ? (
-                          <p className="text-xs text-gray-400 dark:text-gray-500">{tc("loading")}</p>
-                        ) : priceHistory.length <= 1 ? (
-                          <p className="text-xs text-gray-400 dark:text-gray-500">{t("noPriceHistory")}</p>
-                        ) : (
-                          <div className="overflow-x-auto">
-                          <table className="w-full text-xs">
-                            <tbody>
-                              {priceHistory.map((p, i) => (
-                                <tr key={i} className="border-b border-gray-200 dark:border-gray-700">
-                                  <td className="py-1 text-gray-500 dark:text-gray-400">
-                                    {p.source === "catalog" ? t("currentPrice") : formatDate(new Date(p.date))}
-                                  </td>
-                                  <td className="text-gray-500 dark:text-gray-400">{p.supplierName}</td>
-                                  <td className="text-right font-medium">{p.unitPrice}</td>
+                    {seesPrices && (
+                      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                        <div>
+                          <div className="mb-2 text-xs font-semibold text-fg-subtle">{t("priceHistory")}</div>
+                          {!priceHistory ? (
+                            priceHistoryError ? <ErrorState error={priceHistoryError} onRetry={reloadPriceHistory} compact /> : <Skeleton lines={3} />
+                          ) : priceHistory.length <= 1 ? (
+                            <p className="text-xs text-fg-subtle">{t("noPriceHistory")}</p>
+                          ) : (
+                            <div tabIndex={0} className="overflow-x-auto">
+                            <table className="w-full text-xs">
+                              <thead>
+                                <tr className="border-b border-gray-200 text-left text-xs text-fg-subtle dark:border-gray-700">
+                                  <th scope="col" className="py-1.5 font-medium">{ta("date")}</th>
+                                  <th scope="col" className="font-medium">{ta("supplier")}</th>
+                                  <th scope="col" className="text-right font-medium">{ta("unitPrice")}</th>
                                 </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                          </div>
-                        )}
-                      </div>
-                      <div>
-                        <div className="mb-2 text-xs font-semibold text-gray-500 dark:text-gray-400">{t("supplierComparison")}</div>
-                        {!supplierPrices ? (
-                          <p className="text-xs text-gray-400 dark:text-gray-500">{tc("loading")}</p>
-                        ) : supplierPrices.length === 0 ? (
-                          <p className="text-xs text-gray-400 dark:text-gray-500">{t("noSupplierPrices")}</p>
-                        ) : (
-                          <div className="overflow-x-auto">
-                          <table className="w-full text-xs">
-                            <thead>
-                              <tr className="text-left text-gray-400 dark:text-gray-500">
-                                <th className="py-1 font-normal">{tc("name")}</th>
-                                <th className="font-normal">{t("latestPrice")}</th>
-                                <th className="font-normal">{t("avgPrice")}</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {supplierPrices.map((s, i) => (
-                                <tr key={s.supplierId} className="border-b border-gray-200 dark:border-gray-700">
-                                  <td className={`py-1 ${i === 0 ? "font-medium text-success-700 dark:text-success-500" : "text-gray-700 dark:text-gray-200"}`}>
-                                    {s.supplierName}
-                                  </td>
-                                  <td className={i === 0 ? "font-medium text-success-700 dark:text-success-500" : "text-gray-700 dark:text-gray-200"}>
-                                    {s.latestUnitPrice}
-                                  </td>
-                                  <td className="text-gray-500 dark:text-gray-400">{s.averageUnitPrice}</td>
+                              </thead>
+                              <tbody>
+                                {priceHistory.map((p, i) => (
+                                  <tr key={i} className="border-b border-gray-200 dark:border-gray-700">
+                                    <td className="py-1 text-fg-subtle">
+                                      {p.source === "catalog" ? t("currentPrice") : formatDate(new Date(p.date))}
+                                    </td>
+                                    <td className="text-fg-subtle">{p.supplierName}</td>
+                                    <td className="text-right font-medium">{p.unitPrice}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                            </div>
+                          )}
+                        </div>
+                        <div>
+                          <div className="mb-2 text-xs font-semibold text-fg-subtle">{t("supplierComparison")}</div>
+                          {!supplierPrices ? (
+                            supplierPricesError ? <ErrorState error={supplierPricesError} onRetry={reloadSupplierPrices} compact /> : <Skeleton lines={3} />
+                          ) : supplierPrices.length === 0 ? (
+                            <p className="text-xs text-fg-subtle">{t("noSupplierPrices")}</p>
+                          ) : (
+                            <div tabIndex={0} className="overflow-x-auto">
+                            <table className="w-full text-xs">
+                              <thead>
+                                <tr className="text-left text-fg-subtle">
+                                  <th scope="col" className="py-1 font-normal">{tc("name")}</th>
+                                  <th scope="col" className="font-normal">{t("latestPrice")}</th>
+                                  <th scope="col" className="font-normal">{t("avgPrice")}</th>
                                 </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                          </div>
-                        )}
+                              </thead>
+                              <tbody>
+                                {supplierPrices.map((s, i) => (
+                                  <tr key={s.supplierId} className="border-b border-gray-200 dark:border-gray-700">
+                                    <td className={`py-1 ${i === 0 ? "font-medium text-success-fg" : "text-fg-muted"}`}>
+                                      {s.supplierName}
+                                    </td>
+                                    <td className={i === 0 ? "font-medium text-success-fg" : "text-fg-muted"}>
+                                      {s.latestUnitPrice}
+                                    </td>
+                                    <td className="text-fg-subtle">{s.averageUnitPrice}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </td>
                 </tr>
               )}

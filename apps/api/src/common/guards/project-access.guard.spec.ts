@@ -96,6 +96,55 @@ describe("ProjectAccessGuard", () => {
     expect(projectAccess.assertAccess).toHaveBeenCalledWith("c1", "p1", "u1", "worker");
   });
 
+  it("checks every projectId, so an allowed one in the query can't cover a restricted one in the body", async () => {
+    projectAccess.assertAccess.mockImplementation(async (_c: string, projectId: string) => {
+      if (projectId === "p-restricted") throw new ForbiddenException();
+    });
+    const { reflector, context } = makeContext({
+      user: { userId: "u1", companyId: "c1", role: "worker" },
+      query: { projectId: "p-allowed" },
+      body: { projectId: "p-restricted" },
+    });
+    const guard = new ProjectAccessGuard(reflector, projectAccess as unknown as ProjectAccessService);
+
+    await expect(guard.canActivate(context)).rejects.toThrow(ForbiddenException);
+    expect(projectAccess.assertAccess.mock.calls.map((c) => c[1])).toEqual(["p-allowed", "p-restricted"]);
+  });
+
+  it("checks params, the projects/:id route, query and body together, each distinct project once", async () => {
+    const { reflector, context } = makeContext({
+      user: { userId: "u1", companyId: "c1", role: "worker" },
+      route: { path: "/api/projects/:id/things/:projectId" },
+      params: { id: "p-route", projectId: "p-param" },
+      query: { projectId: ["p-query", "p-param"] },
+      body: { projectId: "p-route" },
+    });
+    const guard = new ProjectAccessGuard(reflector, projectAccess as unknown as ProjectAccessService);
+
+    await guard.canActivate(context);
+    expect(projectAccess.assertAccess.mock.calls.map((c) => c[1])).toEqual(["p-param", "p-route", "p-query"]);
+  });
+
+  it("checks each project of a comma-separated projectIds query (the portfolio schedule)", async () => {
+    const { reflector, context } = makeContext({ user: { userId: "u1", companyId: "c1", role: "worker" }, query: { projectIds: "p1, p2,,p3" } });
+    const guard = new ProjectAccessGuard(reflector, projectAccess as unknown as ProjectAccessService);
+
+    await guard.canActivate(context);
+    expect(projectAccess.assertAccess.mock.calls.map((c) => c[1])).toEqual(["p1", "p2", "p3"]);
+  });
+
+  it("doesn't check a @ProjectResource row's project again when the request already named it", async () => {
+    const { reflector, context } = makeContext(
+      { user: { userId: "u1", companyId: "c1", role: "worker" }, params: { id: "row-1" }, query: {}, body: { projectId: "p-owner" } },
+      false,
+      { model: "Task", param: "id" } as ProjectResourceMeta,
+    );
+    const guard = new ProjectAccessGuard(reflector, projectAccess as unknown as ProjectAccessService);
+
+    await guard.canActivate(context);
+    expect(projectAccess.assertAccess.mock.calls.map((c) => c[1])).toEqual(["p-owner"]);
+  });
+
   it("propagates a rejection from ProjectAccessService", async () => {
     projectAccess.assertAccess.mockRejectedValue(new ForbiddenException("nope"));
     const { reflector, context } = makeContext({ user: { userId: "u1", companyId: "c1", role: "worker" }, query: { projectId: "p1" } });

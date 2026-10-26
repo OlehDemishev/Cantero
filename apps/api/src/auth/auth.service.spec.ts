@@ -6,6 +6,12 @@ import { PrismaService } from "../common/prisma/prisma.service";
 import { SessionsService } from "../common/sessions/sessions.service";
 import { RateLimiterService } from "../common/rate-limiter/rate-limiter.service";
 
+// bcryptjs's exports can't be spied on directly; wrap compare so a test can count its calls.
+jest.mock("bcryptjs", () => {
+  const actual = jest.requireActual("bcryptjs");
+  return { ...actual, compare: jest.fn(actual.compare) };
+});
+
 const NO_META = {};
 
 describe("AuthService.login", () => {
@@ -25,12 +31,24 @@ describe("AuthService.login", () => {
 
   afterEach(() => {
     rateLimiter.onModuleDestroy();
+    (bcrypt.compare as unknown as jest.Mock).mockImplementation(jest.requireActual("bcryptjs").compare);
   });
 
   it("throws on an unknown email", async () => {
     prisma.user.findUnique.mockResolvedValue(null);
 
     await expect(service.login({ email: "nobody@example.com", password: "x" }, NO_META)).rejects.toThrow(UnauthorizedException);
+  });
+
+  it("still runs a bcrypt compare for an unknown email, so it answers as slowly as a wrong password", async () => {
+    prisma.user.findUnique.mockResolvedValue(null);
+    const compare = bcrypt.compare as unknown as jest.Mock;
+    compare.mockClear();
+
+    await expect(service.login({ email: "nobody@example.com", password: "x" }, NO_META)).rejects.toThrow("Invalid email or password");
+
+    expect(compare).toHaveBeenCalledTimes(1);
+    expect(compare.mock.calls[0][1]).toMatch(/^\$2[aby]\$12\$/);
   });
 
   it("issues a token with only the base role when no custom role is assigned", async () => {
@@ -50,6 +68,8 @@ describe("AuthService.login", () => {
 
     expect(decoded.role).toBe("worker");
     expect(decoded.additionalRoles).toBeUndefined();
+    // The session remembers its company, so SCIM can sign the person out of this company only.
+    expect(sessions.create).toHaveBeenCalledWith("user-1", "company-a", NO_META);
   });
 
   it("includes the custom role's basePermissions as additionalRoles in the issued token", async () => {
@@ -103,6 +123,8 @@ describe("AuthService.login", () => {
 
   it("throws 429 after too many attempts from the same IP, even across different emails", async () => {
     prisma.user.findUnique.mockResolvedValue(null);
+    // Unknown emails now cost a real cost-12 compare each; 20 of them would outrun Jest's timeout.
+    (bcrypt.compare as unknown as jest.Mock).mockResolvedValue(false);
     for (let i = 0; i < 20; i++) {
       await expect(service.login({ email: `user${i}@example.com`, password: "wrong" }, { ipAddress: "10.0.0.1" })).rejects.toThrow(
         UnauthorizedException,

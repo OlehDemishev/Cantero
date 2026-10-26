@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
+import { formatCurrency } from "@/lib/format-currency";
 
 interface ProjectMargin {
   projectId: string;
@@ -17,31 +19,26 @@ interface ProjectMargin {
 
 export function ProjectMarginsReportPanel({ currency }: { currency: string }) {
   const t = useTranslations("reports");
-  const tc = useTranslations("common");
-  const [margins, setMargins] = useState<ProjectMargin[] | null>(null);
-
-  useEffect(() => {
-    apiFetch<ProjectMargin[]>("/reports/project-margins").then(setMargins);
-  }, []);
+  const { data: margins = null, error: marginsError, reload: reloadMargins } = useApi<ProjectMargin[]>("/reports/project-margins");
 
   return (
     <>
-      <h2 className="mb-3 mt-8 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("projectMargins")}</h2>
+      <h2 className="mb-3 mt-8 text-sm font-semibold text-fg-muted">{t("projectMargins")}</h2>
       {!margins ? (
-        <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
+        marginsError ? <ErrorState error={marginsError} onRetry={reloadMargins} compact /> : <Skeleton lines={3} />
       ) : margins.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noProjects")}</p>
+        <p className="text-sm text-fg-subtle">{t("noProjects")}</p>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full min-w-[720px] border-collapse text-sm">
             <thead>
-              <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
-                <th className="py-2">{t("project")}</th>
-                <th className="text-right">{t("budget")}</th>
-                <th className="text-right">{t("invoiced")}</th>
-                <th className="text-right">{t("actualCost")}</th>
-                <th className="text-right">{t("margin")}</th>
-                <th className="text-right">{t("marginPercent")}</th>
+              <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
+                <th scope="col" className="py-2">{t("project")}</th>
+                <th scope="col" className="text-right">{t("budget")}</th>
+                <th scope="col" className="text-right">{t("invoiced")}</th>
+                <th scope="col" className="text-right">{t("actualCost")}</th>
+                <th scope="col" className="text-right">{t("margin")}</th>
+                <th scope="col" className="text-right">{t("marginPercent")}</th>
               </tr>
             </thead>
             <tbody>
@@ -53,18 +50,18 @@ export function ProjectMarginsReportPanel({ currency }: { currency: string }) {
                     </a>
                   </td>
                   <td className="text-right">
-                    {m.budgetTotal} {currency}
+                    {formatCurrency(m.budgetTotal, currency)}
                   </td>
                   <td className="text-right">
-                    {m.invoicedTotal} {currency}
+                    {formatCurrency(m.invoicedTotal, currency)}
                   </td>
                   <td className="text-right">
-                    {m.actualCost} {currency}
+                    {formatCurrency(m.actualCost, currency)}
                   </td>
-                  <td className={`text-right ${m.margin < 0 ? "text-error-700 dark:text-error-500" : "text-success-700 dark:text-success-500"}`}>
-                    {m.margin} {currency}
+                  <td className={`text-right ${m.margin < 0 ? "text-danger-fg" : "text-success-fg"}`}>
+                    {formatCurrency(m.margin, currency)}
                   </td>
-                  <td className={`text-right ${m.margin < 0 ? "text-error-700 dark:text-error-500" : "text-success-700 dark:text-success-500"}`}>
+                  <td className={`text-right ${m.margin < 0 ? "text-danger-fg" : "text-success-fg"}`}>
                     {m.marginPercent === null ? "—" : `${m.marginPercent}%`}
                   </td>
                 </tr>

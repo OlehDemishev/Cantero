@@ -3,6 +3,10 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch, ApiError } from "@/lib/api-client";
+import { useConfirm } from "@/components/ui/confirm-dialog";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
+import { FormError } from "@/components/ui/field";
 
 interface TemplateEntry {
   key: string;
@@ -14,16 +18,20 @@ interface TemplateEntry {
 
 export function MessageTemplatesPanel() {
   const t = useTranslations("messageTemplates");
+  const confirm = useConfirm();
+  const td = useTranslations("dialog");
   const [templates, setTemplates] = useState<TemplateEntry[] | null>(null);
+  const [templatesError, setTemplatesError] = useState<Error | null>(null);
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [errorKey, setErrorKey] = useState<{ key: string; message: string } | null>(null);
 
   function load() {
     apiFetch<TemplateEntry[]>("/message-templates").then((entries) => {
+      setTemplatesError(null);
       setTemplates(entries);
       setDrafts(Object.fromEntries(entries.map((e) => [e.key, e.customBody ?? ""])));
-    });
+    }).catch(setTemplatesError);
   }
 
   useEffect(load, []);
@@ -42,6 +50,7 @@ export function MessageTemplatesPanel() {
   }
 
   async function reset(key: string) {
+    if (!(await confirm({ message: td("resetMessageTemplate"), tone: "danger", verb: "reset" }))) return;
     setBusyKey(key);
     setErrorKey(null);
     try {
@@ -54,29 +63,29 @@ export function MessageTemplatesPanel() {
     }
   }
 
-  if (!templates) return null;
+  if (!templates) return templatesError ? <ErrorState error={templatesError} onRetry={load} compact /> : <Skeleton lines={3} />;
 
   return (
     <div className="mt-8">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
-      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("description")}</p>
+      <h2 className="mb-1 text-sm font-semibold text-fg-muted">{t("title")}</h2>
+      <p className="mb-3 text-xs text-fg-subtle">{t("description")}</p>
       <div className="flex flex-col gap-3">
         {templates.map((entry) => (
           <div key={entry.key} className="card">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-gray-800 dark:text-gray-100">{t(`key_${entry.key}`)}</span>
+              <span className="text-sm font-medium text-fg">{t(`key_${entry.key}`)}</span>
               {entry.customBody !== null && (
-                <button onClick={() => reset(entry.key)} disabled={busyKey === entry.key} className="text-xs text-gray-400 dark:text-gray-500 hover:text-error-700">
+                <button onClick={() => reset(entry.key)} disabled={busyKey === entry.key} className="text-xs text-fg-subtle hover:text-danger-fg">
                   {t("resetToDefault")}
                 </button>
               )}
             </div>
-            <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
+            <p className="mt-1 text-xs text-fg-subtle">
               {t("placeholders")}: {entry.placeholders.map((p) => `{{${p}}}`).join(", ")}
             </p>
             <textarea
               className="input mt-2 h-20 text-xs"
-              placeholder={t("placeholder")}
+              placeholder={t("placeholder")} aria-label={t("placeholder")}
               value={drafts[entry.key] ?? ""}
               onChange={(e) => setDrafts((d) => ({ ...d, [entry.key]: e.target.value }))}
             />
@@ -85,12 +94,12 @@ export function MessageTemplatesPanel() {
                 {t("save")}
               </button>
               {entry.customBody !== null && entry.updatedByName && (
-                <span className="text-xs text-gray-400 dark:text-gray-500">
+                <span className="text-xs text-fg-subtle">
                   {t("customizedBy", { name: entry.updatedByName })}
                 </span>
               )}
             </div>
-            {errorKey?.key === entry.key && <p className="mt-1 text-xs text-error-700 dark:text-error-500">{errorKey.message}</p>}
+            {errorKey?.key === entry.key && <FormError className="mt-1">{errorKey.message}</FormError>}
           </div>
         ))}
       </div>

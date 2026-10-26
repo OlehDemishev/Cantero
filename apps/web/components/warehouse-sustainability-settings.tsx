@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, notifyApiError } from "@/lib/api-client";
 
 interface MaterialCatalogItem {
   id: string;
@@ -17,6 +17,7 @@ export function WarehouseSustainabilitySettings() {
   const t = useTranslations("warehouses");
   const tc = useTranslations("common");
   const ts = useTranslations("sustainability");
+  const ta = useTranslations("a11y");
 
   const [materials, setMaterials] = useState<MaterialCatalogItem[] | null>(null);
   const [drafts, setDrafts] = useState<Record<string, { carbonFootprintKgCo2e: string; greenCertified: boolean; greenCertificationBody: string }>>({});
@@ -39,7 +40,7 @@ export function WarehouseSustainabilitySettings() {
         }
         return next;
       });
-    });
+    }).catch(notifyApiError);
   }
 
   useEffect(load, []);
@@ -69,17 +70,17 @@ export function WarehouseSustainabilitySettings() {
 
   return (
     <div className="mt-10">
-      <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{ts("materialSettings")}</h2>
-      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{ts("materialSettingsHint")}</p>
+      <h2 className="mb-3 text-sm font-semibold text-fg-muted">{ts("materialSettings")}</h2>
+      <p className="mb-3 text-xs text-fg-subtle">{ts("materialSettingsHint")}</p>
       <div className="overflow-x-auto">
       <table className="w-full border-collapse text-sm">
         <thead>
-          <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
-            <th className="py-2">{t("material")}</th>
-            <th>{ts("carbonFootprint")}</th>
-            <th>{ts("greenCertified")}</th>
-            <th>{ts("greenCertificationBody")}</th>
-            <th></th>
+          <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
+            <th scope="col" className="py-2">{t("material")}</th>
+            <th scope="col">{ts("carbonFootprint")}</th>
+            <th scope="col">{ts("greenCertified")}</th>
+            <th scope="col">{ts("greenCertificationBody")}</th>
+            <th scope="col"></th>
           </tr>
         </thead>
         <tbody>
@@ -91,7 +92,7 @@ export function WarehouseSustainabilitySettings() {
                   {m.name} ({m.code})
                 </td>
                 <td>
-                  <input
+                  <input aria-label={ta("fieldOf", { field: ta("carbonFootprint"), item: m.name })}
                     type="number"
                     step="0.01"
                     min="0"
@@ -101,14 +102,14 @@ export function WarehouseSustainabilitySettings() {
                   />
                 </td>
                 <td>
-                  <input
+                  <input aria-label={ta("fieldOf", { field: ts("greenCertified"), item: m.name })}
                     type="checkbox"
                     checked={draft.greenCertified}
                     onChange={(e) => setDrafts((d) => ({ ...d, [m.id]: { ...draft, greenCertified: e.target.checked } }))}
                   />
                 </td>
                 <td>
-                  <input
+                  <input aria-label={ta("fieldOf", { field: ts("greenCertificationBody"), item: m.name })}
                     className="input w-32"
                     placeholder={ts("greenCertificationBodyPlaceholder")}
                     value={draft.greenCertificationBody}
@@ -119,7 +120,7 @@ export function WarehouseSustainabilitySettings() {
                   <button onClick={() => save(m.id)} disabled={savingId === m.id} className="btn-secondary px-2 py-1 text-xs">
                     {tc("save")}
                   </button>
-                  {savedId === m.id && <span className="ml-2 text-xs text-success-700 dark:text-success-500">{tc("saved")}</span>}
+                  {savedId === m.id && <span className="ml-2 text-xs text-success-fg">{tc("saved")}</span>}
                 </td>
               </tr>
             );

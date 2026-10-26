@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Delete, Get, Param, Patch, Post, Query, StreamableFile, UploadedFile, UseInterceptors,
+import { BadRequestException, Body, Controller, Delete, Get, Param, Patch, Post, Query, UploadedFile, UseInterceptors,
   ParseUUIDPipe,
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
@@ -18,6 +18,7 @@ import { TakeoffsService } from "./takeoffs.service";
 import { ProjectResource } from "../common/project-access/project-resource.decorator";
 import { OpenToAllRoles } from "../common/decorators/roles.decorator";
 import { RequiresFor } from "../common/decorators/permissions.decorator";
+import { storedFileResponse } from "../common/http/file-response";
 
 @ProjectResource("Takeoff")
 @RequiresFor("estimates.view", "estimates.manage")
@@ -38,7 +39,7 @@ export class TakeoffsController {
   @Get(":id/image")
   async image(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     const { buffer, mimeType } = await this.service.image(user.companyId, id);
-    return new StreamableFile(buffer, { type: mimeType });
+    return storedFileResponse(buffer, mimeType);
   }
 
   @Post()

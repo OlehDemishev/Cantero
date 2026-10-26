@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, notifyApiError } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { formatDateTime } from "@/lib/format-date";
 
 type CommentParam = "taskId" | "rfiId" | "punchListItemId" | "projectId";
@@ -25,7 +26,7 @@ interface CommentItem {
 export function CommentsThread({ param, entityId }: { param: CommentParam; entityId: string }) {
   const t = useTranslations("comments");
 
-  const [comments, setComments] = useState<CommentItem[] | null>(null);
+  const { data: comments = null, reload: reloadComments } = useApi<CommentItem[]>(`/comments?${param}=${entityId}`);
   const [members, setMembers] = useState<Member[]>([]);
   const [content, setContent] = useState("");
   const [mentionedIds, setMentionedIds] = useState<string[]>([]);
@@ -33,13 +34,11 @@ export function CommentsThread({ param, entityId }: { param: CommentParam; entit
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<CommentItem[]>(`/comments?${param}=${entityId}`).then(setComments);
+    void reloadComments();
   }
 
   useEffect(() => {
-    load();
-    apiFetch<{ user: Member }[]>("/company/members").then((list) => setMembers(list.map((m) => m.user)));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    apiFetch<{ user: Member }[]>("/company/members").then((list) => setMembers(list.map((m) => m.user))).catch(notifyApiError);
   }, [entityId]);
 
   function handleContentChange(value: string) {
@@ -82,18 +81,18 @@ export function CommentsThread({ param, entityId }: { param: CommentParam; entit
 
   return (
     <div className="flex flex-col gap-2">
-      <span className="text-xs font-medium text-gray-700 dark:text-gray-200">{t("title")}</span>
+      <span className="text-xs font-medium text-fg-muted">{t("title")}</span>
       {comments === null ? null : comments.length === 0 ? (
-        <p className="text-xs text-gray-400 dark:text-gray-500">{t("noComments")}</p>
+        <p className="text-xs text-fg-subtle">{t("noComments")}</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {comments.map((c) => (
             <li key={c.id} className="rounded-md bg-gray-50 dark:bg-gray-700 px-3 py-2 text-xs">
               <div className="flex items-center justify-between">
-                <span className="font-medium text-gray-900 dark:text-gray-50">{c.authorName}</span>
-                <span className="text-gray-400 dark:text-gray-500">{formatDateTime(new Date(c.createdAt))}</span>
+                <span className="font-medium text-fg">{c.authorName}</span>
+                <span className="text-fg-subtle">{formatDateTime(new Date(c.createdAt))}</span>
               </div>
-              <p className="mt-1 whitespace-pre-wrap text-gray-700 dark:text-gray-200">{c.content}</p>
+              <p className="mt-1 whitespace-pre-wrap text-fg-muted">{c.content}</p>
             </li>
           ))}
         </ul>
@@ -102,7 +101,7 @@ export function CommentsThread({ param, entityId }: { param: CommentParam; entit
         <textarea
           rows={2}
           className="input text-xs"
-          placeholder={t("addCommentPlaceholder")}
+          placeholder={t("addCommentPlaceholder")} aria-label={t("addCommentPlaceholder")}
           value={content}
           onChange={(e) => handleContentChange(e.target.value)}
         />

@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { ApiError, apiFetch, clearToken, getToken } from "@/lib/api-client";
+import { Alert } from "@/components/ui/alert";
+import { Field, FormError } from "@/components/ui/field";
 
 interface KioskWorker {
   id: string;
@@ -24,7 +26,9 @@ export default function KioskPage() {
   const [selectedWorker, setSelectedWorker] = useState<KioskWorker | null>(null);
   const [pin, setPin] = useState("");
   const [pinError, setPinError] = useState<string | null>(null);
-  const [verified, setVerified] = useState(false);
+  // The short-lived token a correct PIN returns; the kiosk time-entry endpoint requires it and
+  // only logs hours for the worker it names. Null until the PIN is verified.
+  const [kioskToken, setKioskToken] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [entryForm, setEntryForm] = useState({ projectId: "", hours: "8" });
   const [done, setDone] = useState(false);
@@ -53,7 +57,7 @@ export default function KioskPage() {
     setSelectedWorker(worker);
     setPin("");
     setPinError(null);
-    setVerified(false);
+    setKioskToken(null);
     setDone(false);
   }
 
@@ -61,7 +65,7 @@ export default function KioskPage() {
     setSelectedWorker(null);
     setPin("");
     setPinError(null);
-    setVerified(false);
+    setKioskToken(null);
     setDone(false);
     setEntryForm({ projectId: "", hours: "8" });
   }
@@ -71,12 +75,12 @@ export default function KioskPage() {
     setBusy(true);
     setPinError(null);
     try {
-      const { valid } = await apiFetch<{ valid: boolean }>(`/workers/${selectedWorker.id}/verify-clock-in-pin`, {
+      const result = await apiFetch<{ valid: boolean; kioskToken?: string }>(`/workers/${selectedWorker.id}/verify-clock-in-pin`, {
         method: "POST",
         body: JSON.stringify({ pin }),
       });
-      if (valid) {
-        setVerified(true);
+      if (result.valid && result.kioskToken) {
+        setKioskToken(result.kioskToken);
       } else {
         setPinError(t("wrongPin"));
         setPin("");
@@ -88,13 +92,13 @@ export default function KioskPage() {
 
   async function submitEntry(e: React.FormEvent) {
     e.preventDefault();
-    if (!selectedWorker || !entryForm.projectId) return;
+    if (!selectedWorker || !kioskToken || !entryForm.projectId) return;
     setBusy(true);
     try {
-      await apiFetch("/time-entries", {
+      await apiFetch("/time-entries/kiosk", {
         method: "POST",
         body: JSON.stringify({
-          workerId: selectedWorker.id,
+          kioskToken,
           projectId: entryForm.projectId,
           hours: Number(entryForm.hours),
           date: new Date().toISOString(),
@@ -102,29 +106,38 @@ export default function KioskPage() {
       });
       setDone(true);
       setTimeout(reset, 2500);
+    } catch (err) {
+      // The PIN check expired (the token lasts two minutes; the API answers 403) — back to the PIN prompt.
+      if (err instanceof ApiError && err.status === 403) {
+        setKioskToken(null);
+        setPin("");
+        setPinError(t("pinExpired"));
+        return;
+      }
+      throw err;
     } finally {
       setBusy(false);
     }
   }
 
   if (!workers) {
-    return <div className="flex min-h-screen items-center justify-center text-gray-500 dark:text-gray-400">{tc("loading")}</div>;
+    return <div className="flex min-h-screen items-center justify-center text-fg-subtle">{tc("loading")}</div>;
   }
 
   return (
     <div className="flex min-h-screen flex-col items-center bg-gray-50 dark:bg-gray-700 px-6 py-10">
-      <h1 className="mb-8 text-2xl font-semibold text-gray-900 dark:text-gray-50">{t("title")}</h1>
+      <h1 className="mb-8 text-2xl font-semibold text-fg">{t("title")}</h1>
 
       {!selectedWorker ? (
         <div className="grid w-full max-w-2xl grid-cols-2 gap-3 sm:grid-cols-3">
           {workers.length === 0 ? (
-            <p className="col-span-full text-center text-sm text-gray-400 dark:text-gray-500">{t("noWorkers")}</p>
+            <p className="col-span-full text-center text-sm text-fg-subtle">{t("noWorkers")}</p>
           ) : (
             workers.map((w) => (
               <button
                 key={w.id}
                 onClick={() => pickWorker(w)}
-                className="card flex h-24 items-center justify-center px-3 text-center text-base font-medium text-gray-800 dark:text-gray-100 hover:border-brand-300"
+                className="card flex h-24 items-center justify-center px-3 text-center text-base font-medium text-fg hover:border-brand-300"
               >
                 {w.name}
               </button>
@@ -135,20 +148,19 @@ export default function KioskPage() {
         <div className="w-full max-w-sm">
           <div className="card">
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-50">{selectedWorker.name}</h2>
-              <button onClick={reset} className="text-xs text-gray-400 dark:text-gray-500 hover:underline">
+              <h2 className="text-lg font-semibold text-fg">{selectedWorker.name}</h2>
+              <button onClick={reset} className="text-xs text-fg-subtle hover:underline">
                 {tc("cancel")}
               </button>
             </div>
 
             {done ? (
-              <p className="rounded-lg border border-success-200 bg-success-50 dark:bg-success-500/15 px-4 py-3 text-center text-sm text-success-700 dark:text-success-500">
+              <Alert tone="success" className="text-center">
                 {t("entrySaved")}
-              </p>
-            ) : !verified ? (
+              </Alert>
+            ) : !kioskToken ? (
               <>
-                <label className="flex flex-col gap-1.5 text-sm">
-                  <span className="font-medium text-gray-700 dark:text-gray-200">{t("enterPin")}</span>
+                <Field label={t("enterPin")}>
                   <input
                     type="password"
                     inputMode="numeric"
@@ -158,16 +170,15 @@ export default function KioskPage() {
                     value={pin}
                     onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))}
                   />
-                </label>
-                {pinError && <p className="mt-2 text-xs text-error-700 dark:text-error-500">{pinError}</p>}
+                </Field>
+                {pinError && <FormError className="mt-2">{pinError}</FormError>}
                 <button onClick={submitPin} disabled={busy || pin.length < 4} className="btn-primary mt-4 w-full">
                   {t("submitPin")}
                 </button>
               </>
             ) : (
               <form onSubmit={submitEntry} className="flex flex-col gap-3">
-                <label className="flex flex-col gap-1.5 text-sm">
-                  <span className="font-medium text-gray-700 dark:text-gray-200">{t("project")}</span>
+                <Field label={t("project")}>
                   <select
                     required
                     className="input"
@@ -181,9 +192,8 @@ export default function KioskPage() {
                       </option>
                     ))}
                   </select>
-                </label>
-                <label className="flex flex-col gap-1.5 text-sm">
-                  <span className="font-medium text-gray-700 dark:text-gray-200">{t("hours")}</span>
+                </Field>
+                <Field label={t("hours")}>
                   <input
                     type="number"
                     min="0.25"
@@ -193,7 +203,7 @@ export default function KioskPage() {
                     value={entryForm.hours}
                     onChange={(e) => setEntryForm((f) => ({ ...f, hours: e.target.value }))}
                   />
-                </label>
+                </Field>
                 <button type="submit" disabled={busy || !entryForm.projectId} className="btn-primary mt-2">
                   {t("logHours")}
                 </button>

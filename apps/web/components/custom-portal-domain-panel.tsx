@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch, ApiError } from "@/lib/api-client";
+import { apiFetch, ApiError, notifyApiError } from "@/lib/api-client";
+import { Badge } from "@/components/ui/badge";
+import { FormError } from "@/components/ui/field";
 
 interface Company {
   customPortalDomain: string | null;
@@ -14,6 +16,7 @@ const CNAME_TARGET = "portal.cantero.dev";
 export function CustomPortalDomainPanel({ canManage }: { canManage: boolean }) {
   const t = useTranslations("customPortalDomain");
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
 
   const [company, setCompany] = useState<Company | null>(null);
   const [domainInput, setDomainInput] = useState("");
@@ -25,7 +28,7 @@ export function CustomPortalDomainPanel({ canManage }: { canManage: boolean }) {
     apiFetch<Company>("/company").then((c) => {
       setCompany(c);
       setDomainInput(c.customPortalDomain ?? "");
-    });
+    }).catch(notifyApiError);
   }
 
   useEffect(load, []);
@@ -63,12 +66,12 @@ export function CustomPortalDomainPanel({ canManage }: { canManage: boolean }) {
 
   return (
     <section className="card lg:col-span-2">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
-      <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">{t("hint")}</p>
+      <h2 className="mb-1 text-sm font-semibold text-fg-muted">{t("title")}</h2>
+      <p className="mb-4 text-xs text-fg-subtle">{t("hint")}</p>
 
       <form onSubmit={save} className="flex flex-col gap-2">
         <div className="flex items-center gap-2">
-          <input
+          <input aria-label={ta("domain")}
             className="input flex-1 text-xs"
             placeholder="portal.mycompany.com"
             value={domainInput}
@@ -78,26 +81,22 @@ export function CustomPortalDomainPanel({ canManage }: { canManage: boolean }) {
             {tc("save")}
           </button>
         </div>
-        {error && <p className="text-xs text-error-600">{error}</p>}
+        {error && <FormError>{error}</FormError>}
       </form>
 
       {company?.customPortalDomain && (
         <div className="mt-4 border-t border-gray-100 dark:border-gray-700 pt-4">
-          <p className="text-xs text-gray-500 dark:text-gray-400">{t("cnameInstructions", { target: CNAME_TARGET })}</p>
+          <p className="text-xs text-fg-subtle">{t("cnameInstructions", { target: CNAME_TARGET })}</p>
           <div className="mt-2 flex items-center gap-2">
-            <span
-              className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                company.customPortalDomainVerifiedAt ? "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500" : "bg-warning-50 dark:bg-warning-500/15 text-warning-700 dark:text-warning-500"
-              }`}
-            >
+            <Badge tone={company.customPortalDomainVerifiedAt ? "success" : "warning"}>
               {company.customPortalDomainVerifiedAt ? t("verified") : t("notVerified")}
-            </span>
+            </Badge>
             <button onClick={verify} disabled={busy} className="btn-secondary px-3 py-1 text-xs">
               {t("verifyNow")}
             </button>
-            {verifyResult && !verifyResult.verified && <span className="text-xs text-warning-700 dark:text-warning-500">{t("verifyFailedHint")}</span>}
+            {verifyResult && !verifyResult.verified && <span className="text-xs text-warning-fg">{t("verifyFailedHint")}</span>}
           </div>
-          <p className="mt-2 text-xs text-gray-400 dark:text-gray-500">{t("infraHint")}</p>
+          <p className="mt-2 text-xs text-fg-subtle">{t("infraHint")}</p>
         </div>
       )}
     </section>

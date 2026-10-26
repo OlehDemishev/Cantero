@@ -3,12 +3,19 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { getSupplierPortalToken, supplierPortalApiFetch, clearSupplierPortalToken } from "@/lib/supplier-portal-api-client";
+import { ApiError, notifyApiError } from "@/lib/api-client";
+import { getSupplierPortalToken, supplierPortalApiFetch, signOutSupplierPortal, clearSupplierPortalToken } from "@/lib/supplier-portal-api-client";
 import { formatDate } from "@/lib/format-date";
+import { formatCurrency } from "@/lib/format-currency";
+import { useCompanyLocale } from "@/components/public-locale";
+import { Badge } from "@/components/ui/badge";
+import { statusTone } from "@/lib/status-tone";
+import { Alert } from "@/components/ui/alert";
 
 interface Me {
   name: string;
   companyName: string;
+  locale: string;
   currency: string;
 }
 type PurchaseOrderStatus = "draft" | "ordered" | "received";
@@ -28,24 +35,20 @@ interface PurchaseOrder {
   lines: POLine[];
 }
 
-const STATUS_STYLES: Record<PurchaseOrderStatus, string> = {
-  draft: "bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400",
-  ordered: "bg-warning-50 dark:bg-warning-500/15 text-warning-700 dark:text-warning-500",
-  received: "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500",
-};
-
 export default function SupplierPortalDashboardPage() {
   const t = useTranslations("supplierPortal");
+  const ta = useTranslations("a11y");
   const router = useRouter();
 
   const [me, setMe] = useState<Me | null>(null);
+  useCompanyLocale(me?.locale);
   const [orders, setOrders] = useState<PurchaseOrder[] | null>(null);
   const [ackForms, setAckForms] = useState<Record<string, { eta: string; note: string }>>({});
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   function loadOrders() {
-    supplierPortalApiFetch<PurchaseOrder[]>("/supplier-portal/purchase-orders").then(setOrders);
+    supplierPortalApiFetch<PurchaseOrder[]>("/supplier-portal/purchase-orders").then(setOrders).catch(notifyApiError);
   }
 
   useEffect(() => {
@@ -53,13 +56,21 @@ export default function SupplierPortalDashboardPage() {
       router.replace("/supplier-portal/login");
       return;
     }
-    supplierPortalApiFetch<Me>("/supplier-portal/me").then(setMe);
+    supplierPortalApiFetch<Me>("/supplier-portal/me")
+      .then(setMe)
+      .catch((err) => {
+        // Signed out on another device, or no longer on file: back to the sign-in page.
+        if (err instanceof ApiError && err.status === 401) {
+          clearSupplierPortalToken();
+          router.replace("/supplier-portal/login");
+        }
+      });
     loadOrders();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  function logout() {
-    clearSupplierPortalToken();
+  async function logout() {
+    await signOutSupplierPortal();
     router.replace("/supplier-portal/login");
   }
 
@@ -86,7 +97,7 @@ export default function SupplierPortalDashboardPage() {
   if (!me) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-700 px-6 py-12">
-        <p className="text-sm text-gray-500 dark:text-gray-400">{t("loading")}</p>
+        <p className="text-sm text-fg-subtle">{t("loading")}</p>
       </main>
     );
   }
@@ -100,20 +111,20 @@ export default function SupplierPortalDashboardPage() {
               C
             </span>
             <div>
-              <p className="text-sm font-semibold text-gray-900 dark:text-gray-50">{me.companyName}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">{t("welcome", { name: me.name })}</p>
+              <p className="text-sm font-semibold text-fg">{me.companyName}</p>
+              <p className="text-xs text-fg-subtle">{t("welcome", { name: me.name })}</p>
             </div>
           </div>
           <button onClick={logout} className="btn-secondary px-3 py-1.5 text-xs">
             {t("logout")}
           </button>
         </div>
-        {error && <p className="mb-4 rounded-md bg-red-50 dark:bg-red-500/15 px-3 py-2 text-sm text-red-700 dark:text-red-400">{error}</p>}
+        {error && <Alert tone="danger" className="mb-4">{error}</Alert>}
 
         <section className="card">
-          <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("purchaseOrders")}</h2>
+          <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("purchaseOrders")}</h2>
           {!orders || orders.length === 0 ? (
-            <p className="text-sm text-gray-400 dark:text-gray-500">{t("noPurchaseOrders")}</p>
+            <p className="text-sm text-fg-subtle">{t("noPurchaseOrders")}</p>
           ) : (
             <ul className="flex flex-col gap-3">
               {orders.map((po) => {
@@ -121,38 +132,38 @@ export default function SupplierPortalDashboardPage() {
                 return (
                   <li key={po.id} className="rounded-md border border-gray-200 dark:border-gray-700 px-3 py-2 text-sm">
                     <div className="flex items-center justify-between">
-                      <span className="font-medium text-gray-900 dark:text-gray-50">
+                      <span className="font-medium text-fg">
                         {t("orderNumber", { id: po.id.slice(0, 8) })}
                       </span>
-                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[po.status]}`}>
+                      <Badge tone={statusTone(po.status)}>
                         {t(po.status)}
-                      </span>
+                      </Badge>
                     </div>
-                    <ul className="mt-1.5 flex flex-col gap-0.5 text-xs text-gray-500 dark:text-gray-400">
+                    <ul className="mt-1.5 flex flex-col gap-0.5 text-xs text-fg-subtle">
                       {po.lines.map((l) => (
                         <li key={l.id}>
-                          {l.materialCatalogItem.name} × {l.quantity} {l.materialCatalogItem.unit} @ {l.unitPrice} {me.currency}
+                          {l.materialCatalogItem.name} × {l.quantity} {l.materialCatalogItem.unit} @ {formatCurrency(l.unitPrice, me.currency, { maximumFractionDigits: 4 })}
                         </li>
                       ))}
                     </ul>
                     {po.expectedDate && (
-                      <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
+                      <p className="mt-1 text-xs text-fg-subtle">
                         {t("expectedDate", { date: formatDate(new Date(po.expectedDate)) })}
                       </p>
                     )}
 
                     {po.acknowledgedAt ? (
-                      <p className="mt-2 text-xs text-success-700 dark:text-success-500">
+                      <p className="mt-2 text-xs text-success-fg">
                         {t("acknowledged", { date: formatDate(new Date(po.acknowledgedAt)) })}
                         {po.supplierEta && (
                           <span className="block">{t("yourEta", { date: formatDate(new Date(po.supplierEta)) })}</span>
                         )}
-                        {po.supplierNote && <span className="block text-gray-500 dark:text-gray-400">{po.supplierNote}</span>}
+                        {po.supplierNote && <span className="block text-fg-subtle">{po.supplierNote}</span>}
                       </p>
                     ) : po.status !== "draft" ? (
                       <div className="mt-2 flex flex-col gap-1.5 border-t border-gray-100 dark:border-gray-700 pt-2">
                         <div className="flex gap-2">
-                          <input
+                          <input aria-label={ta("expectedDeliveryDate")}
                             type="date"
                             className="input"
                             value={form.eta}
@@ -160,7 +171,7 @@ export default function SupplierPortalDashboardPage() {
                           />
                           <input
                             className="input flex-1"
-                            placeholder={t("notePlaceholder")}
+                            placeholder={t("notePlaceholder")} aria-label={t("notePlaceholder")}
                             value={form.note}
                             onChange={(e) => setAckForms((f) => ({ ...f, [po.id]: { ...form, note: e.target.value } }))}
                           />

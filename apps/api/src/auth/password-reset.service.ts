@@ -15,6 +15,7 @@ const BCRYPT_ROUNDS = 12;
 // stop someone from email-bombing a victim's inbox with reset requests, not to protect the token.
 const FORGOT_PASSWORD_LIMIT = 5;
 const FORGOT_PASSWORD_WINDOW_MS = 15 * 60 * 1000;
+const INVALID_RESET_LINK = "This reset link is invalid or has expired";
 
 const hashToken = (raw: string) => createHash("sha256").update(raw).digest("hex");
 
@@ -60,7 +61,7 @@ export class PasswordResetService {
     const tokenHash = hashToken(input.token);
     const record = await this.prisma.passwordResetToken.findUnique({ where: { tokenHash } });
     if (!record || record.usedAt || record.expiresAt < new Date()) {
-      throw new BadRequestException("This reset link is invalid or has expired");
+      throw new BadRequestException(INVALID_RESET_LINK);
     }
 
     // A user can belong to more than one company — apply the strictest policy among them so no
@@ -79,12 +80,19 @@ export class PasswordResetService {
     assertPasswordPolicy(input.password, strictestPolicy);
 
     const passwordHash = await bcrypt.hash(input.password, BCRYPT_ROUNDS);
-    await this.prisma.$transaction([
-      this.prisma.user.update({ where: { id: record.userId }, data: { passwordHash } }),
-      this.prisma.passwordResetToken.update({ where: { id: record.id }, data: { usedAt: new Date() } }),
+    await this.prisma.$transaction(async (tx) => {
+      // The check above only spares a policy failure from burning the link. The token is claimed
+      // here, in one conditional write, so two concurrent resets can't both get through.
+      const now = new Date();
+      const { count } = await tx.passwordResetToken.updateMany({
+        where: { id: record.id, usedAt: null, expiresAt: { gt: now } },
+        data: { usedAt: now },
+      });
+      if (count !== 1) throw new BadRequestException(INVALID_RESET_LINK);
+      await tx.user.update({ where: { id: record.userId }, data: { passwordHash } });
       // A password reset is a good moment to sign every other device out too.
-      this.prisma.userSession.updateMany({ where: { userId: record.userId, revokedAt: null }, data: { revokedAt: new Date() } }),
-    ]);
+      await tx.userSession.updateMany({ where: { userId: record.userId, revokedAt: null }, data: { revokedAt: now } });
+    });
     return { ok: true };
   }
 }
