@@ -31,8 +31,10 @@ test("an approved expense's receipt is locked by its hash, can't be swapped, and
     incurredAt: new Date().toISOString(),
     description: "Diesel for the excavator",
   });
-  const blurry = Buffer.from(`blurry photo ${Date.now()}`);
-  const sharp = Buffer.from(`sharp photo ${Date.now()}`);
+  // The API checks a receipt's first bytes against its type, so these start like a JPEG.
+  const jpeg = (text: string) => Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0]), Buffer.from(text)]);
+  const blurry = jpeg(`blurry photo ${Date.now()}`);
+  const sharp = jpeg(`sharp photo ${Date.now()}`);
 
   const db = new Client({ connectionString: databaseUrl() });
   await db.connect();
@@ -55,7 +57,7 @@ test("an approved expense's receipt is locked by its hash, can't be swapped, and
     });
 
     await test.step("afterwards the receipt can't be swapped, and the locked one is what comes back", async () => {
-      expect(await uploadReceipt(token, expense.id, Buffer.from("a different receipt"))).toBe(400);
+      expect(await uploadReceipt(token, expense.id, jpeg("a different receipt"))).toBe(400);
       const res = await fetch(`${apiUrl()}/expenses/${expense.id}/receipt`, { headers: { Authorization: `Bearer ${token}` } });
       expect(sha256(Buffer.from(await res.arrayBuffer()))).toBe(sha256(sharp));
     });

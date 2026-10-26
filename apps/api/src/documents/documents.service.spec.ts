@@ -7,7 +7,7 @@ import { AuditService } from "../common/audit/audit.service";
 import { ProjectAccessService } from "../common/project-access/project-access.service";
 
 const COMPANY_A = "company-a";
-const FILE = { originalname: "photo.jpg", mimetype: "image/jpeg", buffer: Buffer.from("x"), size: 1 };
+const FILE = { originalname: "photo.jpg", mimetype: "image/jpeg", buffer: Buffer.from([0xff, 0xd8, 0xff, 0xe0]), size: 4 };
 const projectAccessStub = { assertAccess: jest.fn(), filterAccessible: jest.fn(async (rows: unknown[]) => rows) };
 
 describe("DocumentsService.upload — field attachments", () => {

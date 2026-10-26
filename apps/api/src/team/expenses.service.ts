@@ -3,12 +3,16 @@ import { createHash } from "crypto";
 import type { CreateExpenseInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { StorageService } from "../common/storage/storage.service";
+import { assertContentMatchesType } from "../common/file-signature";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
 import { OutboxService } from "../common/webhooks/outbox.service";
 import { GobdLedgerService } from "../common/gobd/gobd-ledger.service";
 import { runSerializable } from "../common/prisma/serializable-transaction";
 import { detectExpenseAnomalyFromAggregate } from "./expense-anomaly";
 import { ProjectAccessService, type ProjectViewer } from "../common/project-access/project-access.service";
+
+/** A photo of the receipt (iPhones hand over HEIC unless the picker converts it) or a PDF one. */
+const RECEIPT_MIME_TYPES = new Set(["application/pdf", "image/jpeg", "image/png", "image/webp", "image/gif", "image/heic", "image/heif"]);
 
 export interface ExpenseFilter {
   projectId?: string;
@@ -104,6 +108,8 @@ export class ExpensesService {
   /** Only while the expense is pending: once approved, its receipt is part of the GoBD record
    * (hashed into the ledger entry), and a rejected expense is closed. */
   async uploadReceipt(companyId: string, id: string, file: { originalname: string; mimetype: string; buffer: Buffer }) {
+    if (!RECEIPT_MIME_TYPES.has(file.mimetype)) throw new BadRequestException("Upload the receipt as a photo or a PDF");
+    assertContentMatchesType(file);
     const expense = await this.findOrThrow(companyId, id);
     if (expense.status !== "pending") {
       throw new BadRequestException("Only a pending expense's receipt can be changed — once approved or rejected, the receipt on file is part of its record.");

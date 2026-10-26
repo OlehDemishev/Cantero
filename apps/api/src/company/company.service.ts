@@ -5,6 +5,7 @@ import type { Prisma } from "@prisma/client";
 import type { LinkToParentCompanyInput, SetCustomPortalDomainInput, UpdateCompanyInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { StorageService } from "../common/storage/storage.service";
+import { assertContentMatchesType } from "../common/file-signature";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
 import { MailService } from "../common/mail/mail.service";
 import { ExchangeRateService } from "../common/exchange-rate/exchange-rate.service";
@@ -201,6 +202,7 @@ export class CompanyService {
     if (!ALLOWED_LOGO_MIME_TYPES.has(file.mimetype)) {
       throw new BadRequestException(`Logo must be PNG or JPEG (got "${file.mimetype}")`);
     }
+    assertContentMatchesType(file);
 
     const stored = await this.storage.save(companyId, file.originalname, file.buffer);
     await this.prisma.company.update({

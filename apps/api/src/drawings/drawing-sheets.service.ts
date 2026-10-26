@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, Logger, NotFoundException } from "@nes
 import type { AuthUser, CreateDrawingSheetInput, UpdateDrawingSheetInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { StorageService } from "../common/storage/storage.service";
+import { assertContentMatchesType } from "../common/file-signature";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
 import { ProjectAccessService } from "../common/project-access/project-access.service";
 import { analyzePdf } from "./pdf-analysis";
@@ -100,6 +101,7 @@ export class DrawingSheetsService {
     if (!file) throw new BadRequestException("No file provided");
     if (!ALLOWED_MIME_TYPES.has(file.mimetype)) throw new BadRequestException("Unsupported file type — upload a PDF, JPEG, PNG, or WebP");
     if (file.size > MAX_FILE_SIZE_BYTES) throw new BadRequestException("File exceeds the 25MB limit");
+    assertContentMatchesType(file);
 
     const project = await this.prisma.project.findFirst({ where: { id: projectId, companyId } });
     if (!project) throw new NotFoundException("Project not found");
@@ -139,6 +141,7 @@ export class DrawingSheetsService {
     if (!file) throw new BadRequestException("No file provided");
     if (!ALLOWED_MIME_TYPES.has(file.mimetype)) throw new BadRequestException("Unsupported file type — upload a PDF, JPEG, PNG, or WebP");
     if (file.size > MAX_FILE_SIZE_BYTES) throw new BadRequestException("File exceeds the 25MB limit");
+    assertContentMatchesType(file);
 
     const current = await this.findOrThrow(companyId, id);
     const rootId = current.rootSheetId ?? current.id;

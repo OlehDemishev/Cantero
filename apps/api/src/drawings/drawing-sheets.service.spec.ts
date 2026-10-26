@@ -16,7 +16,7 @@ function pdfFile(overrides: Partial<Express.Multer.File> = {}): Express.Multer.F
     originalname: "sheet-a101.pdf",
     mimetype: "application/pdf",
     size: 1024,
-    buffer: Buffer.from("fake-pdf"),
+    buffer: Buffer.from("%PDF-1.7 fake"),
     ...overrides,
   } as Express.Multer.File;
 }

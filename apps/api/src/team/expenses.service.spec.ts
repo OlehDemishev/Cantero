@@ -11,6 +11,8 @@ import { projectAccessThatSeesAll } from "../common/project-access/project-acces
 
 const COMPANY_A = "company-a";
 const ACTOR = { userId: "user-1", name: "Jane" };
+/** A JPEG as far as the signature check reads: its SOI marker, then anything. */
+const jpeg = (rest: string) => Buffer.concat([Buffer.from([0xff, 0xd8, 0xff]), Buffer.from(rest)]);
 
 describe("ExpensesService", () => {
   let service: ExpensesService;
@@ -219,7 +221,7 @@ describe("ExpensesService", () => {
       prisma.expense.updateMany.mockResolvedValue({ count: 1 });
       prisma.expense.findUniqueOrThrow.mockResolvedValue({ id: "exp-1", receiptStorageKey: "company-a/x-receipt.jpg" });
 
-      await service.uploadReceipt(COMPANY_A, "exp-1", { originalname: "receipt.jpg", mimetype: "image/jpeg", buffer: Buffer.from("x") });
+      await service.uploadReceipt(COMPANY_A, "exp-1", { originalname: "receipt.jpg", mimetype: "image/jpeg", buffer: jpeg("x") });
 
       expect(prisma.expense.updateMany).toHaveBeenCalledWith({
         where: { id: "exp-1", companyId: COMPANY_A, status: "pending" },
@@ -227,11 +229,19 @@ describe("ExpensesService", () => {
       });
     });
 
+    it.each([
+      ["a page renamed to .jpg", "image/jpeg", Buffer.from("<html><script>alert(1)</script>")],
+      ["a type that isn't a receipt", "text/html", Buffer.from("<html></html>")],
+    ])("refuses %s", async (_, mimetype, buffer) => {
+      await expect(service.uploadReceipt(COMPANY_A, "exp-1", { originalname: "receipt.jpg", mimetype, buffer })).rejects.toThrow(BadRequestException);
+      expect(storage.save).not.toHaveBeenCalled();
+    });
+
     it.each(["approved", "rejected"])("won't replace the receipt of an %s expense", async (status) => {
       prisma.expense.findFirst.mockResolvedValue({ id: "exp-1", status });
 
       await expect(
-        service.uploadReceipt(COMPANY_A, "exp-1", { originalname: "other.jpg", mimetype: "image/jpeg", buffer: Buffer.from("y") }),
+        service.uploadReceipt(COMPANY_A, "exp-1", { originalname: "other.jpg", mimetype: "image/jpeg", buffer: jpeg("y") }),
       ).rejects.toThrow(BadRequestException);
       expect(storage.save).not.toHaveBeenCalled();
     });
@@ -242,7 +252,7 @@ describe("ExpensesService", () => {
       prisma.expense.updateMany.mockResolvedValue({ count: 0 });
 
       await expect(
-        service.uploadReceipt(COMPANY_A, "exp-1", { originalname: "late.jpg", mimetype: "image/jpeg", buffer: Buffer.from("z") }),
+        service.uploadReceipt(COMPANY_A, "exp-1", { originalname: "late.jpg", mimetype: "image/jpeg", buffer: jpeg("z") }),
       ).rejects.toThrow(ConflictException);
     });
   });

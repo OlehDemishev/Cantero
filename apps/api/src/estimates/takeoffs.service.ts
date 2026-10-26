@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from "@nestjs/comm
 import type { CalibrateTakeoffByRatioInput, CalibrateTakeoffInput, CreateTakeoffMeasurementInput, TakeoffRatioUnit } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { StorageService } from "../common/storage/storage.service";
+import { assertContentMatchesType } from "../common/file-signature";
 import { pdfPageCount } from "../drawings/pdf-text";
 import { polygonAreaPixels, polylineLengthPixels, scaleToReal, type Point } from "./takeoff-geometry";
 
@@ -34,6 +35,7 @@ export class TakeoffsService {
 
   async create(companyId: string, projectId: string, name: string, file: Express.Multer.File, pageNumber = 1) {
     if (!TAKEOFF_MIME_TYPES.has(file.mimetype)) throw new BadRequestException("Upload a PDF, JPEG, PNG or WebP drawing");
+    assertContentMatchesType(file);
     const project = await this.prisma.project.findFirst({ where: { id: projectId, companyId } });
     if (!project) throw new NotFoundException("Project not found");
     const page = await this.checkedPage(file.mimetype, file.buffer, pageNumber);

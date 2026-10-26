@@ -6,6 +6,7 @@ import { PDFDocument } from "pdf-lib";
 import type { AuthUser, ImportDrawingSetInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { StorageService } from "../common/storage/storage.service";
+import { assertContentMatchesType } from "../common/file-signature";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
 import { ProjectAccessService } from "../common/project-access/project-access.service";
 import { DRAWING_SETS_QUEUE } from "../common/queue/queue.module";
@@ -66,6 +67,7 @@ export class DrawingSetsService implements OnModuleInit {
     if (!file) throw new BadRequestException("No file provided");
     if (file.mimetype !== "application/pdf") throw new BadRequestException("A drawing set has to be a PDF");
     if (file.size > MAX_DRAWING_SET_UPLOAD_BYTES) throw new BadRequestException("The drawing set exceeds the 100MB limit");
+    assertContentMatchesType(file);
     const project = await this.prisma.project.findFirst({ where: { id: projectId, companyId }, select: { id: true } });
     if (!project) throw new NotFoundException("Project not found");
 

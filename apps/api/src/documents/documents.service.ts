@@ -3,6 +3,7 @@ import type { DocumentCategory, Locale } from "@cantero/shared";
 import { documentCategorySchema } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { StorageService } from "../common/storage/storage.service";
+import { assertContentMatchesType } from "../common/file-signature";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
 import { ProjectAccessService } from "../common/project-access/project-access.service";
 
@@ -360,12 +361,13 @@ export class DocumentsService {
     return doc;
   }
 
-  private validateFile(file: { mimetype: string; size: number }) {
+  private validateFile(file: { mimetype: string; size: number; buffer: Buffer }) {
     if (file.size > MAX_FILE_SIZE_BYTES) {
       throw new BadRequestException("File exceeds the 25MB limit");
     }
     if (!ALLOWED_MIME_TYPES.has(file.mimetype)) {
       throw new BadRequestException(`File type "${file.mimetype}" is not allowed`);
     }
+    assertContentMatchesType(file);
   }
 }
