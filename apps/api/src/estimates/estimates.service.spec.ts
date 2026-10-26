@@ -367,7 +367,7 @@ describe("EstimatesService — cross-tenant isolation", () => {
 
     await service.decide(
       "some-token",
-      { decision: "approved", signerName: "Jane Client", signatureDataUrl: "data:image/png;base64,AAAA" },
+      { decision: "approved", signerName: "Jane Client", signatureDataUrl: "data:image/png;base64,iVBORw0KGgo=" },
       "203.0.113.5",
     );
 

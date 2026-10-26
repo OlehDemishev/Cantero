@@ -6,6 +6,7 @@ import { AuditService, type AuditActor } from "../common/audit/audit.service";
 import { ProjectAccessService } from "../common/project-access/project-access.service";
 import { analyzePdf } from "./pdf-analysis";
 import { sheetKey } from "./sheet-recognition";
+import { assertContentMatchesType } from "../common/file-signature";
 
 const MAX_FILE_SIZE_BYTES = 25 * 1024 * 1024;
 const ALLOWED_MIME_TYPES = new Set(["application/pdf", "image/jpeg", "image/png", "image/webp"]);
@@ -99,6 +100,7 @@ export class DrawingSheetsService {
   ) {
     if (!file) throw new BadRequestException("No file provided");
     if (!ALLOWED_MIME_TYPES.has(file.mimetype)) throw new BadRequestException("Unsupported file type — upload a PDF, JPEG, PNG, or WebP");
+    assertContentMatchesType(file);
     if (file.size > MAX_FILE_SIZE_BYTES) throw new BadRequestException("File exceeds the 25MB limit");
 
     const project = await this.prisma.project.findFirst({ where: { id: projectId, companyId } });
@@ -138,6 +140,7 @@ export class DrawingSheetsService {
   ) {
     if (!file) throw new BadRequestException("No file provided");
     if (!ALLOWED_MIME_TYPES.has(file.mimetype)) throw new BadRequestException("Unsupported file type — upload a PDF, JPEG, PNG, or WebP");
+    assertContentMatchesType(file);
     if (file.size > MAX_FILE_SIZE_BYTES) throw new BadRequestException("File exceeds the 25MB limit");
 
     const current = await this.findOrThrow(companyId, id);

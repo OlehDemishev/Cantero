@@ -315,7 +315,7 @@ describe("ContractsService", () => {
     it("rejects an unknown token", async () => {
       prisma.contract.findFirst.mockResolvedValue(null);
 
-      await expect(service.sign("bad-token", { signerName: "Jane", signatureDataUrl: "data:image/png;base64,AAAA" })).rejects.toThrow(
+      await expect(service.sign("bad-token", { signerName: "Jane", signatureDataUrl: "data:image/png;base64,iVBORw0KGgo=" })).rejects.toThrow(
         NotFoundException,
       );
     });
@@ -324,7 +324,7 @@ describe("ContractsService", () => {
       prisma.contract.findFirst.mockResolvedValue({ id: "c1", companyId: COMPANY_A, status: "draft" });
 
       await expect(
-        service.sign("tok-abc", { signerName: "Jane", signatureDataUrl: "data:image/png;base64,AAAA" }),
+        service.sign("tok-abc", { signerName: "Jane", signatureDataUrl: "data:image/png;base64,iVBORw0KGgo=" }),
       ).rejects.toThrow(BadRequestException);
       expect(prisma.contract.update).not.toHaveBeenCalled();
     });
@@ -336,7 +336,7 @@ describe("ContractsService", () => {
 
       const result = await service.sign(
         "tok-abc",
-        { signerName: "Jane Client", signatureDataUrl: "data:image/png;base64,AAAA" },
+        { signerName: "Jane Client", signatureDataUrl: "data:image/png;base64,iVBORw0KGgo=" },
         "203.0.113.5",
       );
 

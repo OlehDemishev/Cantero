@@ -43,7 +43,7 @@ describe("TakeoffsService", () => {
       prisma.project.findFirst.mockResolvedValue(null);
 
       await expect(
-        service.create(COMPANY_A, "project-1", "Floor plan", { originalname: "plan.png", mimetype: "image/png", buffer: Buffer.from("x") } as any),
+        service.create(COMPANY_A, "project-1", "Floor plan", { originalname: "plan.png", mimetype: "image/png", buffer: Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]) } as any),
       ).rejects.toThrow(NotFoundException);
       expect(prisma.takeoff.create).not.toHaveBeenCalled();
     });
@@ -109,7 +109,7 @@ describe("TakeoffsService", () => {
   });
 
   describe("PDF drawings, counts and printed scales", () => {
-    const pdf = (page?: number) => ({ originalname: "set.pdf", mimetype: "application/pdf", buffer: Buffer.from("%PDF"), page });
+    const pdf = (page?: number) => ({ originalname: "set.pdf", mimetype: "application/pdf", buffer: Buffer.from("%PDF-1.7"), page });
 
     it("rejects a file that isn't a drawing", async () => {
       await expect(service.create(COMPANY_A, "project-1", "x", { originalname: "a.docx", mimetype: "application/msword", buffer: Buffer.from("x") } as any)).rejects.toThrow(BadRequestException);

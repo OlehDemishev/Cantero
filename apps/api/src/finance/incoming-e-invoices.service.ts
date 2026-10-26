@@ -4,6 +4,7 @@ import { StorageService } from "../common/storage/storage.service";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
 import { detectXmlFormat, parseEInvoiceXml, validateEn16931Core, type ParsedEInvoice } from "./incoming-e-invoice-parser";
 import { extractZugferdXmlFromPdf } from "./extract-zugferd-xml-from-pdf";
+import { contentMatchesType, looksLikeXml } from "../common/file-signature";
 
 const INCLUDE = { supplier: true, lines: true } as const;
 
@@ -32,16 +33,16 @@ export class IncomingEInvoicesService {
   }
 
   /**
-   * Accepts either a raw e-invoice XML file or a ZUGFeRD hybrid PDF/A-3 — sniffed from the file's
-   * own MIME type/extension, not trusted from a client-supplied hint. Never rejects a document
+   * Accepts either a raw e-invoice XML file or a ZUGFeRD hybrid PDF/A-3 — told apart by the file's
+   * own bytes, not by its client-supplied MIME type or name. Never rejects a document
    * outright for failing EN 16931 core validation (see validateEn16931Core's own doc comment) —
    * those failures are recorded on the row for the reviewer to see, not a reason to refuse
    * staging it at all, since even a bill with data-quality problems still exists and needs
    * tracking.
    */
   async upload(companyId: string, actor: AuditActor, file: Express.Multer.File): Promise<{ id: string }> {
-    const isPdf = file.mimetype === "application/pdf" || file.originalname.toLowerCase().endsWith(".pdf");
-    const isXml = file.mimetype === "application/xml" || file.mimetype === "text/xml" || file.originalname.toLowerCase().endsWith(".xml");
+    const isPdf = contentMatchesType(file.buffer, "application/pdf");
+    const isXml = !isPdf && looksLikeXml(file.buffer);
     if (!isPdf && !isXml) {
       throw new BadRequestException("Only a .xml e-invoice file or a ZUGFeRD/Factur-X PDF is accepted");
     }

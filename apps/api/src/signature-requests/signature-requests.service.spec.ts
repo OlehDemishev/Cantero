@@ -11,7 +11,7 @@ import { ProjectAccessService } from "../common/project-access/project-access.se
 
 const COMPANY_A = "company-a";
 const ACTOR = { userId: "user-1", name: "Ana" };
-const SIGNATURE_DATA_URL = "data:image/png;base64,aGVsbG8=";
+const SIGNATURE_DATA_URL = "data:image/png;base64,iVBORw0KGgo=";
 
 function signer(overrides: Partial<{ id: string; order: number; signedAt: Date | null; email: string; accessToken: string; name: string }>) {
   return {

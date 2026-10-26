@@ -219,7 +219,7 @@ describe("ExpensesService", () => {
       prisma.expense.updateMany.mockResolvedValue({ count: 1 });
       prisma.expense.findUniqueOrThrow.mockResolvedValue({ id: "exp-1", receiptStorageKey: "company-a/x-receipt.jpg" });
 
-      await service.uploadReceipt(COMPANY_A, "exp-1", { originalname: "receipt.jpg", mimetype: "image/jpeg", buffer: Buffer.from("x") });
+      await service.uploadReceipt(COMPANY_A, "exp-1", { originalname: "receipt.jpg", mimetype: "image/jpeg", buffer: Buffer.from([0xff, 0xd8, 0xff, 0xe0]) });
 
       expect(prisma.expense.updateMany).toHaveBeenCalledWith({
         where: { id: "exp-1", companyId: COMPANY_A, status: "pending" },
@@ -231,7 +231,7 @@ describe("ExpensesService", () => {
       prisma.expense.findFirst.mockResolvedValue({ id: "exp-1", status });
 
       await expect(
-        service.uploadReceipt(COMPANY_A, "exp-1", { originalname: "other.jpg", mimetype: "image/jpeg", buffer: Buffer.from("y") }),
+        service.uploadReceipt(COMPANY_A, "exp-1", { originalname: "other.jpg", mimetype: "image/jpeg", buffer: Buffer.from([0xff, 0xd8, 0xff, 0xe0]) }),
       ).rejects.toThrow(BadRequestException);
       expect(storage.save).not.toHaveBeenCalled();
     });
@@ -242,8 +242,19 @@ describe("ExpensesService", () => {
       prisma.expense.updateMany.mockResolvedValue({ count: 0 });
 
       await expect(
-        service.uploadReceipt(COMPANY_A, "exp-1", { originalname: "late.jpg", mimetype: "image/jpeg", buffer: Buffer.from("z") }),
+        service.uploadReceipt(COMPANY_A, "exp-1", { originalname: "late.jpg", mimetype: "image/jpeg", buffer: Buffer.from([0xff, 0xd8, 0xff, 0xe0]) }),
       ).rejects.toThrow(ConflictException);
+    });
+
+    it.each([
+      ["a type a receipt can't be", "text/html", Buffer.from("<script>alert(1)</script>")],
+      ["contents that aren't the claimed type", "image/png", Buffer.from("<script>alert(1)</script>")],
+    ])("refuses %s before looking up the expense", async (_label, mimetype, buffer) => {
+      await expect(service.uploadReceipt(COMPANY_A, "exp-1", { originalname: "receipt.png", mimetype, buffer })).rejects.toThrow(
+        BadRequestException,
+      );
+      expect(prisma.expense.findFirst).not.toHaveBeenCalled();
+      expect(storage.save).not.toHaveBeenCalled();
     });
   });
 });

@@ -59,9 +59,17 @@ describe("IncomingEInvoicesService", () => {
 
   describe("upload()", () => {
     it("rejects a file that's neither XML nor PDF", async () => {
-      const file = { originalname: "invoice.docx", mimetype: "application/msword", buffer: Buffer.from("x") } as Express.Multer.File;
+      const file = { originalname: "invoice.docx", mimetype: "application/msword", buffer: Buffer.from([0xd0, 0xcf, 0x11, 0xe0]) } as Express.Multer.File;
       await expect(service.upload(COMPANY_A, ACTOR, file)).rejects.toThrow(BadRequestException);
       expect(storage.save).not.toHaveBeenCalled();
+    });
+
+    it("goes by the file's bytes, not its name or type: XML sent as octet-stream is still read", async () => {
+      prisma.supplier.findFirst.mockResolvedValue(null);
+      prisma.incomingEInvoice.create.mockResolvedValue({ id: "ie-1", supplier: null });
+      const file = { ...xmlFile(realXRechnungXml(), "export.txt"), mimetype: "application/octet-stream" } as Express.Multer.File;
+
+      await expect(service.upload(COMPANY_A, ACTOR, file)).resolves.toEqual({ id: "ie-1" });
     });
 
     it("parses a real XRechnung XML file, finds no supplier match, and stages it as pending_review", async () => {

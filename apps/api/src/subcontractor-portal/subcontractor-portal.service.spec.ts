@@ -5,7 +5,7 @@ import { PrismaService } from "../common/prisma/prisma.service";
 import { StorageService } from "../common/storage/storage.service";
 
 const SUBCONTRACTOR_A = { subcontractorId: "sub-a", companyId: "company-a" };
-const SIGNATURE_DATA_URL = "data:image/png;base64,aGVsbG8=";
+const SIGNATURE_DATA_URL = "data:image/png;base64,iVBORw0KGgo=";
 
 describe("SubcontractorPortalService", () => {
   let service: SubcontractorPortalService;

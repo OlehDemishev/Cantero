@@ -10,6 +10,7 @@ import { MailService } from "../common/mail/mail.service";
 import { ExchangeRateService } from "../common/exchange-rate/exchange-rate.service";
 import { assertPublicWebhookUrl } from "../common/webhooks/webhook-url";
 import { html } from "../common/mail/html";
+import { assertContentMatchesType } from "../common/file-signature";
 
 const MAX_LOGO_SIZE_BYTES = 1 * 1024 * 1024; // 1MB — a logo, not a photo
 // pdfkit only rasterizes JPEG/PNG, so SVG (however common for logos) isn't accepted here.
@@ -201,6 +202,7 @@ export class CompanyService {
     if (!ALLOWED_LOGO_MIME_TYPES.has(file.mimetype)) {
       throw new BadRequestException(`Logo must be PNG or JPEG (got "${file.mimetype}")`);
     }
+    assertContentMatchesType(file);
 
     const stored = await this.storage.save(companyId, file.originalname, file.buffer);
     await this.prisma.company.update({

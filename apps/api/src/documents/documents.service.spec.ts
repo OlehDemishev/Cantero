@@ -1,4 +1,4 @@
-import { NotFoundException } from "@nestjs/common";
+import { BadRequestException, NotFoundException } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import { DocumentsService } from "./documents.service";
 import { PrismaService } from "../common/prisma/prisma.service";
@@ -7,7 +7,7 @@ import { AuditService } from "../common/audit/audit.service";
 import { ProjectAccessService } from "../common/project-access/project-access.service";
 
 const COMPANY_A = "company-a";
-const FILE = { originalname: "photo.jpg", mimetype: "image/jpeg", buffer: Buffer.from("x"), size: 1 };
+const FILE = { originalname: "photo.jpg", mimetype: "image/jpeg", buffer: Buffer.from([0xff, 0xd8, 0xff, 0xe0]), size: 4 };
 const projectAccessStub = { assertAccess: jest.fn(), filterAccessible: jest.fn(async (rows: unknown[]) => rows) };
 
 describe("DocumentsService.upload — field attachments", () => {
@@ -109,6 +109,12 @@ describe("DocumentsService.upload — field attachments", () => {
         data: expect.objectContaining({ subcontractorDocumentId: "sub-doc-1", category: "insurance_certificate" }),
       }),
     );
+  });
+
+  it("refuses a file whose contents aren't the allowed type it claims", async () => {
+    const page = { ...FILE, originalname: "photo.jpg", buffer: Buffer.from("<!doctype html><script>alert(1)</script>") };
+    await expect(service.upload(COMPANY_A, "user-1", page, {})).rejects.toThrow(BadRequestException);
+    expect(storage.save).not.toHaveBeenCalled();
   });
 });
 

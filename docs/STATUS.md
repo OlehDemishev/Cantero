@@ -96,3 +96,18 @@ in that window (Documents tab) made the loop synchronous and froze the page. Now
 reads the code from the ACS redirect (`route.fetch({ maxRedirects: 0 })`): Playwright never routes
 redirect hops, so its route on /sso/callback never matched. Local e2e: both specs pass; full suite
 29 passed, 1 skipped (gobd-anchor), semantic-search fails only locally (model download blocked).
+
+## 2026-10-26 — upload magic-byte checks (branch claude/busy-cori-mjxuj7)
+
+`apps/api/src/common/file-signature.ts`: `contentMatchesType` / `assertContentMatchesType` check a
+file's first bytes against its claimed MIME type (PDF at offset 0, PNG, JPEG, GIF, WebP, HEIC, ZIP/
+OOXML, OLE2 .doc/.xls, text without NUL; `application/vnd.ms-excel` also passes text, since Windows
+labels .csv that way). Called after the existing allowlists in documents, drawing sheets (upload +
+supersede), drawing sets, takeoffs and the company logo. Expense receipts had no allowlist at all:
+now PDF/JPEG/PNG/WebP/GIF/HEIC. Signature data URLs must decode to a real PNG. Incoming e-invoices
+tell PDF from XML by content, not by MIME/extension (XML sent as octet-stream now works). CSV/GAEB/
+schedule imports aren't stored and were left as they are. Full API suite green; e2e not run.
+
+Next, one session each, in this order: kiosk device account; per-user calendar feeds; L5 (portal
+magic-link verify twice in dev StrictMode); names for focusable scroll areas; keyboard dragging on
+canvas/Gantt; `.btn-*` → `<Button>`; ~25 labels → `<Field>`; "pcs" unit in starter data.

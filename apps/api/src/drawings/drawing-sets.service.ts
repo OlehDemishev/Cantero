@@ -13,6 +13,7 @@ import { MAX_DRAWING_SET_UPLOAD_BYTES } from "../common/upload-limits";
 import { analyzePdf, MAX_SET_PAGES, PdfAnalysisError, type SetPageAnalysis } from "./pdf-analysis";
 import { sheetKey } from "./sheet-recognition";
 import { latestPerChain } from "./drawing-sheets.service";
+import { assertContentMatchesType } from "../common/file-signature";
 
 export type { SetPageAnalysis } from "./pdf-analysis";
 
@@ -65,6 +66,7 @@ export class DrawingSetsService implements OnModuleInit {
   async analyze(companyId: string, actor: AuditActor, projectId: string, file: Express.Multer.File) {
     if (!file) throw new BadRequestException("No file provided");
     if (file.mimetype !== "application/pdf") throw new BadRequestException("A drawing set has to be a PDF");
+    assertContentMatchesType(file);
     if (file.size > MAX_DRAWING_SET_UPLOAD_BYTES) throw new BadRequestException("The drawing set exceeds the 100MB limit");
     const project = await this.prisma.project.findFirst({ where: { id: projectId, companyId }, select: { id: true } });
     if (!project) throw new NotFoundException("Project not found");
