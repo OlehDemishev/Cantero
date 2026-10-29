@@ -1,32 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { supplierPortalApiFetch, setSupplierPortalToken } from "@/lib/supplier-portal-api-client";
-import { ApiError } from "@/lib/api-client";
 import { PublicLinkError } from "@/components/public-link-error";
+import { useMagicLinkVerify } from "@/lib/use-magic-link-verify";
 
 export default function SupplierPortalVerifyPage() {
   const t = useTranslations("supplierPortal");
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const [error, setError] = useState<unknown>(null);
-
-  useEffect(() => {
-    const token = searchParams.get("token");
-    const verified = token
-      ? supplierPortalApiFetch<{ accessToken: string }>("/supplier-portal/auth/verify", {
-          method: "POST",
-          body: JSON.stringify({ token }),
-        }).then((res) => {
-          setSupplierPortalToken(res.accessToken);
-          router.replace("/supplier-portal");
-        })
-      : Promise.reject(new ApiError(400, "missing token"));
-    verified.catch(setError);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const error = useMagicLinkVerify(supplierPortalApiFetch, "/supplier-portal/auth/verify", (accessToken) => {
+    setSupplierPortalToken(accessToken);
+    router.replace("/supplier-portal");
+  });
 
   if (error) {
     return (

@@ -1,32 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { subcontractorPortalApiFetch, setSubcontractorPortalToken } from "@/lib/subcontractor-portal-api-client";
-import { ApiError } from "@/lib/api-client";
 import { PublicLinkError } from "@/components/public-link-error";
+import { useMagicLinkVerify } from "@/lib/use-magic-link-verify";
 
 export default function SubcontractorPortalVerifyPage() {
   const t = useTranslations("subcontractorPortal");
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const [error, setError] = useState<unknown>(null);
-
-  useEffect(() => {
-    const token = searchParams.get("token");
-    const verified = token
-      ? subcontractorPortalApiFetch<{ accessToken: string }>("/subcontractor-portal/auth/verify", {
-          method: "POST",
-          body: JSON.stringify({ token }),
-        }).then((res) => {
-          setSubcontractorPortalToken(res.accessToken);
-          router.replace("/subcontractor-portal");
-        })
-      : Promise.reject(new ApiError(400, "missing token"));
-    verified.catch(setError);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const error = useMagicLinkVerify(subcontractorPortalApiFetch, "/subcontractor-portal/auth/verify", (accessToken) => {
+    setSubcontractorPortalToken(accessToken);
+    router.replace("/subcontractor-portal");
+  });
 
   if (error) {
     return (
