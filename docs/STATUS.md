@@ -1,5 +1,37 @@
 # Status
 
+<!-- summary:start -->
+**Stage:** MVP, runs locally only (B2B construction management SaaS)
+**Updated:** 2026-10-29
+
+**Now:**
+- PR for audit item L5 (portal magic-link verify fires twice), branch `claude/l5-magic-link-verify-once`
+- Branch `claude/per-user-calendar-feeds` in the main checkout: uncommitted files that mix several tasks + a stash from 2026-10-27
+
+**Next:**
+- Commit the open work task by task, one branch and PR each
+- Magic-byte checks on uploads: two unmerged branches `origin/claude/busy-cori-mjxuj7` and `origin/claude/nifty-sagan-l7cmud` (same task twice)
+- Remaining "Left" items of the 2026-10-23 audit entry: kiosk device account, focusable scroll areas without a name, `.btn-*` → `<Button>`, label patterns → `Field`
+
+**Needs Oleh:**
+- Review and merge the L5 PR
+- Pick one of the two magic-byte branches
+- Decide what to do with the stash from 2026-10-27
+<!-- summary:end -->
+
+## 2026-10-29 — portal magic-link verify sends one request per token (branch `claude/l5-magic-link-verify-once`)
+
+Done: new hook `apps/web/lib/use-magic-link-verify.ts` exchanges the `?token=` for an access token once
+per token: a second mount (dev StrictMode, a remount while pending) joins the request in flight instead
+of sending its own and getting a 400 for the spent single-use token. The client, subcontractor and
+supplier portal verify pages use it. The fix was written on 2026-10-27 and left uncommitted in the
+sibling worktree `~/Projects/Cantero-l5` after its sessions were deleted; committed from there, the
+worktree removed after push.
+Checked: locally `next typegen`, `tsc --noEmit` (web) and `pnpm --filter web lint` (0 errors; 19 old
+warnings, none in the changed files). Not checked in a browser.
+Left: the server side of L5 (confirm the sign-in with a user action, so mail link scanners can't spend
+the token) is not done.
+
 ## 2026-10-07 — local setup on the new Mac
 
 Done: Postgres/Redis from `docker-compose.yml`, migrations applied (no schema drift), seed run,
